@@ -8,18 +8,17 @@ import java.io.OutputStream;
 public interface BuildContext {
 
   public static interface Input {
-    public boolean requireProcessing();
-
-    public void registerIncludedFile(File file);
+    public void addIncludedInput(File file);
 
     public Output registerOutput(File file);
   }
 
   public static interface Output {
-
     public OutputStream newOutputStream();
   }
 
-  public Input registerInput(File file);
+  public Input registerInputForProcessing(File file);
+
+  public Iterable<? extends Input> registerInputsForProcessing(FileSet fileSet);
 
 }

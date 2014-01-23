@@ -40,12 +40,15 @@ public class ResourceFilteringDemo {
       // by tracking all input files build-avoidance API is able to determine
       // what input files will require processing during the next build and
       // cleanup output files that are no longer necessary
-      // #registerInput call also clears all error/warning messages associated with the inputFile
-      BuildContext.Input input = context.registerInput(inputFile);
+      BuildContext.Input input = context.registerInputForProcessing(inputFile);
 
       // BuildContext records input file size and lastModified timestamp (and sha1?)
       // input file requires processing if it's changed since last build
-      if (input.requireProcessing()) {
+      if (input != null) {
+
+        // at this point build-avoidance tracks two input instances, previous and current
+        // the previous instance tracks outputs and messages associated with the input during last
+        // build. the current instance has not associated outputs nor messages.
 
         // mapping input->output files is outside of the scope of build-avoidance API
         File outputFile = mapOutputFile(sourceDirectory, inputFile, outputDirectory);
