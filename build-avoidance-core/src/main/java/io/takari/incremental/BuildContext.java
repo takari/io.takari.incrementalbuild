@@ -10,6 +10,8 @@ public interface BuildContext {
   public static interface Input {
     public boolean requireProcessing();
 
+    public void registerIncludedFile(File file);
+
     public Output registerOutput(File file);
   }
 
