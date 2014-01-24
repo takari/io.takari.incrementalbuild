@@ -5,16 +5,16 @@ import io.takari.incremental.BuildContext;
 import java.io.File;
 import java.io.Serializable;
 
-public class DefaultInput implements BuildContext.Input {
+public class DefaultInput implements BuildContext.Input<File> {
 
   @Override
-  public void addIncludedInput(File file) {
+  public void associateIncludedInput(File file) {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public DefaultOutput registerOutput(File file) {
+  public DefaultOutput associateOutput(File file) {
     // TODO Auto-generated method stub
     return null;
   }

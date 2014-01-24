@@ -24,12 +24,12 @@ public class HalfassInputAggregationMockup {
   public void aggregate(FileSet fileSet) throws IOException {
 
     // this is for demo purposes only, real code most likely will also collect per-input data
-    Set<BuildContext.Input> inputs = new LinkedHashSet<>();
+    Set<BuildContext.Input<File>> inputs = new LinkedHashSet<>();
 
     boolean processingRequired = false;
 
     // this iterates on any new/modified inputs from the fileset
-    for (BuildContext.Input input : context.registerInputsForProcessing(fileSet)) {
+    for (BuildContext.Input<File> input : context.processInputs(fileSet)) {
 
       // Not all new/changed inputs need to be aggregated. For example, for maven plugin.xml
       // only classes annotated with @Mojo need to be looked at. as indicated above, real
@@ -44,12 +44,12 @@ public class HalfassInputAggregationMockup {
 
     // oldOutput is read-only Output instance that provide information about end result of the
     // previous build.
-    BuildContext.Output oldOutput = context.getOldOutput(outputFile);
+    BuildContext.Output<File> oldOutput = context.getOldOutput(outputFile);
     if (oldOutput != null) {
       if (!processingRequired) {
         // iterate over all Inputs that contributed to the aggregator during previous build
         // processing is required if any of old inputs was changed or removed since last build
-        for (BuildContext.Input oldInput : oldOutput.getRegisteredInputs()) {
+        for (BuildContext.Input<File> oldInput : oldOutput.getAssociatedInputs()) {
           if (oldInput.isProcessingRequired()) {
             processingRequired = true;
           }
@@ -57,8 +57,8 @@ public class HalfassInputAggregationMockup {
       }
       if (processingRequired) {
         // if processing is required, process all oldInputs that still exist
-        for (BuildContext.Input input : oldOutput.getRegisteredInputs()) {
-          if (input.getResource().canRead() && isInteresting(input)) {
+        for (BuildContext.Input<File> input : oldOutput.getAssociatedInputs()) {
+          if (input.getResource().canRead()) {
             inputs.add(input);
           }
         }
@@ -68,12 +68,12 @@ public class HalfassInputAggregationMockup {
     if (processingRequired) {
 
       // registers new "clean" output with the build context, then associate all relevant inputs
-      BuildContext.Output output = context.registerOutput(outputFile);
+      BuildContext.Output<File> output = context.registerOutput(outputFile);
       try (OutputStream os = output.newOutputStream()) {
-        for (BuildContext.Input input : inputs) {
+        for (BuildContext.Input<File> input : inputs) {
 
           // inputs and outputs have symmetrical many-to-many relation
-          output.addInput(input);
+          output.associateInput(input);
 
           // append aggregator with data specific to the current input
           // real code will likely collect all input data first, then write everything to an
@@ -85,7 +85,7 @@ public class HalfassInputAggregationMockup {
 
   }
 
-  private void contributeToAggregate(Input input, OutputStream os) {
+  private void contributeToAggregate(Input<File> input, OutputStream os) {
     // TODO Auto-generated method stub
 
   }
@@ -95,7 +95,7 @@ public class HalfassInputAggregationMockup {
     return null;
   }
 
-  private boolean isInteresting(Input input) {
+  private boolean isInteresting(Input<File> input) {
     // TODO Auto-generated method stub
     return false;
   }

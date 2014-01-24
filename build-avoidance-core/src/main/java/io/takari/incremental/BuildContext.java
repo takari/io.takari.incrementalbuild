@@ -12,18 +12,18 @@ public interface BuildContext {
 
   public static final int SEVERITY_WARNING = 2;
 
-  public static interface Input {
-    public void addIncludedInput(File file);
+  public static interface Input<T> {
+    public void associateIncludedInput(T file);
 
-    public Output registerOutput(File file);
+    public Output<T> associateOutput(T file);
 
     public boolean isProcessingRequired();
 
-    public File getResource();
+    public T getResource();
 
-    public <T extends Serializable> void setValue(String key, T value);
+    public <V extends Serializable> void setValue(String key, V value);
 
-    public <T extends Serializable> T getValue(String key, Class<T> clazz);
+    public <V extends Serializable> V getValue(String key, Class<V> clazz);
 
     public void addMessage(int line, int column, String message, int severity, Throwable cause);
 
@@ -33,12 +33,12 @@ public interface BuildContext {
     // Throwable cause);
   }
 
-  public static interface Output {
+  public static interface Output<T> {
     public OutputStream newOutputStream();
 
-    public Iterable<? extends Input> getRegisteredInputs();
+    public Iterable<? extends Input<T>> getAssociatedInputs();
 
-    public void addInput(Input input);
+    public void associateInput(Input<T> input);
   }
 
   /**
@@ -52,15 +52,15 @@ public interface BuildContext {
    * 
    * @return registered input or {@code null} if input file does not require processing
    */
-  public Input registerInputForProcessing(File file);
+  public Input<File> processInput(File file);
 
-  public Iterable<? extends Input> registerInputsForProcessing(FileSet fileSet);
+  public Iterable<? extends Input<File>> processInputs(FileSet fileSet);
 
-  public Output registerOutput(File file);
+  public Output<File> registerOutput(File file);
 
-  public Output getOldOutput(File file);
+  public Output<File> getOldOutput(File file);
 
-  public Input registerInput(File file);
+  public Input<File> registerInput(File file);
 
   /**
    * Returns new uninitialized {@link FileSetBuilder} instance.

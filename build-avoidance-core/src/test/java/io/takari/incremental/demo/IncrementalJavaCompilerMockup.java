@@ -43,7 +43,7 @@ public class IncrementalJavaCompilerMockup {
       // and picking Inputs that require processing. It may provide better performance, especially
       // inside Eclipse, compared to manual implementation of the same logic
 
-      for (DefaultInput input : context.registerInputsForProcessing(sourceSet)) {
+      for (DefaultInput input : context.processInputs(sourceSet)) {
         queue.add(input);
       }
     }
@@ -92,7 +92,7 @@ public class IncrementalJavaCompilerMockup {
 
     File outputFile = getOutputFile(type);
 
-    DefaultOutput output = input.registerOutput(outputFile);
+    DefaultOutput output = input.associateOutput(outputFile);
 
     // register capabilities provided by this output
     // used to determine affected inputs when the output changed or deleted

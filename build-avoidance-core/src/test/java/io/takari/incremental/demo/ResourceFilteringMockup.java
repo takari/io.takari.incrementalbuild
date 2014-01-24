@@ -36,40 +36,37 @@ public class ResourceFilteringMockup {
     // by tracking all input files build-avoidance API is able to determine
     // what input files will require processing during the next build and
     // cleanup output files that are no longer necessary
-    for (BuildContext.Input input : context.registerInputsForProcessing(fileSet)) {
+    for (BuildContext.Input<File> input : context.processInputs(fileSet)) {
 
       // BuildContext records input file size and lastModified timestamp (and sha1?)
       // input file requires processing if it's changed since last build
-      if (input != null) {
+      // at this point build-avoidance tracks two input instances, previous and current
+      // the previous instance tracks outputs and messages associated with the input during last
+      // build. the current instance has not associated outputs nor messages.
 
-        // at this point build-avoidance tracks two input instances, previous and current
-        // the previous instance tracks outputs and messages associated with the input during last
-        // build. the current instance has not associated outputs nor messages.
+      // mapping input->output files is outside of the scope of build-avoidance API
+      File outputFile = mapOutputFile(sourceDirectory, input.getResource(), outputDirectory);
 
-        // mapping input->output files is outside of the scope of build-avoidance API
-        File outputFile = mapOutputFile(sourceDirectory, input.getResource(), outputDirectory);
+      // all output files and their relationship to input files must be registered with
+      // BuildAvoidance framework
+      BuildContext.Output<File> output = input.associateOutput(outputFile);
 
-        // all output files and their relationship to input files must be registered with
-        // BuildAvoidance framework
-        BuildContext.Output output = input.registerOutput(outputFile);
+      // BuildContext records output file size and lastModified timestamp (and sha1?)
+      // input file requires processing if it's associated output file(s) change
+      try (OutputStream os = output.newOutputStream()) {
 
-        // BuildContext records output file size and lastModified timestamp (and sha1?)
-        // input file requires processing if it's associated output file(s) change
-        try (OutputStream os = output.newOutputStream()) {
-
-          // output file generation is obviously outside of the scope of build-avoidance API
-          filter(input.getResource(), os);
-        }
-
-        // use of Output#newOutputStream is optional but recommended
-        // the following snippet has the same effect the code as above
-        // use of Output#newOutputStream does help with Eclipse integration
-        File outputFile2 = mapOutputFile2(sourceDirectory, input.getResource(), outputDirectory);
-        try (OutputStream os = new FileOutputStream(outputFile2)) {
-          filter(input.getResource(), os);
-        }
-        input.registerOutput(outputFile);
+        // output file generation is obviously outside of the scope of build-avoidance API
+        filter(input.getResource(), os);
       }
+
+      // use of Output#newOutputStream is optional but recommended
+      // the following snippet has the same effect the code as above
+      // use of Output#newOutputStream does help with Eclipse integration
+      File outputFile2 = mapOutputFile2(sourceDirectory, input.getResource(), outputDirectory);
+      try (OutputStream os = new FileOutputStream(outputFile2)) {
+        filter(input.getResource(), os);
+      }
+      input.associateOutput(outputFile);
 
     }
 

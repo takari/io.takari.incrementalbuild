@@ -9,12 +9,12 @@ public class IncludedInputFilesMockup {
 
   public void generate(File inputFile, File includedFile) {
 
-    BuildContext.Input input = context.registerInputForProcessing(inputFile);
+    BuildContext.Input<File> input = context.processInput(inputFile);
 
     if (input != null) {
       // creates association between input and included files
       // input file requires processing when any of its included files changes
-      input.addIncludedInput(includedFile);
+      input.associateIncludedInput(includedFile);
     }
 
     // XXX deal will error/warning messages in included files

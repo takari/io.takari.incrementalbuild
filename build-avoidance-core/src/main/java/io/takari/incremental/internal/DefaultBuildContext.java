@@ -19,13 +19,13 @@ public class DefaultBuildContext implements BuildContext {
   private final Map<QualifiedName, Set<DefaultInput>> requirementInputs = new HashMap<>();
 
   @Override
-  public DefaultInput registerInputForProcessing(File file) {
+  public DefaultInput processInput(File file) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public Iterable<DefaultInput> registerInputsForProcessing(FileSet fileSet) {
+  public Iterable<DefaultInput> processInputs(FileSet fileSet) {
     // TODO Auto-generated method stub
     return null;
   }

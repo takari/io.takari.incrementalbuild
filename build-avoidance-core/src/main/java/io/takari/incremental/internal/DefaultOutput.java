@@ -3,9 +3,10 @@ package io.takari.incremental.internal;
 import io.takari.incremental.BuildContext;
 import io.takari.incremental.BuildContext.Input;
 
+import java.io.File;
 import java.io.OutputStream;
 
-public class DefaultOutput implements BuildContext.Output {
+public class DefaultOutput implements BuildContext.Output<File> {
 
   @Override
   public OutputStream newOutputStream() {
@@ -23,13 +24,13 @@ public class DefaultOutput implements BuildContext.Output {
   }
 
   @Override
-  public Iterable<DefaultInput> getRegisteredInputs() {
+  public Iterable<DefaultInput> getAssociatedInputs() {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public void addInput(Input input) {
+  public void associateInput(Input<File> input) {
     if (!(input instanceof DefaultInput)) {
       throw new IllegalArgumentException();
     }
