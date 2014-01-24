@@ -11,9 +11,9 @@ public interface FileSetBuilder {
 
   public FileSetBuilder withBasedir(File basedir);
 
-  public FileSetBuilder withIncludes(Iterable<String> includes);
+  public FileSetBuilder addIncludes(Iterable<String> includes);
 
-  public FileSetBuilder withExcludes(Iterable<String> includes);
+  public FileSetBuilder addExcludes(Iterable<String> includes);
 
   public FileSetBuilder addDefaultExcludes();
 

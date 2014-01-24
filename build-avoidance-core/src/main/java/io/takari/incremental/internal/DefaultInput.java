@@ -48,4 +48,9 @@ public class DefaultInput implements BuildContext.Input {
     return null;
   }
 
+  @Override
+  public void addMessage(int line, int column, String message, int severity, Throwable cause) {
+    // TODO Auto-generated method stub
+
+  }
 }

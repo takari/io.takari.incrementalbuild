@@ -27,9 +27,10 @@ public class ResourceFilteringMockup {
 
   public void filter() throws IOException {
 
-    FileSet fileSet =
-        context.fileSetBuilder().withBasedir(sourceDirectory).withIncludes(excludes)
-            .withExcludes(excludes).build();
+    FileSet fileSet = context.fileSetBuilder().withBasedir(sourceDirectory) //
+        .addIncludes(excludes) //
+        .addExcludes(excludes) //
+        .build();
 
     // all input files must be registered with BuildContext
     // by tracking all input files build-avoidance API is able to determine
@@ -68,7 +69,6 @@ public class ResourceFilteringMockup {
           filter(input.getResource(), os);
         }
         input.registerOutput(outputFile);
-
       }
 
     }

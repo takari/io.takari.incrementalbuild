@@ -8,6 +8,10 @@ import java.io.Serializable;
 
 public interface BuildContext {
 
+  public static final int SEVERITY_ERROR = 1;
+
+  public static final int SEVERITY_WARNING = 2;
+
   public static interface Input {
     public void addIncludedInput(File file);
 
@@ -20,6 +24,13 @@ public interface BuildContext {
     public <T extends Serializable> void setValue(String key, T value);
 
     public <T extends Serializable> T getValue(String key, Class<T> clazz);
+
+    public void addMessage(int line, int column, String message, int severity, Throwable cause);
+
+    // the following is required to support include inputs
+    // public void addMessage(Input includedInput, int line, int column, String message, int
+    // severity,
+    // Throwable cause);
   }
 
   public static interface Output {
