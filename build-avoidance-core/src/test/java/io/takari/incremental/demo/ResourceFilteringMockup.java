@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Set;
 
-public class ResourceFilteringDemo {
+public class ResourceFilteringMockup {
 
   // injected parameters
 

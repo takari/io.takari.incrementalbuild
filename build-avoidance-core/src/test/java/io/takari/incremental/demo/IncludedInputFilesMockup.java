@@ -4,7 +4,7 @@ import io.takari.incremental.BuildContext;
 
 import java.io.File;
 
-public class IncludedInputFiles {
+public class IncludedInputFilesMockup {
   private BuildContext context;
 
   public void generate(File inputFile, File includedFile) {

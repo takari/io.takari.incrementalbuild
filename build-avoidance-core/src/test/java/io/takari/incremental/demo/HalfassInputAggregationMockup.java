@@ -16,7 +16,7 @@ import java.util.Set;
 // if the changed since last build or not. this is "half-ass" input aggregation because
 // it does not persist per-input state (other than standard "modified" hash) and requires
 // reprocessing of all inputs whenever new aggregate needs to be generated
-public class HalfassInputAggregationDemo {
+public class HalfassInputAggregationMockup {
 
   /** @Injected */
   BuildContext context;
