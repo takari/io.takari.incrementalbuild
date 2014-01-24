@@ -2,6 +2,7 @@ package io.takari.incremental;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.io.Serializable;
 
 
 
@@ -15,6 +16,10 @@ public interface BuildContext {
     public boolean isProcessingRequired();
 
     public File getResource();
+
+    public <T extends Serializable> void setValue(String key, T value);
+
+    public <T extends Serializable> T getValue(String key, Class<T> clazz);
   }
 
   public static interface Output {
@@ -32,5 +37,7 @@ public interface BuildContext {
   public Output registerOutput(File file);
 
   public Output getOldOutput(File file);
+
+  public Input registerInput(File file);
 
 }

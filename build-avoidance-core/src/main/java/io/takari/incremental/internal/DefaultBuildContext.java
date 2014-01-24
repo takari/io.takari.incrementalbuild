@@ -56,4 +56,10 @@ public class DefaultBuildContext implements BuildContext {
     return null;
   }
 
+  @Override
+  public Input registerInput(File file) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
 }

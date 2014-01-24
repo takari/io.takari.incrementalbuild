@@ -3,6 +3,7 @@ package io.takari.incremental.internal;
 import io.takari.incremental.BuildContext;
 
 import java.io.File;
+import java.io.Serializable;
 
 public class DefaultInput implements BuildContext.Input {
 
@@ -31,6 +32,18 @@ public class DefaultInput implements BuildContext.Input {
 
   @Override
   public File getResource() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public <T extends Serializable> void setValue(String key, T value) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public <T extends Serializable> T getValue(String key, Class<T> clazz) {
     // TODO Auto-generated method stub
     return null;
   }
