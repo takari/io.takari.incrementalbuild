@@ -2,6 +2,7 @@ package io.takari.incremental.internal;
 
 import io.takari.incremental.BuildContext;
 import io.takari.incremental.FileSet;
+import io.takari.incremental.FileSetBuilder;
 
 import java.io.File;
 import java.io.Serializable;
@@ -62,4 +63,9 @@ public class DefaultBuildContext implements BuildContext {
     return null;
   }
 
+  @Override
+  public FileSetBuilder fileSetBuilder() {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

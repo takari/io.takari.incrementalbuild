@@ -1,6 +1,7 @@
 package io.takari.incremental.demo;
 
 import io.takari.incremental.BuildContext;
+import io.takari.incremental.FileSet;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,21 +27,15 @@ public class ResourceFilteringMockup {
 
   public void filter() throws IOException {
 
-    // directory scanning is outside of the scope of build-avoidance API
-    // XXX not so fast. m2e needs a way to provide scanner implementation
-    // or maybe not. m2e integration is a big question mark at this point
-    DirectoryScanner scanner = new DirectoryScanner(sourceDirectory);
-    scanner.addInclludes(includes);
-    scanner.addExclues(excludes);
-    scanner.scan();
+    FileSet fileSet =
+        context.fileSetBuilder().withBasedir(sourceDirectory).withIncludes(excludes)
+            .withExcludes(excludes).build();
 
-    for (File inputFile : scanner.getIncludedFiles()) {
-
-      // all input files must be registered with BuildContext
-      // by tracking all input files build-avoidance API is able to determine
-      // what input files will require processing during the next build and
-      // cleanup output files that are no longer necessary
-      BuildContext.Input input = context.registerInputForProcessing(inputFile);
+    // all input files must be registered with BuildContext
+    // by tracking all input files build-avoidance API is able to determine
+    // what input files will require processing during the next build and
+    // cleanup output files that are no longer necessary
+    for (BuildContext.Input input : context.registerInputsForProcessing(fileSet)) {
 
       // BuildContext records input file size and lastModified timestamp (and sha1?)
       // input file requires processing if it's changed since last build
@@ -51,7 +46,7 @@ public class ResourceFilteringMockup {
         // build. the current instance has not associated outputs nor messages.
 
         // mapping input->output files is outside of the scope of build-avoidance API
-        File outputFile = mapOutputFile(sourceDirectory, inputFile, outputDirectory);
+        File outputFile = mapOutputFile(sourceDirectory, input.getResource(), outputDirectory);
 
         // all output files and their relationship to input files must be registered with
         // BuildAvoidance framework
@@ -62,15 +57,15 @@ public class ResourceFilteringMockup {
         try (OutputStream os = output.newOutputStream()) {
 
           // output file generation is obviously outside of the scope of build-avoidance API
-          filter(inputFile, os);
+          filter(input.getResource(), os);
         }
 
         // use of Output#newOutputStream is optional but recommended
         // the following snippet has the same effect the code as above
         // use of Output#newOutputStream does help with Eclipse integration
-        File outputFile2 = mapOutputFile2(sourceDirectory, inputFile, outputDirectory);
+        File outputFile2 = mapOutputFile2(sourceDirectory, input.getResource(), outputDirectory);
         try (OutputStream os = new FileOutputStream(outputFile2)) {
-          filter(inputFile, os);
+          filter(input.getResource(), os);
         }
         input.registerOutput(outputFile);
 
