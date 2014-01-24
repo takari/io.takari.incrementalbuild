@@ -11,14 +11,26 @@ public interface BuildContext {
     public void addIncludedInput(File file);
 
     public Output registerOutput(File file);
+
+    public boolean isProcessingRequired();
+
+    public File getResource();
   }
 
   public static interface Output {
     public OutputStream newOutputStream();
+
+    public Iterable<? extends Input> getRegisteredInputs();
+
+    public void addInput(Input input);
   }
 
   public Input registerInputForProcessing(File file);
 
   public Iterable<? extends Input> registerInputsForProcessing(FileSet fileSet);
+
+  public Output registerOutput(File file);
+
+  public Output getOldOutput(File file);
 
 }

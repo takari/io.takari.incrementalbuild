@@ -23,4 +23,16 @@ public class DefaultInput implements BuildContext.Input {
 
   }
 
+  @Override
+  public boolean isProcessingRequired() {
+    // TODO Auto-generated method stub
+    return false;
+  }
+
+  @Override
+  public File getResource() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
 }

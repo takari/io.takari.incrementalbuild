@@ -44,4 +44,16 @@ public class DefaultBuildContext implements BuildContext {
     return result != null ? result : Collections.<DefaultInput>emptyList();
   }
 
+  @Override
+  public DefaultOutput registerOutput(File file) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public DefaultOutput getOldOutput(File file) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
 }
