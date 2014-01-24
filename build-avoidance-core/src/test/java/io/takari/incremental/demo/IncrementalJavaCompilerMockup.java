@@ -18,12 +18,12 @@ public class IncrementalJavaCompilerMockup {
   DefaultBuildContext context;
 
   /** Inputs waiting to be compiled */
-  Set<DefaultInput> queue = new HashSet<>();
+  Set<DefaultInput> queue = new HashSet<DefaultInput>();
 
   /**
    * Compiled inputs, used to prevent multiple recompilation of the same input
    */
-  Set<DefaultInput> processed = new HashSet<>();
+  Set<DefaultInput> processed = new HashSet<DefaultInput>();
 
   public void compile(Collection<FileSet> sourceSets) {
 
@@ -115,8 +115,11 @@ public class IncrementalJavaCompilerMockup {
     }
 
     // this is new Output instance, that does not know anything about the previous build
-    try (OutputStream os = output.newOutputStream()) {
+    OutputStream os = output.newOutputStream();
+    try {
       os.write(bytes);
+    } finally {
+      os.close();
     }
   }
 

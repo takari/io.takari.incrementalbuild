@@ -53,18 +53,23 @@ public class ResourceFilteringMockup {
 
       // BuildContext records output file size and lastModified timestamp (and sha1?)
       // input file requires processing if it's associated output file(s) change
-      try (OutputStream os = output.newOutputStream()) {
+      OutputStream os = output.newOutputStream();
+      try {
 
         // output file generation is obviously outside of the scope of build-avoidance API
         filter(input.getResource(), os);
+      } finally {
+        os.close();
       }
 
       // use of Output#newOutputStream is optional but recommended
       // the following snippet has the same effect the code as above
       // use of Output#newOutputStream does help with Eclipse integration
-      File outputFile2 = mapOutputFile2(sourceDirectory, input.getResource(), outputDirectory);
-      try (OutputStream os = new FileOutputStream(outputFile2)) {
+      os = new FileOutputStream(outputFile);
+      try {
         filter(input.getResource(), os);
+      } finally {
+        os.close();
       }
       input.associateOutput(outputFile);
 
@@ -81,11 +86,6 @@ public class ResourceFilteringMockup {
   }
 
   private File mapOutputFile(File sourceDirectory, File sourceFile, File outputDirectory) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  private File mapOutputFile2(File sourceDirectory, File sourceFile, File outputDirectory) {
     // TODO Auto-generated method stub
     return null;
   }

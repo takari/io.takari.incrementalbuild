@@ -23,7 +23,7 @@ public class InputAggregationMockup {
   public void aggregate(FileSet fileSet) throws IOException {
 
     // this is for demo purposes only, real code most likely will also collect per-input data
-    Set<BuildContext.Input<File>> inputs = new LinkedHashSet<>();
+    Set<BuildContext.Input<File>> inputs = new LinkedHashSet<BuildContext.Input<File>>();
 
     boolean processingRequired = false;
 
@@ -76,7 +76,8 @@ public class InputAggregationMockup {
 
       // registers new "clean" output with the build context, then associate all relevant inputs
       BuildContext.Output<File> output = context.registerOutput(outputFile);
-      try (OutputStream os = output.newOutputStream()) {
+      OutputStream os = output.newOutputStream();
+      try {
         for (BuildContext.Input<File> input : inputs) {
 
           // inputs and outputs have symmetrical many-to-many relation
@@ -87,7 +88,10 @@ public class InputAggregationMockup {
           // xml/json/etc file
           contributeToAggregate(input, os);
         }
+      } finally {
+        os.close();
       }
+
     }
 
   }

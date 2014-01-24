@@ -16,7 +16,8 @@ public class DefaultBuildContext implements BuildContext {
   /**
    * Maps requirement qname to all input that require it.
    */
-  private final Map<QualifiedName, Set<DefaultInput>> requirementInputs = new HashMap<>();
+  private final Map<QualifiedName, Set<DefaultInput>> requirementInputs =
+      new HashMap<QualifiedName, Set<DefaultInput>>();
 
   @Override
   public DefaultInput processInput(File file) {
