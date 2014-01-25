@@ -1,6 +1,7 @@
 package io.takari.incremental.internal;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Collection;
 
 interface BuildContextStateManager {
@@ -29,4 +30,9 @@ interface BuildContextStateManager {
 
   Collection<String> getCapabilities(DefaultOutput output, String qualifier);
 
+  // simple key/value pairs
+
+  <T extends Serializable> void setValue(DefaultInput input, String key, T value);
+
+  <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz);
 }

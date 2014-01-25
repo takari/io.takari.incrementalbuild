@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -88,6 +89,11 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
   private final ConcurrentMap<File, Collection<QualifiedName>> outputCapabilities =
       new ConcurrentHashMap<File, Collection<QualifiedName>>();
 
+  // simple key/value pairs
+
+  private final ConcurrentMap<File, Map<String, Serializable>> inputAttributes =
+      new ConcurrentHashMap<File, Map<String, Serializable>>();
+
   public DefaultBuildContext(File stateFile, Map<String, byte[]> configuration) {
     // preconditions
     if (stateFile == null) {
@@ -162,7 +168,8 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
   private void storeState() throws IOException {
 
     DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, //
-        inputOutputs, outputInputs, inputIncludedInputs, requirementInputs, outputCapabilities);
+        inputOutputs, outputInputs, inputIncludedInputs, requirementInputs, outputCapabilities, //
+        inputAttributes);
 
     ObjectOutputStream os =
         new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));
@@ -427,5 +434,24 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     }
 
     return result.values();
+  }
+
+  // simple key/value pairs
+
+  @Override
+  public <T extends Serializable> void setValue(DefaultInput input, String key, T value) {
+    File inputFile = input.getResource();
+    Map<String, Serializable> attributes = inputAttributes.get(inputFile);
+    if (attributes == null) {
+      inputAttributes.putIfAbsent(inputFile, new LinkedHashMap<String, Serializable>());
+      attributes = inputAttributes.get(inputFile);
+    }
+    attributes.put(key, value); // XXX NOT THREAD SAFE
+  }
+
+  @Override
+  public <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz) {
+    Map<String, Serializable> attributes = inputAttributes.get(input.getResource());
+    return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 }

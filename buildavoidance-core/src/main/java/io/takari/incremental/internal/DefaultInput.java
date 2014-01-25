@@ -46,14 +46,12 @@ public class DefaultInput implements BuildContext.Input<File> {
 
   @Override
   public <T extends Serializable> void setValue(String key, T value) {
-    // TODO Auto-generated method stub
-
+    state.setValue(this, key, value);
   }
 
   @Override
   public <T extends Serializable> T getValue(String key, Class<T> clazz) {
-    // TODO Auto-generated method stub
-    return null;
+    return state.getValue(this, key, clazz);
   }
 
   @Override

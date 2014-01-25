@@ -7,7 +7,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 class DefaultBuildContextState implements Serializable, BuildContextStateManager {
 
@@ -29,13 +31,16 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   private final Map<File, Collection<QualifiedName>> outputCapabilities;
 
+  private final Map<File, Map<String, Serializable>> inputAttributes;
+
   public DefaultBuildContextState(Map<String, byte[]> configuration,
       Map<File, DefaultInput> inputs, Map<File, DefaultOutput> outputs,
       Map<File, Collection<DefaultOutput>> inputOutputs,
       Map<File, Collection<DefaultInput>> outputInputs,
       Map<File, Collection<File>> inputIncludedInputs,
       Map<QualifiedName, Collection<DefaultInput>> requirementInputs,
-      Map<File, Collection<QualifiedName>> outputCapabilities) {
+      Map<File, Collection<QualifiedName>> outputCapabilities,
+      Map<File, Map<String, Serializable>> inputAttributes) {
 
     this.configuration = unmodifiableMap(configuration); // clone byte[] arrays?
     this.inputs = unmodifiableMap(inputs);
@@ -47,14 +52,25 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     this.requirementInputs = unmodifiableMultimap(requirementInputs);
     this.outputCapabilities = unmodifiableMap(outputCapabilities);
 
+    this.inputAttributes = unmodifiableMapMap(inputAttributes);
+
     Map<File, FileState> files = new HashMap<File, FileState>();
     putAll(files, inputs.keySet());
     putAll(files, outputs.keySet());
     for (Collection<File> includedInputs : inputIncludedInputs.values()) {
       putAll(files, includedInputs);
     }
-
     this.files = files;
+  }
+
+  private static Map<File, Map<String, Serializable>> unmodifiableMapMap(
+      Map<File, Map<String, Serializable>> inputAttributes) {
+    Map<File, Map<String, Serializable>> result =
+        new LinkedHashMap<File, Map<String, Serializable>>();
+    for (Map.Entry<File, Map<String, Serializable>> entry : inputAttributes.entrySet()) {
+      result.put(entry.getKey(), unmodifiableMap(entry.getValue()));
+    }
+    return Collections.unmodifiableMap(result);
   }
 
   private static <K, V> Map<K, V> unmodifiableMap(Map<K, V> map) {
@@ -69,6 +85,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     }
     return Collections.unmodifiableMap(result);
   }
+
 
   private static void putAll(Map<File, FileState> state, Collection<File> files) {
     for (File file : files) {
@@ -183,7 +200,29 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   @Override
   public Collection<String> getCapabilities(DefaultOutput output, String qualifier) {
-    // TODO Auto-generated method stub
-    return null;
+    Collection<QualifiedName> capabilities = outputCapabilities.get(output.getResource());
+    if (capabilities == null) {
+      return Collections.emptyList();
+    }
+    Set<String> result = new LinkedHashSet<String>();
+    for (QualifiedName capability : capabilities) {
+      if (qualifier.equals(capability.getQualifier())) {
+        result.add(capability.getLocalName());
+      }
+    }
+    return result;
+  }
+
+  // input key/value attrbutes
+
+  @Override
+  public <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz) {
+    Map<String, Serializable> attributes = inputAttributes.get(input.getResource());
+    return attributes != null ? clazz.cast(attributes.get(key)) : null;
+  }
+
+  @Override
+  public <T extends Serializable> void setValue(DefaultInput input, String key, T value) {
+    throw new IllegalStateException();
   }
 }
