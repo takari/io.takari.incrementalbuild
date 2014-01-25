@@ -19,8 +19,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -153,26 +151,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     return null;
   }
 
-  private static <K, V> Map<K, V> unmodifiableMap(Map<K, V> map) {
-    return Collections.unmodifiableMap(new LinkedHashMap<K, V>(map));
-  }
-
-  private static <K, V> Map<K, Collection<V>> unmodifiableMultimap(Map<K, Collection<V>> map) {
-    HashMap<K, Collection<V>> result = new LinkedHashMap<K, Collection<V>>();
-    for (Map.Entry<K, Collection<V>> entry : map.entrySet()) {
-      Collection<V> values = new ArrayList<V>(entry.getValue());
-      result.put(entry.getKey(), Collections.unmodifiableCollection(values));
-    }
-    return Collections.unmodifiableMap(result);
-  }
-
   private void storeState() throws IOException {
-    Map<String, byte[]> configuration = unmodifiableMap(this.configuration);
-    Map<File, DefaultInput> inputs = unmodifiableMap(this.inputs);
-    Map<File, DefaultOutput> outputs = unmodifiableMap(this.outputs);
-    Map<File, Collection<DefaultOutput>> inputOutputs = unmodifiableMultimap(this.inputOutputs);
-    Map<File, Collection<File>> inputIncludedInputs =
-        unmodifiableMultimap(this.inputIncludedInputs);
 
     BuildContextState state =
         new BuildContextState(configuration, inputs, outputs, inputOutputs, inputIncludedInputs);
@@ -347,7 +326,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     File inputFile = input.getResource();
     Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
     if (outputs == null) {
-      inputOutputs.putIfAbsent(inputFile, new HashSet<DefaultOutput>());
+      inputOutputs.putIfAbsent(inputFile, new LinkedHashSet<DefaultOutput>());
       outputs = inputOutputs.get(inputFile);
     }
     outputs.add(output); // XXX NOT THREAD SAFE
@@ -370,7 +349,13 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
 
   @Override
   public void associateIncludedInput(DefaultInput input, File includedFile) {
-
+    File inputFile = input.getResource();
+    Collection<File> includedFiles = inputIncludedInputs.get(inputFile);
+    if (includedFiles == null) {
+      inputIncludedInputs.putIfAbsent(inputFile, new LinkedHashSet<File>());
+      includedFiles = inputIncludedInputs.get(inputFile);
+    }
+    includedFiles.add(includedFile); // XXX NOT THREAD SAFE
   }
 
   @Override

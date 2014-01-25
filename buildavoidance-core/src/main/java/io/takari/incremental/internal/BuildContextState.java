@@ -2,8 +2,11 @@ package io.takari.incremental.internal;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 class BuildContextState implements Serializable, BuildContextStateManager {
@@ -24,14 +27,11 @@ class BuildContextState implements Serializable, BuildContextStateManager {
       Map<File, DefaultOutput> outputs, Map<File, Collection<DefaultOutput>> inputOutputs,
       Map<File, Collection<File>> inputIncludedInputs) {
 
-    // TODO does serialization/desirilization preserve unmodifiable collections?
-    // TODO create deep unmodifiable clones
-
-    this.configuration = configuration;
-    this.inputs = inputs;
-    this.outputs = outputs;
-    this.inputOutputs = inputOutputs;
-    this.inputIncludedInputs = inputIncludedInputs;
+    this.configuration = unmodifiableMap(configuration); // clone byte[] arrays?
+    this.inputs = unmodifiableMap(inputs);
+    this.outputs = unmodifiableMap(outputs);
+    this.inputOutputs = unmodifiableMultimap(inputOutputs);
+    this.inputIncludedInputs = unmodifiableMultimap(inputIncludedInputs);
 
     Map<File, FileState> files = new HashMap<File, FileState>();
     putAll(files, inputs.keySet());
@@ -41,6 +41,19 @@ class BuildContextState implements Serializable, BuildContextStateManager {
     }
 
     this.files = files;
+  }
+
+  private static <K, V> Map<K, V> unmodifiableMap(Map<K, V> map) {
+    return Collections.unmodifiableMap(new LinkedHashMap<K, V>(map));
+  }
+
+  private static <K, V> Map<K, Collection<V>> unmodifiableMultimap(Map<K, Collection<V>> map) {
+    HashMap<K, Collection<V>> result = new LinkedHashMap<K, Collection<V>>();
+    for (Map.Entry<K, Collection<V>> entry : map.entrySet()) {
+      Collection<V> values = new ArrayList<V>(entry.getValue());
+      result.put(entry.getKey(), Collections.unmodifiableCollection(values));
+    }
+    return Collections.unmodifiableMap(result);
   }
 
   private static void putAll(Map<File, FileState> state, Collection<File> files) {

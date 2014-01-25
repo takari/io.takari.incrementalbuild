@@ -20,9 +20,9 @@ public interface BuildContext {
   public static final int SEVERITY_WARNING = 2;
 
   public static interface Input<T> {
-    public void associateIncludedInput(T file);
+    public void associateIncludedInput(T resource);
 
-    public Output<T> associateOutput(T file);
+    public Output<T> associateOutput(T resource);
 
     // TODO this method only applies to old state, see if you can remove it somehow
     public boolean isProcessingRequired();
