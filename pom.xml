@@ -1,12 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>test</groupId>
-  <artifactId>build-avoidance</artifactId>
+
+  <groupId>io.takari.buildavoidance</groupId>
+  <artifactId>buildavoidance</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
+
+  <properties>
+    <maven.version>3.2.0-SNAPSHOT</maven.version>
+  </properties>
+
   <modules>
-    <module>build-avoidance-core</module>
+    <module>buildavoidance-core</module>
+    <module>buildavoidance-its</module>
   </modules>
 
   <build>
@@ -18,9 +25,30 @@
           <version>3.1</version>
           <configuration>
             <!-- http://maven.apache.org/plugins/maven-compiler-plugin/ -->
-            <source>1.7</source>
-            <target>1.7</target>
+            <source>1.6</source>
+            <target>1.6</target>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.4.2</version>
+          <configuration>
+            <autoVersionSubmodules>true</autoVersionSubmodules>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>sisu-maven-plugin</artifactId>
+          <version>1.1</version>
+          <executions>
+            <execution>
+              <id>generate-index</id>
+              <goals>
+                <goal>main-index</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
