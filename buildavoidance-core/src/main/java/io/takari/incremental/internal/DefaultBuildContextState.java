@@ -29,6 +29,8 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   private final Map<QualifiedName, Collection<DefaultInput>> requirementInputs;
 
+  private final Map<File, Collection<QualifiedName>> inputRequirements;
+
   private final Map<File, Collection<QualifiedName>> outputCapabilities;
 
   private final Map<File, Map<String, Serializable>> inputAttributes;
@@ -40,6 +42,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
       Map<File, Collection<DefaultOutput>> inputOutputs,
       Map<File, Collection<DefaultInput>> outputInputs,
       Map<File, Collection<File>> inputIncludedInputs,
+      Map<File, Collection<QualifiedName>> inputRequirements,
       Map<QualifiedName, Collection<DefaultInput>> requirementInputs,
       Map<File, Collection<QualifiedName>> outputCapabilities,
       Map<File, Map<String, Serializable>> inputAttributes,
@@ -52,6 +55,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     this.outputInputs = unmodifiableMultimap(outputInputs);
     this.inputIncludedInputs = unmodifiableMultimap(inputIncludedInputs);
 
+    this.inputRequirements = unmodifiableMap(inputRequirements);
     this.requirementInputs = unmodifiableMultimap(requirementInputs);
     this.outputCapabilities = unmodifiableMap(outputCapabilities);
 
@@ -254,5 +258,9 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   public Collection<Message> getInputMessages(File inputFile) {
     return inputMessages.get(inputFile);
+  }
+
+  public Collection<QualifiedName> getInputRequirements(File inputFile) {
+    return inputRequirements.get(inputFile);
   }
 }

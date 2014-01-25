@@ -80,6 +80,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // provided/required capabilities
 
+  private final ConcurrentMap<File, Collection<QualifiedName>> inputRequirements =
+      new ConcurrentHashMap<File, Collection<QualifiedName>>();
+
   /**
    * Maps requirement qname to all input that require it.
    */
@@ -184,8 +187,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private void storeState() throws IOException {
     DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, //
-        inputOutputs, outputInputs, inputIncludedInputs, requirementInputs, outputCapabilities, //
-        inputAttributes, inputMessages);
+        inputOutputs, outputInputs, inputIncludedInputs, inputRequirements, requirementInputs, //
+        outputCapabilities, inputAttributes, inputMessages);
 
     ObjectOutputStream os =
         new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));
@@ -391,12 +394,19 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     addRequirement(input, new QualifiedName(qualifier, localName));
   }
 
-  private void addRequirement(DefaultInput input, QualifiedName capabilty) {
-    Collection<DefaultInput> inputs = requirementInputs.get(capabilty);
+  private void addRequirement(DefaultInput input, QualifiedName requirement) {
+    Collection<DefaultInput> inputs = requirementInputs.get(requirement);
     if (inputs == null) {
-      inputs = putIfAbsent(requirementInputs, capabilty, new LinkedHashSet<DefaultInput>());
+      inputs = putIfAbsent(requirementInputs, requirement, new LinkedHashSet<DefaultInput>());
     }
     inputs.add(input); // XXX NOT THREAD SAFE
+
+    File inputFile = input.getResource();
+    Collection<QualifiedName> requirements = inputRequirements.get(inputFile);
+    if (requirements == null) {
+      requirements = putIfAbsent(inputRequirements, inputFile, new LinkedHashSet<QualifiedName>());
+    }
+    requirements.add(requirement); // XXX NOT THREAD SAFE
   }
 
   @Override
