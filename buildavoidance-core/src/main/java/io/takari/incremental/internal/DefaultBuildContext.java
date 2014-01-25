@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,13 +34,19 @@ public class DefaultBuildContext implements BuildContext {
 
   private final BuildContextState oldState;
 
-  private final BuildContextState state;
+  private final Map<String, byte[]> configuration;
 
   /**
-   * Previous build state cannot be read or configuration has changed. Consider all inputs require
-   * processing.
+   * Previous build state does not exist, cannot be read or configuration has changed. When
+   * escalated, all input files are considered require processing.
    */
   private final boolean escalated;
+
+  /**
+   * Inputs that require processing.
+   */
+  private final ConcurrentMap<File, DefaultInput> inputs =
+      new ConcurrentHashMap<File, DefaultInput>();
 
   /**
    * Maps requirement qname to all input that require it.
@@ -57,7 +65,9 @@ public class DefaultBuildContext implements BuildContext {
 
     this.stateFile = stateFile;
     this.oldState = load(stateFile);
-    this.state = new BuildContextState(configuration);
+
+    // TODO clone byte arrays too?
+    this.configuration = new HashMap<String, byte[]>(configuration);
 
     this.escalated = getEscalated();
   }
@@ -69,8 +79,6 @@ public class DefaultBuildContext implements BuildContext {
     }
 
     Map<String, byte[]> oldConfiguration = oldState.getConfiguration();
-
-    Map<String, byte[]> configuration = state.getConfiguration();
 
     if (!oldConfiguration.keySet().equals(configuration.keySet())) {
       log.debug("Inconsistent configuration keys, old={}, new={}", oldConfiguration.keySet(),
@@ -86,7 +94,7 @@ public class DefaultBuildContext implements BuildContext {
     }
 
     if (!keys.isEmpty()) {
-      log.debug("Configuration changed, keys={}", keys);
+      log.debug("Configuration changed, changed keys={}", keys);
       return true;
     }
 
@@ -171,7 +179,29 @@ public class DefaultBuildContext implements BuildContext {
 
   @Override
   public DefaultInput registerInput(File file) {
-    return new DefaultInput(state, file);
+    if (!file.canRead()) {
+      return null;
+    }
+
+    file = normalize(file);
+
+    DefaultInput result = inputs.get(file);
+    if (result == null) {
+      // XXX do I do this right? need to check with the concurrency book
+      inputs.putIfAbsent(file, new DefaultInput());
+      result = inputs.get(file);
+    }
+
+    return result;
+  }
+
+  private File normalize(File file) {
+    try {
+      return file.getCanonicalFile();
+    } catch (IOException e) {
+      log.debug("Could not normalize file {}", file, e);
+      return file.getAbsoluteFile();
+    }
   }
 
   @Override

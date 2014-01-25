@@ -7,9 +7,7 @@ import java.io.Serializable;
 
 public class DefaultInput implements BuildContext.Input<File> {
 
-  public DefaultInput(BuildContextState state, File file) {
-    // TODO Auto-generated constructor stub
-  }
+  public DefaultInput() {}
 
   @Override
   public void associateIncludedInput(File file) {
