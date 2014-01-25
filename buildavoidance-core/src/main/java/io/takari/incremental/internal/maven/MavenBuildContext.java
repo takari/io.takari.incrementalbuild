@@ -1,6 +1,7 @@
 package io.takari.incremental.internal.maven;
 
 import io.takari.incremental.internal.DefaultBuildContext;
+import io.takari.incremental.internal.DefaultInput;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -30,7 +31,9 @@ import org.apache.maven.plugin.MojoExecutionException;
  */
 @Named
 @MojoExecutionScoped
-public class MavenBuildContext extends DefaultBuildContext implements WeakMojoExecutionListener {
+public class MavenBuildContext extends DefaultBuildContext<MojoExecutionException>
+    implements
+      WeakMojoExecutionListener {
 
   @Inject
   public MavenBuildContext(MojoConfigurationDigester digester) {
@@ -55,5 +58,15 @@ public class MavenBuildContext extends DefaultBuildContext implements WeakMojoEx
 
   }
 
+  @Override
+  protected void logMessage(DefaultInput input, int line, int column, String message, int severity,
+      Throwable cause) {
+    // TODO Auto-generated method stub
 
+  }
+
+  @Override
+  protected MojoExecutionException newBuildFailureException() {
+    return new MojoExecutionException("Build failed, see previous messages for details");
+  }
 }

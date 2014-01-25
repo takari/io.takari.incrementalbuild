@@ -14,9 +14,9 @@ class QualifiedName implements Serializable {
 
   @Override
   public int hashCode() {
-    int result = 17;
-    result = result * 31 + qualifier.hashCode();
-    result = result * 31 + localName.hashCode();
+    int result = 31;
+    result = result * 17 + qualifier.hashCode();
+    result = result * 17 + localName.hashCode();
     return result;
   }
 

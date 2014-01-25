@@ -33,6 +33,8 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   private final Map<File, Map<String, Serializable>> inputAttributes;
 
+  private final Map<File, Collection<Message>> inputMessages;
+
   public DefaultBuildContextState(Map<String, byte[]> configuration,
       Map<File, DefaultInput> inputs, Map<File, DefaultOutput> outputs,
       Map<File, Collection<DefaultOutput>> inputOutputs,
@@ -40,7 +42,8 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
       Map<File, Collection<File>> inputIncludedInputs,
       Map<QualifiedName, Collection<DefaultInput>> requirementInputs,
       Map<File, Collection<QualifiedName>> outputCapabilities,
-      Map<File, Map<String, Serializable>> inputAttributes) {
+      Map<File, Map<String, Serializable>> inputAttributes,
+      Map<File, Collection<Message>> inputMessages) {
 
     this.configuration = unmodifiableMap(configuration); // clone byte[] arrays?
     this.inputs = unmodifiableMap(inputs);
@@ -53,6 +56,8 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     this.outputCapabilities = unmodifiableMap(outputCapabilities);
 
     this.inputAttributes = unmodifiableMapMap(inputAttributes);
+
+    this.inputMessages = unmodifiableMap(inputMessages);
 
     Map<File, FileState> files = new HashMap<File, FileState>();
     putAll(files, inputs.keySet());
@@ -177,7 +182,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
       throw new IllegalArgumentException();
     }
 
-    return !file.canRead() || fileState.lastModified != file.lastModified()
+    return !FileState.isPresent(file) || fileState.lastModified != file.lastModified()
         || fileState.length != file.length();
   }
 
@@ -232,5 +237,22 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
   public void addMessage(DefaultInput defaultInput, int line, int column, String message,
       int severity, Throwable cause) {
     throw new IllegalStateException();
+  }
+
+  public Collection<DefaultOutput> getAssociatedOutputs(File inputFile) {
+    Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
+    return outputs != null ? outputs : Collections.<DefaultOutput>emptyList();
+  }
+
+  public Collection<QualifiedName> getOutputCapabilities(File outputFile) {
+    return outputCapabilities.get(outputFile);
+  }
+
+  public Collection<File> getInputIncludedInputs(File inputFile) {
+    return inputIncludedInputs.get(inputFile);
+  }
+
+  public Collection<Message> getInputMessages(File inputFile) {
+    return inputMessages.get(inputFile);
   }
 }

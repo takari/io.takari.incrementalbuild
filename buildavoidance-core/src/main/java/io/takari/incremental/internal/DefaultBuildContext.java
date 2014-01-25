@@ -31,10 +31,10 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// XXX normalize all File paramters. maybe easier to use URI internally.
+// XXX normalize all File parameters. maybe easier to use URI internally.
 // XXX maybe use relative URIs to save heap
 
-public abstract class DefaultBuildContext<E extends Exception>
+public abstract class DefaultBuildContext<BuildFailureException extends Exception>
     implements
       BuildContext,
       BuildContextStateManager {
@@ -94,16 +94,22 @@ public abstract class DefaultBuildContext<E extends Exception>
 
   // simple key/value pairs
 
+  private final ConcurrentMap<File, Map<String, Serializable>> inputAttributes =
+      new ConcurrentHashMap<File, Map<String, Serializable>>();
+
+  // messages
+
   /**
    * Maps input or included input file to messages generated for the file
    */
   private final ConcurrentMap<File, Collection<Message>> inputMessages =
       new ConcurrentHashMap<File, Collection<Message>>();
 
-  private final ConcurrentMap<File, Map<String, Serializable>> inputAttributes =
-      new ConcurrentHashMap<File, Map<String, Serializable>>();
-
-  // messages
+  /**
+   * Indicates that error messages were reported during this build or not cleared from the previous
+   * build.
+   */
+  private volatile boolean failed;
 
   public DefaultBuildContext(File stateFile, Map<String, byte[]> configuration) {
     // preconditions
@@ -179,7 +185,7 @@ public abstract class DefaultBuildContext<E extends Exception>
   private void storeState() throws IOException {
     DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, //
         inputOutputs, outputInputs, inputIncludedInputs, requirementInputs, outputCapabilities, //
-        inputAttributes);
+        inputAttributes, inputMessages);
 
     ObjectOutputStream os =
         new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));
@@ -255,7 +261,7 @@ public abstract class DefaultBuildContext<E extends Exception>
       for (DefaultInput oldInput : oldOutput.getValue().getAssociatedInputs()) {
         final File inputFile = oldInput.getResource();
 
-        if (inputFile.canRead()) {
+        if (FileState.isPresent(inputFile)) {
           // keep if inputFile is not registered during this build
           // keep if inputFile is registered and is associated with outputFile
 
@@ -300,7 +306,7 @@ public abstract class DefaultBuildContext<E extends Exception>
 
   @Override
   public DefaultInput registerInput(File inputFile) {
-    if (!inputFile.canRead()) {
+    if (!FileState.isPresent(inputFile)) {
       throw new IllegalArgumentException("Input file does not exist or cannot be read " + inputFile);
     }
 
@@ -382,7 +388,10 @@ public abstract class DefaultBuildContext<E extends Exception>
 
   @Override
   public void addRequirement(DefaultInput input, String qualifier, String localName) {
-    QualifiedName capabilty = new QualifiedName(qualifier, localName);
+    addRequirement(input, new QualifiedName(qualifier, localName));
+  }
+
+  private void addRequirement(DefaultInput input, QualifiedName capabilty) {
     Collection<DefaultInput> inputs = requirementInputs.get(capabilty);
     if (inputs == null) {
       inputs = putIfAbsent(requirementInputs, capabilty, new LinkedHashSet<DefaultInput>());
@@ -472,24 +481,75 @@ public abstract class DefaultBuildContext<E extends Exception>
     if (messages == null) {
       messages = putIfAbsent(inputMessages, inputFile, new LinkedHashSet<Message>());
     }
+    messages.add(new Message(line, column, message, severity, cause)); // XXX NOT THREAD SAFE
+    failed = failed || severity == SEVERITY_ERROR;
+
+    // echo message
+    logMessage(input, line, column, message, severity, cause);
   }
 
-  public void commit() throws E, IOException {
+  public void commit() throws BuildFailureException, IOException {
     deleteStaleOutputs();
+
+    // copy relevant parts of the old state
 
     if (oldState != null) {
       for (DefaultInput oldInput : oldState.getInputs().values()) {
-        if (oldInput.getResource().canRead()) {
+        File inputFile = oldInput.getResource();
+        if (FileState.isPresent(inputFile) && !inputs.containsKey(inputFile)) {
+          DefaultInput input = registerInput(inputFile);
 
+          // deep(!) copy associated outputs
+          for (DefaultOutput oldOutput : oldState.getAssociatedOutputs(inputFile)) {
+            File outputFile = oldOutput.getResource();
+
+            associate(input, registerOutput(outputFile));
+
+            Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
+            if (capabilities != null) {
+              outputCapabilities.put(outputFile, new LinkedHashSet<QualifiedName>(capabilities));
+            }
+          }
+
+          // copy associated included inputs
+          Collection<File> includedInputs = oldState.getInputIncludedInputs(inputFile);
+          if (includedInputs != null) {
+            inputIncludedInputs.put(inputFile, new LinkedHashSet<File>(includedInputs));
+          }
+
+          // copy requirements
+          Collection<QualifiedName> requirements = oldState.getInputRequirements(inputFile);
+          if (requirements != null) {
+            for (QualifiedName requirement : requirements) {
+              addRequirement(input, requirement);
+            }
+          }
+
+          // copy messages
+          Collection<Message> messages = oldState.getInputMessages(inputFile);
+          if (messages != null) {
+            inputMessages.put(inputFile, new LinkedHashSet<Message>(messages));
+
+            // replay old messages
+            for (Message message : messages) {
+              logMessage(input, message.line, message.column, message.message, message.severity,
+                  message.cause);
+              failed = failed || message.severity == SEVERITY_ERROR;
+            }
+          }
         }
       }
     }
 
-    // XXX copy unmodified parts of the old state
-
-    // XXX replay old messages
-
     storeState();
 
+    if (failed) {
+      throw newBuildFailureException();
+    }
   }
+
+  protected abstract void logMessage(DefaultInput input, int line, int column, String message,
+      int severity, Throwable cause);
+
+  protected abstract BuildFailureException newBuildFailureException();
 }

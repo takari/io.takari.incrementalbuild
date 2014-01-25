@@ -1,6 +1,7 @@
 package io.takari.incremental.test;
 
 import io.takari.incremental.internal.DefaultBuildContext;
+import io.takari.incremental.internal.DefaultInput;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,7 +20,16 @@ public class DefaultBuildContextTest {
   private DefaultBuildContext<?> newBuildContext() {
     File stateFile =
         new File("target/", getClass().getSimpleName() + "_" + name.getMethodName() + ".ctx");
-    return new DefaultBuildContext<Exception>(stateFile, Collections.<String, byte[]>emptyMap()) {};
+    return new DefaultBuildContext<Exception>(stateFile, Collections.<String, byte[]>emptyMap()) {
+      @Override
+      protected void logMessage(DefaultInput input, int line, int column, String message,
+          int severity, Throwable cause) {}
+
+      @Override
+      protected Exception newBuildFailureException() {
+        return new Exception();
+      }
+    };
   }
 
   @Test(expected = IllegalArgumentException.class)

@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * @noinstantiate clients are not supposed to instantiate instances of this class
+ * @noinstantiate clients are not supposed to instantiate this class
  */
 public class DefaultOutput implements BuildContext.Output<File> {
 
@@ -17,7 +17,7 @@ public class DefaultOutput implements BuildContext.Output<File> {
 
   private final File file;
 
-  DefaultOutput(DefaultBuildContext context, File file) {
+  DefaultOutput(BuildContextStateManager context, File file) {
     this.state = context;
     this.file = file;
   }
@@ -37,6 +37,7 @@ public class DefaultOutput implements BuildContext.Output<File> {
     state.addCapability(this, qualifier, localName);
   }
 
+  // XXX odd name, odd behaviour, maybe better return Map<String,String>
   public Iterable<String> getCapabilities(String qualifier) {
     return state.getCapabilities(this, qualifier);
   }
