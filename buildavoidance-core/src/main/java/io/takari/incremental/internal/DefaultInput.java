@@ -31,8 +31,7 @@ public class DefaultInput implements BuildContext.Input<File> {
   }
 
   public void addRequirement(String qualifier, String localName) {
-    // TODO Auto-generated method stub
-
+    state.addRequirement(this, qualifier, localName);
   }
 
   @Override

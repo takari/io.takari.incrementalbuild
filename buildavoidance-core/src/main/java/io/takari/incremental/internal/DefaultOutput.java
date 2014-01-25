@@ -13,12 +13,12 @@ import java.io.OutputStream;
  */
 public class DefaultOutput implements BuildContext.Output<File> {
 
-  private transient final DefaultBuildContext context;
+  private transient final BuildContextStateManager state;
 
   private final File file;
 
   DefaultOutput(DefaultBuildContext context, File file) {
-    this.context = context;
+    this.state = context;
     this.file = file;
   }
 
@@ -29,21 +29,21 @@ public class DefaultOutput implements BuildContext.Output<File> {
 
   @Override
   public OutputStream newOutputStream() throws IOException {
+    // XXX oldState must be read-only
     return new FileOutputStream(file);
   }
 
   public void addCapability(String qualifier, String localName) {
-    // TODO Auto-generated method stub
+    state.addCapability(this, qualifier, localName);
   }
 
   public Iterable<String> getCapabilities(String qualifier) {
-    // TODO Auto-generated method stub
-    return null;
+    return state.getCapabilities(this, qualifier);
   }
 
   @Override
   public Iterable<DefaultInput> getAssociatedInputs() {
-    return context.getAssociatedInputs(this);
+    return state.getAssociatedInputs(this);
   }
 
   @Override
@@ -52,7 +52,7 @@ public class DefaultOutput implements BuildContext.Output<File> {
       throw new IllegalArgumentException();
     }
 
-    context.associate((DefaultInput) input, this);
+    state.associate((DefaultInput) input, this);
   }
 
   @Override
@@ -73,6 +73,6 @@ public class DefaultOutput implements BuildContext.Output<File> {
     DefaultOutput other = (DefaultOutput) obj;
 
     // must be from the same context to be equal
-    return context == other.context && file.equals(other.file);
+    return state == other.state && file.equals(other.file);
   }
 }

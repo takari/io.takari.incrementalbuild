@@ -13,12 +13,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -74,11 +74,19 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
   private final ConcurrentMap<File, Collection<File>> inputIncludedInputs =
       new ConcurrentHashMap<File, Collection<File>>();
 
+  // provided/required capabilities
+
   /**
    * Maps requirement qname to all input that require it.
    */
-  private final Map<QualifiedName, Set<DefaultInput>> requirementInputs =
-      new HashMap<QualifiedName, Set<DefaultInput>>();
+  private final ConcurrentMap<QualifiedName, Collection<DefaultInput>> requirementInputs =
+      new ConcurrentHashMap<QualifiedName, Collection<DefaultInput>>();
+
+  /**
+   * Maps output file to capabilities provided by it.
+   */
+  private final ConcurrentMap<File, Collection<QualifiedName>> outputCapabilities =
+      new ConcurrentHashMap<File, Collection<QualifiedName>>();
 
   public DefaultBuildContext(File stateFile, Map<String, byte[]> configuration) {
     // preconditions
@@ -153,8 +161,8 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
 
   private void storeState() throws IOException {
 
-    DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, inputOutputs, //
-        outputInputs, inputIncludedInputs);
+    DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, //
+        inputOutputs, outputInputs, inputIncludedInputs, requirementInputs, outputCapabilities);
 
     ObjectOutputStream os =
         new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));
@@ -248,14 +256,6 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
       deleted.add(oldOutput.getValue());
     }
     return deleted;
-  }
-
-  /**
-   * Returns {@code Input}s with this requirement
-   */
-  public Iterable<DefaultInput> getDependencies(String qualifier, Serializable localName) {
-    Set<DefaultInput> result = requirementInputs.get(new QualifiedName(qualifier, localName));
-    return result != null ? result : Collections.<DefaultInput>emptyList();
   }
 
   @Override
@@ -361,5 +361,71 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
   @Override
   public boolean isProcessingRequired(DefaultInput input) {
     return true;
+  }
+
+  // provided/required capability matching
+
+  @Override
+  public void addRequirement(DefaultInput input, String qualifier, String localName) {
+    QualifiedName capabilty = new QualifiedName(qualifier, localName);
+    Collection<DefaultInput> inputs = requirementInputs.get(capabilty);
+    if (inputs == null) {
+      requirementInputs.putIfAbsent(capabilty, new LinkedHashSet<DefaultInput>());
+      inputs = requirementInputs.get(capabilty);
+    }
+    inputs.add(input); // XXX NOT THREAD SAFE
+  }
+
+  @Override
+  public void addCapability(DefaultOutput output, String qualifier, String localName) {
+    File outputFile = output.getResource();
+    Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
+    if (capabilities == null) {
+      outputCapabilities.putIfAbsent(outputFile, new LinkedHashSet<QualifiedName>());
+      capabilities = outputCapabilities.get(outputFile);
+    }
+    capabilities.add(new QualifiedName(qualifier, localName)); // XXX NOT THREAD SAFE
+  }
+
+  @Override
+  public Collection<String> getCapabilities(DefaultOutput output, String qualifier) {
+    Collection<QualifiedName> capabilities = outputCapabilities.get(output.getResource());
+    if (capabilities == null) {
+      return Collections.emptyList();
+    }
+    Set<String> result = new LinkedHashSet<String>();
+    for (QualifiedName capability : capabilities) {
+      if (qualifier.equals(capability.getQualifier())) {
+        result.add(capability.getLocalName());
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns {@code Input}s with specified requirement. Inputs from the old state are automatically
+   * registered for processing.
+   */
+  public Iterable<DefaultInput> getDependentInputs(String qualifier, String localName) {
+    Map<File, DefaultInput> result = new LinkedHashMap<File, DefaultInput>();
+
+    Collection<DefaultInput> inputs =
+        requirementInputs.get(new QualifiedName(qualifier, localName));
+    if (inputs != null) {
+      for (DefaultInput input : inputs) {
+        result.put(input.getResource(), input);
+      }
+    }
+
+    if (oldState != null) {
+      for (DefaultInput oldInput : oldState.getDependentInputs(qualifier, localName)) {
+        File inputFile = oldInput.getResource();
+        if (!result.containsKey(inputFile)) {
+          result.put(inputFile, registerInput(inputFile));
+        }
+      }
+    }
+
+    return result.values();
   }
 }

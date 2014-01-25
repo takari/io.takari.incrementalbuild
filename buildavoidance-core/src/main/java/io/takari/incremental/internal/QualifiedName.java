@@ -5,9 +5,9 @@ import java.io.Serializable;
 class QualifiedName implements Serializable {
   private static final long serialVersionUID = 8966369370744414886L;
   private final String qualifier;
-  private final Serializable localName;
+  private final String localName;
 
-  public QualifiedName(String qualifier, Serializable localName) {
+  public QualifiedName(String qualifier, String localName) {
     this.qualifier = qualifier;
     this.localName = localName;
   }
@@ -36,7 +36,7 @@ class QualifiedName implements Serializable {
     return qualifier;
   }
 
-  public Serializable getLocalName() {
+  public String getLocalName() {
     return localName;
   }
 }

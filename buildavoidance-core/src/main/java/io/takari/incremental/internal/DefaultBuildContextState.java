@@ -25,10 +25,17 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   private final Map<File, Collection<File>> inputIncludedInputs;
 
-  public DefaultBuildContextState(Map<String, byte[]> configuration, Map<File, DefaultInput> inputs,
-      Map<File, DefaultOutput> outputs, Map<File, Collection<DefaultOutput>> inputOutputs,
+  private final Map<QualifiedName, Collection<DefaultInput>> requirementInputs;
+
+  private final Map<File, Collection<QualifiedName>> outputCapabilities;
+
+  public DefaultBuildContextState(Map<String, byte[]> configuration,
+      Map<File, DefaultInput> inputs, Map<File, DefaultOutput> outputs,
+      Map<File, Collection<DefaultOutput>> inputOutputs,
       Map<File, Collection<DefaultInput>> outputInputs,
-      Map<File, Collection<File>> inputIncludedInputs) {
+      Map<File, Collection<File>> inputIncludedInputs,
+      Map<QualifiedName, Collection<DefaultInput>> requirementInputs,
+      Map<File, Collection<QualifiedName>> outputCapabilities) {
 
     this.configuration = unmodifiableMap(configuration); // clone byte[] arrays?
     this.inputs = unmodifiableMap(inputs);
@@ -36,6 +43,9 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     this.inputOutputs = unmodifiableMultimap(inputOutputs);
     this.outputInputs = unmodifiableMultimap(outputInputs);
     this.inputIncludedInputs = unmodifiableMultimap(inputIncludedInputs);
+
+    this.requirementInputs = unmodifiableMultimap(requirementInputs);
+    this.outputCapabilities = unmodifiableMap(outputCapabilities);
 
     Map<File, FileState> files = new HashMap<File, FileState>();
     putAll(files, inputs.keySet());
@@ -154,4 +164,26 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
         || fileState.length != file.length();
   }
 
+  @Override
+  public void addRequirement(DefaultInput defaultInput, String qualifier, String localName) {
+    throw new IllegalStateException();
+  }
+
+  @Override
+  public Iterable<DefaultInput> getDependentInputs(String qualifier, String localName) {
+    Collection<DefaultInput> result =
+        requirementInputs.get(new QualifiedName(qualifier, localName));
+    return result != null ? result : Collections.<DefaultInput>emptyList();
+  }
+
+  @Override
+  public void addCapability(DefaultOutput output, String qualifier, String localName) {
+    throw new IllegalStateException();
+  }
+
+  @Override
+  public Collection<String> getCapabilities(DefaultOutput output, String qualifier) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

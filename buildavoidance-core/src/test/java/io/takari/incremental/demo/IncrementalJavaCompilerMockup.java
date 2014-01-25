@@ -74,13 +74,13 @@ public class IncrementalJavaCompilerMockup {
     // output identity and do not change from one build to the next
 
     for (String type : output.getCapabilities("jdt.type")) {
-      for (DefaultInput input : context.getDependencies("jdt.type", type)) {
+      for (DefaultInput input : context.getDependentInputs("jdt.type", type)) {
         enqueue(input);
       }
     }
 
     for (String type : output.getCapabilities("jdt.simpleType")) {
-      for (DefaultInput input : context.getDependencies("jdt.simpleType", type)) {
+      for (DefaultInput input : context.getDependentInputs("jdt.simpleType", type)) {
         enqueue(input);
       }
     }
