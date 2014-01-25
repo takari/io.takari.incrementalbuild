@@ -5,7 +5,10 @@ import java.io.Serializable;
 
 class FileState implements Serializable {
 
+  private static final long serialVersionUID = -3901167354884462923L;
+
   final long lastModified;
+
   final long length;
 
   public FileState(File file) {
