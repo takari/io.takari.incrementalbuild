@@ -2,7 +2,7 @@ package io.takari.incremental.internal;
 
 import java.io.Serializable;
 
-public class QualifiedName implements Serializable {
+class QualifiedName implements Serializable {
   private static final long serialVersionUID = 8966369370744414886L;
   private final String qualifier;
   private final Serializable localName;

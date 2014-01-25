@@ -1,6 +1,7 @@
 package io.takari.incremental;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 
@@ -40,7 +41,9 @@ public interface BuildContext {
   }
 
   public static interface Output<T> {
-    public OutputStream newOutputStream();
+    public T getResource();
+
+    public OutputStream newOutputStream() throws IOException;
 
     public Iterable<? extends Input<T>> getAssociatedInputs();
 

@@ -14,9 +14,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -43,10 +45,16 @@ public class DefaultBuildContext implements BuildContext {
   private final boolean escalated;
 
   /**
-   * Inputs that require processing.
+   * Inputs registered with this build context during this build.
    */
   private final ConcurrentMap<File, DefaultInput> inputs =
       new ConcurrentHashMap<File, DefaultInput>();
+
+  /**
+   * Outputs registered with this build context during this build.
+   */
+  private final ConcurrentMap<File, DefaultOutput> outputs =
+      new ConcurrentHashMap<File, DefaultOutput>();
 
   /**
    * Maps requirement qname to all input that require it.
@@ -104,6 +112,7 @@ public class DefaultBuildContext implements BuildContext {
   }
 
   private BuildContextState load(File stateFile) {
+    // TODO verify stateFile local has not changed since last build
     try {
       ObjectInputStream is =
           new ObjectInputStream(new BufferedInputStream(new FileInputStream(stateFile)));
@@ -152,9 +161,42 @@ public class DefaultBuildContext implements BuildContext {
 
   // low-level methods
 
-  public Iterable<DefaultOutput> deleteStaleOutputs() {
-    // TODO Auto-generated method stub
-    return null;
+  /**
+   * @return
+   * @throws IOException if a stale output file cannot be deleted.
+   */
+  public Iterable<DefaultOutput> deleteStaleOutputs() throws IOException {
+    List<DefaultOutput> deleted = new ArrayList<DefaultOutput>();
+
+    oldOutpus: for (Map.Entry<File, DefaultOutput> oldOutput : oldState.getOutputs().entrySet()) {
+      final File outputFile = oldOutput.getKey();
+
+      // keep if output file was registered during this build
+      if (outputs.containsKey(outputFile)) {
+        continue oldOutpus;
+      }
+
+      for (DefaultInput oldInput : oldOutput.getValue().getAssociatedInputs()) {
+        final File inputFile = oldInput.getResource();
+
+        if (inputFile.canRead()) {
+          // keep if inputFile is not registered during this build
+          // keep if inputFile is registered and is associated with outputFile
+
+          final DefaultInput input = inputs.get(inputFile);
+          if (input == null || input.isAssociatedOutput(outputFile)) {
+            continue oldOutpus;
+          }
+        }
+      }
+
+      if (outputFile.exists() && !outputFile.delete()) {
+        throw new IOException("Could not delete file " + outputFile);
+      }
+
+      deleted.add(oldOutput.getValue());
+    }
+    return deleted;
   }
 
   /**
@@ -188,7 +230,7 @@ public class DefaultBuildContext implements BuildContext {
     DefaultInput result = inputs.get(file);
     if (result == null) {
       // XXX do I do this right? need to check with the concurrency book
-      inputs.putIfAbsent(file, new DefaultInput());
+      inputs.putIfAbsent(file, new DefaultInput(this));
       result = inputs.get(file);
     }
 
@@ -209,4 +251,7 @@ public class DefaultBuildContext implements BuildContext {
     // TODO Auto-generated method stub
     return null;
   }
+
+  // to throw
+  // public abstract void commit() throws E;
 }

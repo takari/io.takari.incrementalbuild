@@ -25,7 +25,7 @@ public class IncrementalJavaCompilerMockup {
    */
   Set<DefaultInput> processed = new HashSet<DefaultInput>();
 
-  public void compile(Collection<FileSet> sourceSets) {
+  public void compile(Collection<FileSet> sourceSets) throws IOException {
 
     // incremental compilation is a multi-pass process
 
