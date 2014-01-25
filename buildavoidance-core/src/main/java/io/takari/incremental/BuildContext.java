@@ -60,14 +60,23 @@ public interface BuildContext {
    * </code>
    * 
    * @return registered input or {@code null} if the input file does not require processing
+   * @throws IllegalArgumentException if inputFile does not exist or cannot be read
    */
-  public Input<File> processInput(File file);
+  public Input<File> processInput(File inputFile);
 
+  /**
+   * <p>
+   * XXX decide if the same input should be "processed" multiple times or not. Tentatively, the same
+   * input is only processed once.
+   * 
+   * @param fileSet
+   * @return
+   */
   public Iterable<? extends Input<File>> processInputs(FileSet fileSet);
 
-  public Output<File> registerOutput(File file);
+  public Output<File> registerOutput(File outputFile);
 
-  public Output<File> getOldOutput(File file);
+  public Output<File> getOldOutput(File outputFile);
 
   /**
    * Registers specified input {@code File} with this build context.
@@ -82,10 +91,10 @@ public interface BuildContext {
    * <p>
    * XXX decide if this method returns the same or equal instance
    * 
-   * @return {@link Input} representing the input file, or {@code null} if the input file does not
-   *         exist or cannot be read.
+   * @return {@link Input} representing the input file, never {@code null}.
+   * @throws IllegalArgumentException if inputFile does not exist or cannot be read
    */
-  public Input<File> registerInput(File file);
+  public Input<File> registerInput(File inputFile);
 
   /**
    * Returns new uninitialized {@link FileSetBuilder} instance.

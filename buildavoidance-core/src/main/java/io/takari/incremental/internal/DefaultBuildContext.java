@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+// XXX normalize all File paramters. maybe easier to use URI internally.
+// XXX maybe use relative URIs to save heap
 
 public class DefaultBuildContext implements BuildContext {
 
@@ -160,15 +164,44 @@ public class DefaultBuildContext implements BuildContext {
   }
 
   @Override
-  public DefaultInput processInput(File file) {
-    // TODO Auto-generated method stub
+  public DefaultInput processInput(File inputFile) {
+    if (inputs.containsKey(inputFile)) {
+      // skip, inputFile has been processed already
+      return null;
+    }
+    if (escalated) {
+      return registerInput(inputFile);
+    }
+    final DefaultInput oldInput = oldState.getInputs().get(inputFile);
+    if (oldInput == null || oldInput.isProcessingRequired()) {
+      return registerInput(inputFile);
+    }
     return null;
   }
 
   @Override
   public Iterable<DefaultInput> processInputs(FileSet fileSet) {
-    // TODO Auto-generated method stub
-    return null;
+    // reminder to self: don't optimize prematurely
+
+    Set<DefaultInput> result = new LinkedHashSet<DefaultInput>();
+
+    for (File inputFile : fileSet) {
+
+      // can return the same input twice, if called concurrently from multiple threads
+
+      if (inputs.containsKey(inputFile)) {
+        // skip, this inputFile has been processed already
+        continue;
+      }
+
+      final DefaultInput oldInput = oldState.getInputs().get(inputFile);
+      if (oldInput == null || oldInput.isProcessingRequired()) {
+        // this is new or changed input file
+        result.add(registerInput(inputFile));
+      }
+    }
+
+    return result;
   }
 
   // low-level methods
@@ -220,30 +253,36 @@ public class DefaultBuildContext implements BuildContext {
   }
 
   @Override
-  public DefaultOutput registerOutput(File file) {
-    // TODO Auto-generated method stub
-    return null;
-  }
+  public DefaultOutput registerOutput(File outputFile) {
+    outputFile = normalize(outputFile);
 
-  @Override
-  public DefaultOutput getOldOutput(File file) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public DefaultInput registerInput(File file) {
-    if (!file.canRead()) {
-      return null;
+    DefaultOutput output = outputs.get(outputFile);
+    if (output == null) {
+      outputs.putIfAbsent(outputFile, new DefaultOutput(this, outputFile));
+      output = outputs.get(outputFile);
     }
 
-    file = normalize(file);
+    return output;
+  }
 
-    DefaultInput result = inputs.get(file);
+  @Override
+  public DefaultOutput getOldOutput(File outputFile) {
+    return oldState.getOutputs().get(outputFile);
+  }
+
+  @Override
+  public DefaultInput registerInput(File inputFile) {
+    if (!inputFile.canRead()) {
+      throw new IllegalArgumentException("Input file does not exist or cannot be read " + inputFile);
+    }
+
+    inputFile = normalize(inputFile);
+
+    DefaultInput result = inputs.get(inputFile);
     if (result == null) {
       // XXX do I do this right? need to check with the concurrency book
-      inputs.putIfAbsent(file, new DefaultInput(this, file));
-      result = inputs.get(file);
+      inputs.putIfAbsent(inputFile, new DefaultInput(this, inputFile));
+      result = inputs.get(inputFile);
     }
 
     return result;

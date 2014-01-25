@@ -11,6 +11,8 @@ class BuildContextState implements Serializable {
 
   private final Map<File, DefaultOutput> outputs;
 
+  private final Map<File, DefaultInput> inputs;
+
   public BuildContextState(Map<String, byte[]> configuration, Map<File, DefaultOutput> outputs) {
     // TODO does serialization/desirilization preserve unmodifiable collections?
 
@@ -24,5 +26,9 @@ class BuildContextState implements Serializable {
 
   public Map<File, DefaultOutput> getOutputs() {
     return outputs;
+  }
+
+  public Map<File, DefaultInput> getInputs() {
+    return inputs;
   }
 }
