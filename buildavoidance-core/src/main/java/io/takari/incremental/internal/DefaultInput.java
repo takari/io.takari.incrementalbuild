@@ -4,35 +4,30 @@ import io.takari.incremental.BuildContext;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public class DefaultInput implements BuildContext.Input<File> {
 
   private transient final DefaultBuildContext context;
 
-  private final ConcurrentMap<File, DefaultOutput> associatedOutputs =
-      new ConcurrentHashMap<File, DefaultOutput>();
+  private final File file;
 
-  public DefaultInput(DefaultBuildContext context) {
+  public DefaultInput(DefaultBuildContext context, File file) {
     this.context = context;
+    this.file = file;
   }
 
   @Override
   public void associateIncludedInput(File file) {
-    // TODO Auto-generated method stub
-
+    context.associateIncludedInput(this, file);
   }
 
   @Override
   public DefaultOutput associateOutput(File file) {
-    DefaultOutput output = context.registerOutput(file);
-    associateOutput(output);
-    return output;
+    return context.associateOutput(this, file);
   }
 
   public void associateOutput(DefaultOutput output) {
-    associatedOutputs.put(output.getResource(), output);
+    context.associate(this, output);
   }
 
   public void addRequirement(String qualifier, String localName) {
@@ -49,8 +44,7 @@ public class DefaultInput implements BuildContext.Input<File> {
 
   @Override
   public File getResource() {
-    // TODO Auto-generated method stub
-    return null;
+    return file;
   }
 
   @Override
@@ -72,6 +66,27 @@ public class DefaultInput implements BuildContext.Input<File> {
   }
 
   public boolean isAssociatedOutput(File file) {
-    return associatedOutputs.containsKey(file);
+    return context.isAssociatedOutput(this, file);
+  }
+
+  @Override
+  public int hashCode() {
+    return file.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+
+    if (!(obj instanceof DefaultInput)) {
+      return false;
+    }
+
+    DefaultInput other = (DefaultInput) obj;
+
+    // must be from the same context to be equal
+    return context == other.context && file.equals(other.file);
   }
 }

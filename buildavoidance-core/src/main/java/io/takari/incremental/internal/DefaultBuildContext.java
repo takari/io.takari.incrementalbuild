@@ -16,8 +16,10 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +46,8 @@ public class DefaultBuildContext implements BuildContext {
    */
   private final boolean escalated;
 
+  // inputs and outputs
+
   /**
    * Inputs registered with this build context during this build.
    */
@@ -55,6 +59,14 @@ public class DefaultBuildContext implements BuildContext {
    */
   private final ConcurrentMap<File, DefaultOutput> outputs =
       new ConcurrentHashMap<File, DefaultOutput>();
+
+  // direct associations
+
+  private final ConcurrentMap<File, Collection<DefaultOutput>> inputOutputs =
+      new ConcurrentHashMap<File, Collection<DefaultOutput>>();
+
+  private final ConcurrentMap<File, Collection<DefaultInput>> outputInputs =
+      new ConcurrentHashMap<File, Collection<DefaultInput>>();
 
   /**
    * Maps requirement qname to all input that require it.
@@ -230,7 +242,7 @@ public class DefaultBuildContext implements BuildContext {
     DefaultInput result = inputs.get(file);
     if (result == null) {
       // XXX do I do this right? need to check with the concurrency book
-      inputs.putIfAbsent(file, new DefaultInput(this));
+      inputs.putIfAbsent(file, new DefaultInput(this, file));
       result = inputs.get(file);
     }
 
@@ -254,4 +266,39 @@ public class DefaultBuildContext implements BuildContext {
 
   // to throw
   // public abstract void commit() throws E;
+
+  // association management
+
+  DefaultOutput associateOutput(DefaultInput input, File outputFile) {
+    DefaultOutput output = registerOutput(outputFile);
+    associate(input, output);
+    return output;
+  }
+
+  void associate(DefaultInput input, DefaultOutput output) {
+    File inputFile = input.getResource();
+    Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
+    if (outputs == null) {
+      inputOutputs.putIfAbsent(inputFile, new HashSet<DefaultOutput>());
+      outputs = inputOutputs.get(inputFile);
+    }
+    outputs.add(output); // XXX NOT THREAD SAFE
+  }
+
+  boolean isAssociatedOutput(DefaultInput input, File outputFile) {
+    DefaultOutput output = outputs.get(outputFile);
+    if (output == null) {
+      return false;
+    }
+    Collection<DefaultOutput> outputs = inputOutputs.get(input.getResource());
+    return outputs != null && outputs.contains(output);
+  }
+
+  Collection<DefaultInput> getAssociatedInputs(DefaultOutput output) {
+    return Collections.unmodifiableCollection(outputInputs.get(output.getResource()));
+  }
+
+  void associateIncludedInput(DefaultInput input, File includedFile) {
+
+  }
 }

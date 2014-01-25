@@ -80,6 +80,7 @@ public interface BuildContext {
    * Invocation of this method forces processing of the registered input file by build avoidance
    * framework even if the input file has not changed since last build.
    * <p>
+   * XXX decide if this method returns the same or equal instance
    * 
    * @return {@link Input} representing the input file, or {@code null} if the input file does not
    *         exist or cannot be read.

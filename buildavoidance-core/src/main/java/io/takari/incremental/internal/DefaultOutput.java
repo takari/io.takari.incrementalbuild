@@ -7,21 +7,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * @noinstantiate clients are not supposed to instantiate instances of this class
  */
 public class DefaultOutput implements BuildContext.Output<File> {
 
+  private transient final DefaultBuildContext context;
+
   private final File file;
 
-  private final ConcurrentMap<File, DefaultInput> associatedInputs =
-      new ConcurrentHashMap<File, DefaultInput>();
-
-  DefaultOutput(File file) {
+  DefaultOutput(DefaultBuildContext context, File file) {
+    this.context = context;
     this.file = file;
   }
 
@@ -46,7 +43,7 @@ public class DefaultOutput implements BuildContext.Output<File> {
 
   @Override
   public Iterable<DefaultInput> getAssociatedInputs() {
-    return Collections.unmodifiableCollection(associatedInputs.values());
+    return context.getAssociatedInputs(this);
   }
 
   @Override
@@ -55,11 +52,27 @@ public class DefaultOutput implements BuildContext.Output<File> {
       throw new IllegalArgumentException();
     }
 
-    final DefaultInput defaultInput = (DefaultInput) input;
-    associatedInputs.put(input.getResource(), defaultInput);
+    context.associate((DefaultInput) input, this);
+  }
 
-    if (defaultInput.isAssociatedOutput(file)) {
-      defaultInput.associateOutput(file);
+  @Override
+  public int hashCode() {
+    return file.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
     }
+
+    if (!(obj instanceof DefaultOutput)) {
+      return false;
+    }
+
+    DefaultOutput other = (DefaultOutput) obj;
+
+    // must be from the same context to be equal
+    return context == other.context && file.equals(other.file);
   }
 }
