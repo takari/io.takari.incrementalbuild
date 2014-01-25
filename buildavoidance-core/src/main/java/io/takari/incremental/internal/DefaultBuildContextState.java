@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-class BuildContextState implements Serializable, BuildContextStateManager {
+class DefaultBuildContextState implements Serializable, BuildContextStateManager {
 
   private final Map<String, byte[]> configuration;
 
@@ -25,7 +25,7 @@ class BuildContextState implements Serializable, BuildContextStateManager {
 
   private final Map<File, Collection<File>> inputIncludedInputs;
 
-  public BuildContextState(Map<String, byte[]> configuration, Map<File, DefaultInput> inputs,
+  public DefaultBuildContextState(Map<String, byte[]> configuration, Map<File, DefaultInput> inputs,
       Map<File, DefaultOutput> outputs, Map<File, Collection<DefaultOutput>> inputOutputs,
       Map<File, Collection<DefaultInput>> outputInputs,
       Map<File, Collection<File>> inputIncludedInputs) {

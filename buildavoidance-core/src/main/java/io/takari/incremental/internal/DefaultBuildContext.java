@@ -39,7 +39,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
 
   private final File stateFile;
 
-  private final BuildContextState oldState;
+  private final DefaultBuildContextState oldState;
 
   private final Map<String, byte[]> configuration;
 
@@ -129,13 +129,13 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     return false;
   }
 
-  private BuildContextState loadState(File stateFile) {
+  private DefaultBuildContextState loadState(File stateFile) {
     // TODO verify stateFile location has not changed since last build
     try {
       ObjectInputStream is =
           new ObjectInputStream(new BufferedInputStream(new FileInputStream(stateFile)));
       try {
-        return (BuildContextState) is.readObject();
+        return (DefaultBuildContextState) is.readObject();
       } finally {
         try {
           is.close();
@@ -153,7 +153,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
 
   private void storeState() throws IOException {
 
-    BuildContextState state = new BuildContextState(configuration, inputs, outputs, inputOutputs, //
+    DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, inputOutputs, //
         outputInputs, inputIncludedInputs);
 
     ObjectOutputStream os =
