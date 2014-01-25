@@ -15,7 +15,7 @@ import java.util.Set;
 public class IncrementalJavaCompilerMockup {
 
   /** @Injected */
-  DefaultBuildContext context;
+  DefaultBuildContext<?> context;
 
   /** Inputs waiting to be compiled */
   Set<DefaultInput> queue = new HashSet<DefaultInput>();

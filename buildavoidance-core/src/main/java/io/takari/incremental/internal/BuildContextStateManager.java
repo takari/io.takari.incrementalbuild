@@ -35,4 +35,7 @@ interface BuildContextStateManager {
   <T extends Serializable> void setValue(DefaultInput input, String key, T value);
 
   <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz);
+
+  void addMessage(DefaultInput defaultInput, int line, int column, String message, int severity,
+      Throwable cause);
 }

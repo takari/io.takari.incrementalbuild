@@ -225,4 +225,12 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
   public <T extends Serializable> void setValue(DefaultInput input, String key, T value) {
     throw new IllegalStateException();
   }
+
+  // messages
+
+  @Override
+  public void addMessage(DefaultInput defaultInput, int line, int column, String message,
+      int severity, Throwable cause) {
+    throw new IllegalStateException();
+  }
 }

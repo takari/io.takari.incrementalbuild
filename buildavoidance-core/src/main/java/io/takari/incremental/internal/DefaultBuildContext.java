@@ -34,7 +34,10 @@ import org.slf4j.LoggerFactory;
 // XXX normalize all File paramters. maybe easier to use URI internally.
 // XXX maybe use relative URIs to save heap
 
-public class DefaultBuildContext implements BuildContext, BuildContextStateManager {
+public abstract class DefaultBuildContext<E extends Exception>
+    implements
+      BuildContext,
+      BuildContextStateManager {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -91,8 +94,16 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
 
   // simple key/value pairs
 
+  /**
+   * Maps input or included input file to messages generated for the file
+   */
+  private final ConcurrentMap<File, Collection<Message>> inputMessages =
+      new ConcurrentHashMap<File, Collection<Message>>();
+
   private final ConcurrentMap<File, Map<String, Serializable>> inputAttributes =
       new ConcurrentHashMap<File, Map<String, Serializable>>();
+
+  // messages
 
   public DefaultBuildContext(File stateFile, Map<String, byte[]> configuration) {
     // preconditions
@@ -166,7 +177,6 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
   }
 
   private void storeState() throws IOException {
-
     DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, //
         inputOutputs, outputInputs, inputIncludedInputs, requirementInputs, outputCapabilities, //
         inputAttributes);
@@ -265,14 +275,19 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     return deleted;
   }
 
+  private static <K, V> V putIfAbsent(ConcurrentMap<K, V> map, K key, V value) {
+    // XXX do I do this right? need to check with the concurrency book
+    map.putIfAbsent(key, value);
+    return map.get(key);
+  }
+
   @Override
   public DefaultOutput registerOutput(File outputFile) {
     outputFile = normalize(outputFile);
 
     DefaultOutput output = outputs.get(outputFile);
     if (output == null) {
-      outputs.putIfAbsent(outputFile, new DefaultOutput(this, outputFile));
-      output = outputs.get(outputFile);
+      output = putIfAbsent(outputs, outputFile, new DefaultOutput(this, outputFile));
     }
 
     return output;
@@ -293,9 +308,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
 
     DefaultInput result = inputs.get(inputFile);
     if (result == null) {
-      // XXX do I do this right? need to check with the concurrency book
-      inputs.putIfAbsent(inputFile, new DefaultInput(this, inputFile));
-      result = inputs.get(inputFile);
+      result = putIfAbsent(inputs, inputFile, new DefaultInput(this, inputFile));
     }
 
     return result;
@@ -316,9 +329,6 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     return null;
   }
 
-  // to throw
-  // public abstract void commit() throws E;
-
   // association management
 
   @Override
@@ -333,8 +343,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     File inputFile = input.getResource();
     Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
     if (outputs == null) {
-      inputOutputs.putIfAbsent(inputFile, new LinkedHashSet<DefaultOutput>());
-      outputs = inputOutputs.get(inputFile);
+      outputs = putIfAbsent(inputOutputs, inputFile, new LinkedHashSet<DefaultOutput>());
     }
     outputs.add(output); // XXX NOT THREAD SAFE
   }
@@ -359,8 +368,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     File inputFile = input.getResource();
     Collection<File> includedFiles = inputIncludedInputs.get(inputFile);
     if (includedFiles == null) {
-      inputIncludedInputs.putIfAbsent(inputFile, new LinkedHashSet<File>());
-      includedFiles = inputIncludedInputs.get(inputFile);
+      includedFiles = putIfAbsent(inputIncludedInputs, inputFile, new LinkedHashSet<File>());
     }
     includedFiles.add(includedFile); // XXX NOT THREAD SAFE
   }
@@ -377,8 +385,7 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     QualifiedName capabilty = new QualifiedName(qualifier, localName);
     Collection<DefaultInput> inputs = requirementInputs.get(capabilty);
     if (inputs == null) {
-      requirementInputs.putIfAbsent(capabilty, new LinkedHashSet<DefaultInput>());
-      inputs = requirementInputs.get(capabilty);
+      inputs = putIfAbsent(requirementInputs, capabilty, new LinkedHashSet<DefaultInput>());
     }
     inputs.add(input); // XXX NOT THREAD SAFE
   }
@@ -388,8 +395,8 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     File outputFile = output.getResource();
     Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
     if (capabilities == null) {
-      outputCapabilities.putIfAbsent(outputFile, new LinkedHashSet<QualifiedName>());
-      capabilities = outputCapabilities.get(outputFile);
+      capabilities =
+          putIfAbsent(outputCapabilities, outputFile, new LinkedHashSet<QualifiedName>());
     }
     capabilities.add(new QualifiedName(qualifier, localName)); // XXX NOT THREAD SAFE
   }
@@ -443,8 +450,8 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
     File inputFile = input.getResource();
     Map<String, Serializable> attributes = inputAttributes.get(inputFile);
     if (attributes == null) {
-      inputAttributes.putIfAbsent(inputFile, new LinkedHashMap<String, Serializable>());
-      attributes = inputAttributes.get(inputFile);
+      attributes =
+          putIfAbsent(inputAttributes, inputFile, new LinkedHashMap<String, Serializable>());
     }
     attributes.put(key, value); // XXX NOT THREAD SAFE
   }
@@ -453,5 +460,36 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
   public <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz) {
     Map<String, Serializable> attributes = inputAttributes.get(input.getResource());
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
+  }
+
+  // messages
+
+  @Override
+  public void addMessage(DefaultInput input, int line, int column, String message, int severity,
+      Throwable cause) {
+    File inputFile = input.getResource();
+    Collection<Message> messages = this.inputMessages.get(inputFile);
+    if (messages == null) {
+      messages = putIfAbsent(inputMessages, inputFile, new LinkedHashSet<Message>());
+    }
+  }
+
+  public void commit() throws E, IOException {
+    deleteStaleOutputs();
+
+    if (oldState != null) {
+      for (DefaultInput oldInput : oldState.getInputs().values()) {
+        if (oldInput.getResource().canRead()) {
+
+        }
+      }
+    }
+
+    // XXX copy unmodified parts of the old state
+
+    // XXX replay old messages
+
+    storeState();
+
   }
 }

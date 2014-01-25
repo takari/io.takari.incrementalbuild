@@ -56,8 +56,7 @@ public class DefaultInput implements BuildContext.Input<File> {
 
   @Override
   public void addMessage(int line, int column, String message, int severity, Throwable cause) {
-    // TODO Auto-generated method stub
-
+    state.addMessage(this, line, column, message, severity, cause);
   }
 
   public boolean isAssociatedOutput(File file) {
