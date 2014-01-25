@@ -11,17 +11,18 @@
 
   <dependencies>
 
-    <!-- All maven dependencies must be optional(!) -->
-    <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-core</artifactId>
-      <version>${maven.version}</version>
-      <scope>optional</scope>
-    </dependency>
+    <!-- lsf4j api is the only required external dependency -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.7.2</version>
+    </dependency>
+
+    <!-- all maven dependencies must be optional(!) -->
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${maven.version}</version>
       <scope>optional</scope>
     </dependency>
     <dependency>

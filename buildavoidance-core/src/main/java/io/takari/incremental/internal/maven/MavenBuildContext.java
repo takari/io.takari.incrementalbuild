@@ -4,13 +4,11 @@ import io.takari.incremental.internal.DefaultBuildContext;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 
-import org.apache.maven.execution.MavenSession;
+import org.apache.maven.execution.MojoExecutionEvent;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
-import org.apache.maven.plugin.MojoExecution;
-import org.apache.maven.project.MavenProject;
-import org.slf4j.Logger;
+import org.apache.maven.execution.scope.WeakMojoExecutionListener;
+import org.apache.maven.plugin.MojoExecutionException;
 
 /**
  * Maven specific BuildContext implementation that provides
@@ -32,17 +30,29 @@ import org.slf4j.Logger;
  */
 @Named
 @MojoExecutionScoped
-public class MavenBuildContext implements Provider<DefaultBuildContext> {
+public class MavenBuildContext extends DefaultBuildContext implements WeakMojoExecutionListener {
 
   @Inject
-  public MavenBuildContext(MavenSession session, MavenProject project, MojoExecution execution,
-      Logger logger) {
+  public MavenBuildContext(MojoConfigurationDigester digester) {
+    super(null, digester.digest());
+  }
+
+  @Override
+  public void beforeMojoExecution(MojoExecutionEvent event) throws MojoExecutionException {
+    // TODO Auto-generated method stub
 
   }
 
   @Override
-  public DefaultBuildContext get() {
-    return null;
+  public void afterMojoExecutionSuccess(MojoExecutionEvent event) throws MojoExecutionException {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void afterExecutionFailure(MojoExecutionEvent event) {
+    // TODO Auto-generated method stub
+
   }
 
 

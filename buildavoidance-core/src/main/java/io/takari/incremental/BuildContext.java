@@ -46,11 +46,11 @@ public interface BuildContext {
    * 
    * <code>
    *     FileSet fileSet = context.fileSetBuild().fromFile(file);
-   *     Iterator&lt;Input> iterator = context.registerInputsForProcessing(fileSet).iterator();
+   *     Iterator&lt;Input> iterator = context.processInputs(fileSet).iterator();
    *     Input input = iterator.hasNext()? iterator.next(): null;
    * </code>
    * 
-   * @return registered input or {@code null} if input file does not require processing
+   * @return registered input or {@code null} if the input file does not require processing
    */
   public Input<File> processInput(File file);
 
@@ -60,6 +60,19 @@ public interface BuildContext {
 
   public Output<File> getOldOutput(File file);
 
+  /**
+   * Registers specified input {@code File} with this build context.
+   * <p>
+   * The same {@link Input} instance is returned if this method is invoked multiple times during the
+   * same build. During the first invocation {@link Input} is initialized with clean state, i.e. no
+   * associated output files, no message, etc. The same initialized instance is returned as is
+   * during subsequent invocations of this method.
+   * <p>
+   * Invocation of this method forces processing of the registered input file by build avoidance
+   * framework even if the input file has not changed since last build.
+   * 
+   * @return {@link Input} representing the input file, never {@code null}.
+   */
   public Input<File> registerInput(File file);
 
   /**
