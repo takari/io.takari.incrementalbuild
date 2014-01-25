@@ -7,27 +7,27 @@ import java.io.Serializable;
 
 public class DefaultInput implements BuildContext.Input<File> {
 
-  private transient final DefaultBuildContext context;
+  private transient final BuildContextStateManager state;
 
   private final File file;
 
-  public DefaultInput(DefaultBuildContext context, File file) {
-    this.context = context;
+  public DefaultInput(BuildContextStateManager context, File file) {
+    this.state = context;
     this.file = file;
   }
 
   @Override
   public void associateIncludedInput(File file) {
-    context.associateIncludedInput(this, file);
+    state.associateIncludedInput(this, file);
   }
 
   @Override
   public DefaultOutput associateOutput(File file) {
-    return context.associateOutput(this, file);
+    return state.associateOutput(this, file);
   }
 
   public void associateOutput(DefaultOutput output) {
-    context.associate(this, output);
+    state.associate(this, output);
   }
 
   public void addRequirement(String qualifier, String localName) {
@@ -37,9 +37,7 @@ public class DefaultInput implements BuildContext.Input<File> {
 
   @Override
   public boolean isProcessingRequired() {
-    // XXX need different behaviour for new and old instances
-
-    return true;
+    return state.isProcessingRequired(this);
   }
 
   @Override
@@ -66,7 +64,7 @@ public class DefaultInput implements BuildContext.Input<File> {
   }
 
   public boolean isAssociatedOutput(File file) {
-    return context.isAssociatedOutput(this, file);
+    return state.isAssociatedOutput(this, file);
   }
 
   @Override
@@ -87,6 +85,6 @@ public class DefaultInput implements BuildContext.Input<File> {
     DefaultInput other = (DefaultInput) obj;
 
     // must be from the same context to be equal
-    return context == other.context && file.equals(other.file);
+    return state == other.state && file.equals(other.file);
   }
 }

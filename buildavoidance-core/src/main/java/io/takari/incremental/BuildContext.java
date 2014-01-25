@@ -24,6 +24,7 @@ public interface BuildContext {
 
     public Output<T> associateOutput(T file);
 
+    // TODO this method only applies to old state, see if you can remove it somehow
     public boolean isProcessingRequired();
 
     public T getResource();

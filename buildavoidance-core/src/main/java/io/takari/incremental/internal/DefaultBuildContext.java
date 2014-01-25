@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory;
 // XXX normalize all File paramters. maybe easier to use URI internally.
 // XXX maybe use relative URIs to save heap
 
-public class DefaultBuildContext implements BuildContext {
+public class DefaultBuildContext implements BuildContext, BuildContextStateManager {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -72,6 +73,9 @@ public class DefaultBuildContext implements BuildContext {
   private final ConcurrentMap<File, Collection<DefaultInput>> outputInputs =
       new ConcurrentHashMap<File, Collection<DefaultInput>>();
 
+  private final ConcurrentMap<File, Collection<File>> inputIncludedInputs =
+      new ConcurrentHashMap<File, Collection<File>>();
+
   /**
    * Maps requirement qname to all input that require it.
    */
@@ -88,7 +92,7 @@ public class DefaultBuildContext implements BuildContext {
     }
 
     this.stateFile = stateFile;
-    this.oldState = load(stateFile);
+    this.oldState = loadState(stateFile);
 
     // TODO clone byte arrays too?
     this.configuration = new HashMap<String, byte[]>(configuration);
@@ -127,8 +131,8 @@ public class DefaultBuildContext implements BuildContext {
     return false;
   }
 
-  private BuildContextState load(File stateFile) {
-    // TODO verify stateFile local has not changed since last build
+  private BuildContextState loadState(File stateFile) {
+    // TODO verify stateFile location has not changed since last build
     try {
       ObjectInputStream is =
           new ObjectInputStream(new BufferedInputStream(new FileInputStream(stateFile)));
@@ -149,7 +153,30 @@ public class DefaultBuildContext implements BuildContext {
     return null;
   }
 
-  private static void store(BuildContextState state, File stateFile) throws IOException {
+  private static <K, V> Map<K, V> unmodifiableMap(Map<K, V> map) {
+    return Collections.unmodifiableMap(new LinkedHashMap<K, V>(map));
+  }
+
+  private static <K, V> Map<K, Collection<V>> unmodifiableMultimap(Map<K, Collection<V>> map) {
+    HashMap<K, Collection<V>> result = new LinkedHashMap<K, Collection<V>>();
+    for (Map.Entry<K, Collection<V>> entry : map.entrySet()) {
+      Collection<V> values = new ArrayList<V>(entry.getValue());
+      result.put(entry.getKey(), Collections.unmodifiableCollection(values));
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  private void storeState() throws IOException {
+    Map<String, byte[]> configuration = unmodifiableMap(this.configuration);
+    Map<File, DefaultInput> inputs = unmodifiableMap(this.inputs);
+    Map<File, DefaultOutput> outputs = unmodifiableMap(this.outputs);
+    Map<File, Collection<DefaultOutput>> inputOutputs = unmodifiableMultimap(this.inputOutputs);
+    Map<File, Collection<File>> inputIncludedInputs =
+        unmodifiableMultimap(this.inputIncludedInputs);
+
+    BuildContextState state =
+        new BuildContextState(configuration, inputs, outputs, inputOutputs, inputIncludedInputs);
+
     ObjectOutputStream os =
         new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));
     try {
@@ -308,13 +335,15 @@ public class DefaultBuildContext implements BuildContext {
 
   // association management
 
-  DefaultOutput associateOutput(DefaultInput input, File outputFile) {
+  @Override
+  public DefaultOutput associateOutput(DefaultInput input, File outputFile) {
     DefaultOutput output = registerOutput(outputFile);
     associate(input, output);
     return output;
   }
 
-  void associate(DefaultInput input, DefaultOutput output) {
+  @Override
+  public void associate(DefaultInput input, DefaultOutput output) {
     File inputFile = input.getResource();
     Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
     if (outputs == null) {
@@ -324,7 +353,8 @@ public class DefaultBuildContext implements BuildContext {
     outputs.add(output); // XXX NOT THREAD SAFE
   }
 
-  boolean isAssociatedOutput(DefaultInput input, File outputFile) {
+  @Override
+  public boolean isAssociatedOutput(DefaultInput input, File outputFile) {
     DefaultOutput output = outputs.get(outputFile);
     if (output == null) {
       return false;
@@ -333,11 +363,18 @@ public class DefaultBuildContext implements BuildContext {
     return outputs != null && outputs.contains(output);
   }
 
-  Collection<DefaultInput> getAssociatedInputs(DefaultOutput output) {
+  @Override
+  public Collection<DefaultInput> getAssociatedInputs(DefaultOutput output) {
     return Collections.unmodifiableCollection(outputInputs.get(output.getResource()));
   }
 
-  void associateIncludedInput(DefaultInput input, File includedFile) {
+  @Override
+  public void associateIncludedInput(DefaultInput input, File includedFile) {
 
+  }
+
+  @Override
+  public boolean isProcessingRequired(DefaultInput input) {
+    return true;
   }
 }

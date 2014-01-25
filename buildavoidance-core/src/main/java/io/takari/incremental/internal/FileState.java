@@ -5,8 +5,8 @@ import java.io.Serializable;
 
 class FileState implements Serializable {
 
-  private final long lastModified;
-  private final long length;
+  final long lastModified;
+  final long length;
 
   public FileState(File file) {
     this.lastModified = file.lastModified();
