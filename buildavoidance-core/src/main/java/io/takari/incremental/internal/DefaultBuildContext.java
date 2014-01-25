@@ -153,8 +153,8 @@ public class DefaultBuildContext implements BuildContext, BuildContextStateManag
 
   private void storeState() throws IOException {
 
-    BuildContextState state =
-        new BuildContextState(configuration, inputs, outputs, inputOutputs, inputIncludedInputs);
+    BuildContextState state = new BuildContextState(configuration, inputs, outputs, inputOutputs, //
+        outputInputs, inputIncludedInputs);
 
     ObjectOutputStream os =
         new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));

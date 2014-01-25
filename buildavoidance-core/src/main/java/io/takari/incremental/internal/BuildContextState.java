@@ -21,16 +21,20 @@ class BuildContextState implements Serializable, BuildContextStateManager {
 
   private final Map<File, Collection<DefaultOutput>> inputOutputs;
 
+  private final Map<File, Collection<DefaultInput>> outputInputs;
+
   private final Map<File, Collection<File>> inputIncludedInputs;
 
   public BuildContextState(Map<String, byte[]> configuration, Map<File, DefaultInput> inputs,
       Map<File, DefaultOutput> outputs, Map<File, Collection<DefaultOutput>> inputOutputs,
+      Map<File, Collection<DefaultInput>> outputInputs,
       Map<File, Collection<File>> inputIncludedInputs) {
 
     this.configuration = unmodifiableMap(configuration); // clone byte[] arrays?
     this.inputs = unmodifiableMap(inputs);
     this.outputs = unmodifiableMap(outputs);
     this.inputOutputs = unmodifiableMultimap(inputOutputs);
+    this.outputInputs = unmodifiableMultimap(outputInputs);
     this.inputIncludedInputs = unmodifiableMultimap(inputIncludedInputs);
 
     Map<File, FileState> files = new HashMap<File, FileState>();
@@ -86,14 +90,16 @@ class BuildContextState implements Serializable, BuildContextStateManager {
 
   @Override
   public boolean isAssociatedOutput(DefaultInput input, File outputFile) {
-    // TODO Auto-generated method stub
-    return false;
+    DefaultOutput output = outputs.get(outputFile);
+    Collection<DefaultOutput> outputs = inputOutputs.get(input.getResource());
+    // is it legal to have null output or outputs here?
+    return output != null && outputs != null && outputs.contains(output);
   }
 
   @Override
   public Collection<DefaultInput> getAssociatedInputs(DefaultOutput output) {
-    // TODO Auto-generated method stub
-    return null;
+    Collection<DefaultInput> inputs = outputInputs.get(output.getResource());
+    return inputs != null ? inputs : Collections.<DefaultInput>emptyList();
   }
 
   @Override
