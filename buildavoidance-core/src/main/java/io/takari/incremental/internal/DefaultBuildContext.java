@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -52,6 +53,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private final boolean escalated;
 
   // inputs and outputs
+
+  /**
+   * Requested inputs that do not require processing. These will be carried over during commit.
+   */
+  private final Set<File> uptodateInputs = new HashSet<File>();
 
   /**
    * Inputs registered with this build context during this build.
@@ -229,6 +235,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (oldInput == null || oldInput.isProcessingRequired()) {
       return registerInput(inputFile);
     }
+    uptodateInputs.add(inputFile);
     return null;
   }
 
@@ -265,24 +272,28 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     List<DefaultOutput> deleted = new ArrayList<DefaultOutput>();
 
-    oldOutpus: for (Map.Entry<File, DefaultOutput> oldOutput : oldState.getOutputs().entrySet()) {
+    oldOutputs: for (Map.Entry<File, DefaultOutput> oldOutput : oldState.getOutputs().entrySet()) {
       final File outputFile = oldOutput.getKey();
 
       // keep if output file was registered during this build
       if (outputs.containsKey(outputFile)) {
-        continue oldOutpus;
+        continue oldOutputs;
       }
 
       for (DefaultInput oldInput : oldOutput.getValue().getAssociatedInputs()) {
         final File inputFile = oldInput.getResource();
 
-        if (FileState.isPresent(inputFile)) {
-          // keep if inputFile is not registered during this build
-          // keep if inputFile is registered and is associated with outputFile
+        if (uptodateInputs.contains(inputFile)) {
+          // old input did not change and its associated state is carried over as-is
+          // the oldOutput is not orphaned (but may or may not be stale)
+          continue oldOutputs;
+        }
 
+        if (inputs.containsKey(inputFile)) {
           final DefaultInput input = inputs.get(inputFile);
           if (input == null || input.isAssociatedOutput(outputFile)) {
-            continue oldOutpus;
+            // the oldOutput is associated with an input, not orphaned
+            continue oldOutputs;
           }
         }
       }
@@ -326,6 +337,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     inputFile = normalize(inputFile);
+
+    uptodateInputs.remove(inputFile);
 
     DefaultInput result = inputs.get(inputFile);
     if (result == null) {
@@ -519,10 +532,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (oldState != null) {
       for (DefaultInput oldInput : oldState.getInputs().values()) {
         File inputFile = oldInput.getResource();
-        if (FileState.isPresent(inputFile) && !inputs.containsKey(inputFile)) {
+        if (uptodateInputs.contains(inputFile) && !inputs.containsKey(inputFile)) {
           DefaultInput input = registerInput(inputFile);
 
-          // deep(!) copy associated outputs
+          // copy associated outputs
           for (DefaultOutput oldOutput : oldState.getAssociatedOutputs(inputFile)) {
             File outputFile = oldOutput.getResource();
 
