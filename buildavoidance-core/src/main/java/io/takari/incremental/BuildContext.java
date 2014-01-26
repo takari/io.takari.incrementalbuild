@@ -24,6 +24,7 @@ public interface BuildContext {
 
     public Output<T> associateOutput(T resource);
 
+    // processing of deleted inputs is NOT required
     // TODO this method only applies to old state, see if you can remove it somehow
     public boolean isProcessingRequired();
 

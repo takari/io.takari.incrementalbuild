@@ -2,6 +2,7 @@ package io.takari.incremental.test;
 
 import io.takari.incremental.internal.DefaultBuildContext;
 import io.takari.incremental.internal.DefaultInput;
+import io.takari.incremental.internal.DefaultOutput;
 
 import java.io.File;
 import java.util.Collections;
@@ -189,5 +190,24 @@ public class DefaultBuildContextTest {
     context = newBuildContext();
     context.commit();
     Assert.assertFalse(outputFile.canRead());
+  }
+
+  @Test
+  public void testInputProcessingRequired_deletedInput() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile);
+    context.commit();
+
+    Assert.assertTrue(inputFile.delete());
+
+    context = newBuildContext();
+    DefaultOutput oldOutput = context.getOldOutput(outputFile);
+    DefaultInput oldInput = oldOutput.getAssociatedInputs().iterator().next();
+    Assert.assertEquals(input.getResource(), oldInput.getResource());
+    Assert.assertFalse(oldInput.isProcessingRequired());
   }
 }

@@ -188,8 +188,11 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
       throw new IllegalArgumentException();
     }
 
-    return !FileState.isPresent(file) || fileState.lastModified != file.lastModified()
-        || fileState.length != file.length();
+    if (!FileState.isPresent(file)) {
+      return false;
+    }
+
+    return fileState.lastModified != file.lastModified() || fileState.length != file.length();
   }
 
   @Override

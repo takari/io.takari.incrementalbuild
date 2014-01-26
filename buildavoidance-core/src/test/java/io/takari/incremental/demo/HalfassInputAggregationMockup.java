@@ -2,6 +2,7 @@ package io.takari.incremental.demo;
 
 import io.takari.incremental.BuildContext;
 import io.takari.incremental.BuildContext.Input;
+import io.takari.incremental.BuildContext.Output;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,48 +27,36 @@ public class HalfassInputAggregationMockup {
     // this is for demo purposes only, real code most likely will also collect per-input data
     Set<BuildContext.Input<File>> inputs = new LinkedHashSet<BuildContext.Input<File>>();
 
-    boolean processingRequired = false;
-
     // this iterates on any new/modified inputs from the fileset
     for (BuildContext.Input<File> input : context.processInputs(fileSet)) {
 
       // Not all new/changed inputs need to be aggregated. For example, for maven plugin.xml
       // only classes annotated with @Mojo need to be looked at. as indicated above, real
       // code will likely capture both interesting inputs and data to be aggregated
-      if (isInteresting(input)) {
+      if (isInteresting(input.getResource())) {
         inputs.add(input);
-        processingRequired = true;
       }
     }
 
-    File outputFile = getOutputFile();
+    if (!inputs.isEmpty()) {
+      File outputFile = getOutputFile();
 
-    // oldOutput is read-only Output instance that provide information about end result of the
-    // previous build.
-    BuildContext.Output<File> oldOutput = context.getOldOutput(outputFile);
-    if (oldOutput != null) {
-      if (!processingRequired) {
-        // iterate over all Inputs that contributed to the aggregator during previous build
-        // processing is required if any of old inputs was changed or removed since last build
+      // collect old inputs that still part of fileSet and do not require processing
+      // inputs that were deleted do not require processing (obviously)
+      // inputs that require processing were processed above already
+      Output<File> oldOutput = context.getOldOutput(outputFile);
+      if (oldOutput != null) {
         for (BuildContext.Input<File> oldInput : oldOutput.getAssociatedInputs()) {
-          if (oldInput.isProcessingRequired()) {
-            processingRequired = true;
+          File inputFile = oldInput.getResource();
+          if (fileSet.contains(inputFile) && !oldInput.isProcessingRequired()) {
+            // this half-ass implementation mockup forces processing of old inputs
+            // see InputAggregationMockup.java for proper incremental implementation
+            inputs.add(context.registerInput(inputFile));
           }
         }
       }
-      if (processingRequired) {
-        // if processing is required, process all oldInputs that still exist
-        for (BuildContext.Input<File> input : oldOutput.getAssociatedInputs()) {
-          if (input.getResource().canRead()) {
-            inputs.add(input);
-          }
-        }
-      }
-    }
 
-    if (processingRequired) {
-
-      // registers new "clean" output with the build context, then associate all relevant inputs
+      // register new "clean" output with the build context, then associate all relevant inputs
       BuildContext.Output<File> output = context.registerOutput(outputFile);
       OutputStream os = output.newOutputStream();
       try {
@@ -86,6 +75,8 @@ public class HalfassInputAggregationMockup {
       }
     }
 
+    // output will be deleted as orphaned if it does not have any associated inputs
+    // TODO example that shows how to generate empty output even if all inputs are deleted
   }
 
   private void contributeToAggregate(Input<File> input, OutputStream os) {
@@ -98,7 +89,7 @@ public class HalfassInputAggregationMockup {
     return null;
   }
 
-  private boolean isInteresting(Input<File> input) {
+  private boolean isInteresting(File inputFile) {
     // TODO Auto-generated method stub
     return false;
   }

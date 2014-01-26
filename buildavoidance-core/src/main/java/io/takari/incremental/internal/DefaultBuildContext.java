@@ -316,7 +316,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   @Override
   public DefaultOutput getOldOutput(File outputFile) {
-    return oldState.getOutputs().get(outputFile);
+    return oldState.getOutputs().get(normalize(outputFile));
   }
 
   @Override
