@@ -6,6 +6,7 @@ import io.takari.incremental.internal.DefaultInput;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Collections;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -17,19 +18,26 @@ public class DefaultBuildContextTest {
   @Rule
   public final TestName name = new TestName();
 
+  private static class TestBuildContext extends DefaultBuildContext<Exception> {
+
+    public TestBuildContext(File stateFile, Map<String, byte[]> configuration) {
+      super(stateFile, configuration);
+    }
+
+    @Override
+    protected void logMessage(DefaultInput input, int line, int column, String message,
+        int severity, Throwable cause) {}
+
+    @Override
+    protected Exception newBuildFailureException() {
+      return new Exception();
+    }
+  }
+
   private DefaultBuildContext<?> newBuildContext() {
     File stateFile =
         new File("target/", getClass().getSimpleName() + "_" + name.getMethodName() + ".ctx");
-    return new DefaultBuildContext<Exception>(stateFile, Collections.<String, byte[]>emptyMap()) {
-      @Override
-      protected void logMessage(DefaultInput input, int line, int column, String message,
-          int severity, Throwable cause) {}
-
-      @Override
-      protected Exception newBuildFailureException() {
-        return new Exception();
-      }
-    };
+    return new TestBuildContext(stateFile, Collections.<String, byte[]>emptyMap());
   }
 
   @Test(expected = IllegalArgumentException.class)

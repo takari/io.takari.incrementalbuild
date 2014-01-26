@@ -13,6 +13,8 @@ import java.util.Set;
 
 class DefaultBuildContextState implements Serializable, BuildContextStateManager {
 
+  private static final long serialVersionUID = 6195150574931820441L;
+
   private final Map<String, byte[]> configuration;
 
   private final Map<File, FileState> files;

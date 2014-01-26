@@ -7,13 +7,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 
 /**
  * @noinstantiate clients are not supposed to instantiate this class
  */
-public class DefaultOutput implements BuildContext.Output<File> {
+public class DefaultOutput implements BuildContext.Output<File>, Serializable {
 
-  private transient final BuildContextStateManager state;
+  private static final long serialVersionUID = 5401802777737239169L;
+
+  private final BuildContextStateManager state;
 
   private final File file;
 

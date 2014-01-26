@@ -5,9 +5,11 @@ import io.takari.incremental.BuildContext;
 import java.io.File;
 import java.io.Serializable;
 
-public class DefaultInput implements BuildContext.Input<File> {
+public class DefaultInput implements BuildContext.Input<File>, Serializable {
 
-  private transient final BuildContextStateManager state;
+  private static final long serialVersionUID = -4041970414396994134L;
+
+  private final BuildContextStateManager state;
 
   private final File file;
 

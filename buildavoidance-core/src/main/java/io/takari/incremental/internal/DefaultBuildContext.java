@@ -186,12 +186,26 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private void storeState() throws IOException {
-    DefaultBuildContextState state = new DefaultBuildContextState(configuration, inputs, outputs, //
-        inputOutputs, outputInputs, inputIncludedInputs, inputRequirements, requirementInputs, //
-        outputCapabilities, inputAttributes, inputMessages);
+    final DefaultBuildContextState state =
+        new DefaultBuildContextState(configuration, inputs, outputs, inputOutputs, outputInputs,
+            inputIncludedInputs, inputRequirements, requirementInputs, outputCapabilities,
+            inputAttributes, inputMessages);
 
     ObjectOutputStream os =
-        new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));
+        new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile))) {
+          {
+            enableReplaceObject(true);
+          }
+
+          @Override
+          protected Object replaceObject(Object obj) throws IOException {
+            // TODO maybe don't serialize DefaultInput/DefaultOutput instances?
+            if (obj == DefaultBuildContext.this) {
+              return state;
+            }
+            return super.replaceObject(obj);
+          }
+        };
     try {
       os.writeObject(state);
     } finally {
@@ -251,6 +265,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * @throws IOException if a stale output file cannot be deleted.
    */
   public Iterable<DefaultOutput> deleteStaleOutputs() throws IOException {
+    if (oldState == null) {
+      return Collections.emptyList();
+    }
+
     List<DefaultOutput> deleted = new ArrayList<DefaultOutput>();
 
     oldOutpus: for (Map.Entry<File, DefaultOutput> oldOutput : oldState.getOutputs().entrySet()) {
