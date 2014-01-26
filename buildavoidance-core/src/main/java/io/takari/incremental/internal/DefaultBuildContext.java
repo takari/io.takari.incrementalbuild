@@ -217,6 +217,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   @Override
   public DefaultInput processInput(File inputFile) {
+    inputFile = normalize(inputFile);
     if (inputs.containsKey(inputFile)) {
       // skip, inputFile has been processed already
       return null;
@@ -250,8 +251,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   // low-level methods
 
   /**
-   * @return
-   * @throws IOException if a stale output file cannot be deleted.
+   * Deletes outputs that were produced from inputs that no longer exist or are not part of build
+   * input set (due to configuration change, for example).
+   * 
+   * @return deleted outputs
+   * 
+   * @throws IOException if an orphaned output file cannot be deleted.
    */
   public Iterable<DefaultOutput> deleteOrphanedOutputs() throws IOException {
     if (oldState == null) {

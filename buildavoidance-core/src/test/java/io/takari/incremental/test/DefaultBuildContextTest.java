@@ -12,6 +12,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
 public class DefaultBuildContextTest {
 
   @Rule
@@ -92,8 +95,8 @@ public class DefaultBuildContextTest {
     input.associateOutput(outputFile);
     context.commit();
 
+    // deleted input
     Assert.assertTrue(inputFile.delete());
-
     context = newBuildContext();
     context.deleteOrphanedOutputs();
 
@@ -110,8 +113,11 @@ public class DefaultBuildContextTest {
     input.associateOutput(outputFile);
     context.commit();
 
+    // input is modified and registered for processing
+    // output is not orphaned because input still exists
+    Files.append("test", inputFile, Charsets.UTF_8);
     context = newBuildContext();
-    context.registerInput(inputFile);
+    Assert.assertNotNull(context.processInput(inputFile));
     context.deleteOrphanedOutputs();
 
     Assert.assertTrue(outputFile.canRead());
@@ -128,9 +134,60 @@ public class DefaultBuildContextTest {
     context.commit();
 
     context = newBuildContext();
+    Assert.assertNull(context.processInput(inputFile));
     context.deleteOrphanedOutputs();
 
     Assert.assertTrue(outputFile.canRead());
   }
 
+  @Test
+  public void testProcessInput() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    // initial build
+    DefaultBuildContext<?> context = newBuildContext();
+
+    // first time invocation returns Input for processing
+    Assert.assertNotNull(context.processInput(inputFile));
+    // second invocation returns null
+    Assert.assertNull(context.processInput(inputFile));
+
+    // new build
+    context.commit();
+    context = newBuildContext();
+
+    // null if input file was not modified since last build
+    Assert.assertNull(context.processInput(inputFile));
+
+    // new build
+    context.commit();
+    Files.append("test", inputFile, Charsets.UTF_8);
+    context = newBuildContext();
+
+    // Input if input file was modified since last build
+    Assert.assertNotNull(context.processInput(inputFile));
+    Assert.assertNull(context.processInput(inputFile));
+  }
+
+  @Test
+  public void testInputModifiedAfterRegistration() throws Exception {
+    Assert.fail();
+  }
+
+  @Test
+  public void testCommit_orphanedOutputsCleanup() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile);
+    context.commit();
+
+    // input is not part of input set any more
+    // associated output must be cleaned up
+    context = newBuildContext();
+    context.commit();
+    Assert.assertFalse(outputFile.canRead());
+  }
 }
