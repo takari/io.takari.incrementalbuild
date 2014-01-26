@@ -123,7 +123,7 @@ public class DefaultBuildContextTest {
     // but actual processing has not happened yet
     // there is no association between (new) input and (old) output
     // assume the (old) output is orphaned and delete it
-    // (new) output will be generate as needed when input is processed
+    // (new) output will be generate as needed when (new) input is processed
     context.deleteOrphanedOutputs();
     Assert.assertFalse(outputFile.canRead());
   }
@@ -176,7 +176,31 @@ public class DefaultBuildContextTest {
 
   @Test
   public void testInputModifiedAfterRegistration() throws Exception {
-    Assert.fail();
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile);
+    context.commit();
+
+    context = newBuildContext();
+    Assert.assertNull(context.processInput(inputFile));
+
+    // this is incorrect use of build-avoidance API
+    // even though the input has changed, it was changed after it was registered for processing
+    // and it's associated state and output files are carried over as-is
+    // TODO ideally, this should be detected and reported as IllegalStateException
+    Files.append("test", inputFile, Charsets.UTF_8);
+    context.commit();
+    Assert.assertTrue(outputFile.canRead());
+
+    // the discrepancy is reconciled during next build
+    // this is suboptimal and causes unexpected process/not-process behaviour, see TODO above
+    context = newBuildContext();
+    Assert.assertNotNull(context.processInput(inputFile));
+    context.commit();
+    Assert.assertFalse(outputFile.canRead());
   }
 
   @Test
