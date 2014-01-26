@@ -55,6 +55,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   // inputs and outputs
 
   /**
+   * Timestamps/hashes of all input files.
+   */
+  private final ConcurrentMap<File, FileState> inputFiles =
+      new ConcurrentHashMap<File, FileState>();
+
+  /**
    * Requested inputs that do not require processing. These will be carried over during commit.
    */
   private final Set<File> uptodateInputs = new HashSet<File>();
@@ -190,10 +196,16 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private void storeState() throws IOException {
+    // timestamp output files
+    final Map<File, FileState> files = new HashMap<File, FileState>(inputFiles);
+    for (File output : outputs.keySet()) {
+      files.put(output, new FileState(output));
+    }
+
     final DefaultBuildContextState state =
-        new DefaultBuildContextState(configuration, inputs, outputs, inputOutputs, outputInputs,
-            inputIncludedInputs, inputRequirements, requirementInputs, outputCapabilities,
-            inputAttributes, inputMessages);
+        new DefaultBuildContextState(configuration, files, inputs, outputs, inputOutputs,
+            outputInputs, inputIncludedInputs, inputRequirements, requirementInputs,
+            outputCapabilities, inputAttributes, inputMessages);
 
     ObjectOutputStream os =
         new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile))) {
@@ -228,7 +240,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       // skip, inputFile has been processed already
       return null;
     }
-    if (escalated) {
+    if (escalated || oldState == null) {
       return registerInput(inputFile);
     }
     final DefaultInput oldInput = oldState.getInputs().get(inputFile);
@@ -236,7 +248,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       return registerInput(inputFile);
     }
     uptodateInputs.add(inputFile);
+    putInputFileState(inputFile, oldState.getFileState(inputFile));
     return null;
+  }
+
+  private void putInputFileState(File inputFile, FileState fileState) {
+    FileState oldFileState = inputFiles.put(inputFile, fileState);
+    if (oldFileState != null && !FileState.equals(oldFileState, fileState)) {
+      throw new IllegalStateException("Unexpected input file change " + inputFile);
+    }
   }
 
   @Override
@@ -338,6 +358,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     inputFile = normalize(inputFile);
 
+    putInputFileState(inputFile, new FileState(inputFile));
+
     uptodateInputs.remove(inputFile);
 
     DefaultInput result = inputs.get(inputFile);
@@ -406,6 +428,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       includedFiles = putIfAbsent(inputIncludedInputs, inputFile, new LinkedHashSet<File>());
     }
     includedFiles.add(includedFile); // XXX NOT THREAD SAFE
+    putInputFileState(includedFile, new FileState(includedFile));
   }
 
   @Override
@@ -527,13 +550,17 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   public void commit() throws BuildFailureException, IOException {
     deleteOrphanedOutputs();
 
-    // copy relevant parts of the old state
+    // carry over relevant parts of the old state
 
     if (oldState != null) {
       for (DefaultInput oldInput : oldState.getInputs().values()) {
         File inputFile = oldInput.getResource();
         if (uptodateInputs.contains(inputFile) && !inputs.containsKey(inputFile)) {
-          DefaultInput input = registerInput(inputFile);
+          if (!FileState.equals(new FileState(inputFile), inputFiles.get(inputFile))) {
+            throw new IllegalStateException("Unexpected input file change " + inputFile);
+          }
+
+          DefaultInput input = putIfAbsent(inputs, inputFile, new DefaultInput(this, inputFile));
 
           // copy associated outputs
           for (DefaultOutput oldOutput : oldState.getAssociatedOutputs(inputFile)) {

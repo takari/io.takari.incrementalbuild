@@ -51,6 +51,9 @@ public class DefaultBuildContextTest {
 
   @Test
   public void testRegisterInput() throws Exception {
+    // this is NOT part of API but rather currently implemented behaviour
+    // API allows #registerInput return different instances
+
     File file = new File("src/test/resources/simplelogger.properties");
     Assert.assertTrue(file.exists() && file.canRead());
     DefaultBuildContext<?> context = newBuildContext();
@@ -151,30 +154,27 @@ public class DefaultBuildContextTest {
 
     // initial build
     DefaultBuildContext<?> context = newBuildContext();
-
     // first time invocation returns Input for processing
     Assert.assertNotNull(context.processInput(inputFile));
     // second invocation returns null
     Assert.assertNull(context.processInput(inputFile));
+    context.commit();
 
     // new build
-    context.commit();
     context = newBuildContext();
-
     // null if input file was not modified since last build
     Assert.assertNull(context.processInput(inputFile));
+    context.commit();
 
     // new build
-    context.commit();
     Files.append("test", inputFile, Charsets.UTF_8);
     context = newBuildContext();
-
     // Input if input file was modified since last build
     Assert.assertNotNull(context.processInput(inputFile));
     Assert.assertNull(context.processInput(inputFile));
   }
 
-  @Test
+  @Test(expected = IllegalStateException.class)
   public void testInputModifiedAfterRegistration() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");
@@ -189,18 +189,10 @@ public class DefaultBuildContextTest {
 
     // this is incorrect use of build-avoidance API
     // even though the input has changed, it was changed after it was registered for processing
-    // and it's associated state and output files are carried over as-is
-    // TODO ideally, this should be detected and reported as IllegalStateException
+    // IllegalStateException is raised to prevent unexpected process/not-process flip-flop
     Files.append("test", inputFile, Charsets.UTF_8);
     context.commit();
     Assert.assertTrue(outputFile.canRead());
-
-    // the discrepancy is reconciled during next build
-    // this is suboptimal and causes unexpected process/not-process behaviour, see TODO above
-    context = newBuildContext();
-    Assert.assertNotNull(context.processInput(inputFile));
-    context.commit();
-    Assert.assertFalse(outputFile.canRead());
   }
 
   @Test

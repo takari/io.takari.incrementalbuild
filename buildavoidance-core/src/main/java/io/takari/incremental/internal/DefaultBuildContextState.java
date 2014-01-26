@@ -39,7 +39,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   private final Map<File, Collection<Message>> inputMessages;
 
-  public DefaultBuildContextState(Map<String, byte[]> configuration,
+  public DefaultBuildContextState(Map<String, byte[]> configuration, Map<File, FileState> files,
       Map<File, DefaultInput> inputs, Map<File, DefaultOutput> outputs,
       Map<File, Collection<DefaultOutput>> inputOutputs,
       Map<File, Collection<DefaultInput>> outputInputs,
@@ -51,6 +51,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
       Map<File, Collection<Message>> inputMessages) {
 
     this.configuration = unmodifiableMap(configuration); // clone byte[] arrays?
+    this.files = unmodifiableMap(files);
     this.inputs = unmodifiableMap(inputs);
     this.outputs = unmodifiableMap(outputs);
     this.inputOutputs = unmodifiableMultimap(inputOutputs);
@@ -64,14 +65,6 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     this.inputAttributes = unmodifiableMapMap(inputAttributes);
 
     this.inputMessages = unmodifiableMap(inputMessages);
-
-    Map<File, FileState> files = new HashMap<File, FileState>();
-    putAll(files, inputs.keySet());
-    putAll(files, outputs.keySet());
-    for (Collection<File> includedInputs : inputIncludedInputs.values()) {
-      putAll(files, includedInputs);
-    }
-    this.files = files;
   }
 
   private static Map<File, Map<String, Serializable>> unmodifiableMapMap(
@@ -95,13 +88,6 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
       result.put(entry.getKey(), Collections.unmodifiableCollection(values));
     }
     return Collections.unmodifiableMap(result);
-  }
-
-
-  private static void putAll(Map<File, FileState> state, Collection<File> files) {
-    for (File file : files) {
-      state.put(file, new FileState(file));
-    }
   }
 
   public Map<String, byte[]> getConfiguration() {
@@ -149,7 +135,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
   public boolean isProcessingRequired(DefaultInput input) {
     final File inputFile = input.getResource();
 
-    // processing required if input itself changed or removed, any associated outputs changed or
+    // processing required if input itself changed, any associated outputs was changed or
     // removed, any included inputs changed or removed
 
     // input itself
@@ -180,7 +166,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     return false;
   }
 
-  private boolean isProcessingRequired(File file) {
+  public boolean isProcessingRequired(File file) {
     FileState fileState = files.get(file);
 
     if (fileState == null) {
@@ -188,11 +174,7 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
       throw new IllegalArgumentException();
     }
 
-    if (!FileState.isPresent(file)) {
-      return false;
-    }
-
-    return fileState.lastModified != file.lastModified() || fileState.length != file.length();
+    return FileState.isPresent(file) && !fileState.isUptodate(file);
   }
 
   @Override
@@ -267,5 +249,9 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   public Collection<QualifiedName> getInputRequirements(File inputFile) {
     return inputRequirements.get(inputFile);
+  }
+
+  public FileState getFileState(File file) {
+    return files.get(file);
   }
 }

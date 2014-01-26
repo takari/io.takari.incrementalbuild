@@ -16,8 +16,18 @@ class FileState implements Serializable {
     this.length = file.length();
   }
 
+  public static boolean equals(FileState a, FileState b) {
+    return a.length == b.length && a.lastModified == b.lastModified;
+  }
+
+  public boolean isUptodate(File file) {
+    return length == file.length() && lastModified == file.lastModified();
+  }
+
   // TODO find a better place
   public static boolean isPresent(File file) {
     return file.isFile() && file.canRead();
   }
+
+
 }
