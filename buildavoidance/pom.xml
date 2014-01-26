@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.takari.buildavoidance</groupId>
-    <artifactId>buildavoidance</artifactId>
+    <groupId>io.takari</groupId>
+    <artifactId>buildavoidance-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>buildavoidance-core</artifactId>
+  <artifactId>buildavoidance</artifactId>
 
   <dependencies>
 

@@ -2,8 +2,8 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.takari.buildavoidance</groupId>
-  <artifactId>buildavoidance</artifactId>
+  <groupId>io.takari</groupId>
+  <artifactId>buildavoidance-parent</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -14,7 +14,7 @@
   </properties>
 
   <modules>
-    <module>buildavoidance-core</module>
+    <module>buildavoidance</module>
     <module>buildavoidance-its</module>
   </modules>
 
