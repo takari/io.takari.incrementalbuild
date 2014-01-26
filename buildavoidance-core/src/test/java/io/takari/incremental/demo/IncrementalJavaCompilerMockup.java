@@ -1,6 +1,5 @@
 package io.takari.incremental.demo;
 
-import io.takari.incremental.FileSet;
 import io.takari.incremental.internal.DefaultBuildContext;
 import io.takari.incremental.internal.DefaultInput;
 import io.takari.incremental.internal.DefaultOutput;
@@ -25,7 +24,7 @@ public class IncrementalJavaCompilerMockup {
    */
   Set<DefaultInput> processed = new HashSet<DefaultInput>();
 
-  public void compile(Collection<FileSet> sourceSets) throws IOException {
+  public void compile(Collection<File> sources) throws IOException {
 
     // incremental compilation is a multi-pass process
 
@@ -37,21 +36,17 @@ public class IncrementalJavaCompilerMockup {
     // the worst case, all inputs are compiled. never endless loop
     // keeping track of all compiled inputs requires lots of ram
 
-    for (FileSet sourceSet : sourceSets) {
-
-      // context.getInputsForProcessing is a shortcut for iterating over all Files in the FileSet
-      // and picking Inputs that require processing. It may provide better performance, especially
-      // inside Eclipse, compared to manual implementation of the same logic
-
-      for (DefaultInput input : context.processInputs(sourceSet)) {
-        queue.add(input);
-      }
+    // enqueue all sources that require processing, i.e. new or changed
+    // this also prepares internal build-avoidance state to track dependencies
+    // and messages associated with processed inputs
+    for (DefaultInput input : context.processInputs(sources)) {
+      queue.add(input);
     }
 
     // at this point all inputs were registered with the build context and build-avoidance can
     // determine and delete all "orphaned" outputs, i.e. outputs that were produced from inputs
     // that no longer exist or not part of compiler configuration
-    for (DefaultOutput deleted : context.deleteStaleOutputs()) {
+    for (DefaultOutput deleted : context.deleteOrphanedOutputs()) {
       // find and enqueue all affected inputs
       enqueueAffectedInputs(deleted);
     }

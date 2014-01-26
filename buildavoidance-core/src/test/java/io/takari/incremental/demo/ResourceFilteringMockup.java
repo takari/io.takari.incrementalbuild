@@ -1,13 +1,12 @@
 package io.takari.incremental.demo;
 
 import io.takari.incremental.BuildContext;
-import io.takari.incremental.FileSet;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Set;
+import java.util.Collection;
 
 public class ResourceFilteringMockup {
 
@@ -15,22 +14,9 @@ public class ResourceFilteringMockup {
 
   BuildContext context;
 
-  File sourceDirectory;
-
-  Set<String> includes;
-
-  Set<String> excludes;
-
-  File outputDirectory;
-
   // end of injected parameters
 
-  public void filter() throws IOException {
-
-    FileSet fileSet = context.fileSetBuilder().withBasedir(sourceDirectory) //
-        .addIncludes(excludes) //
-        .addExcludes(excludes) //
-        .build();
+  public void filter(Collection<File> fileSet) throws IOException {
 
     // all input files must be registered with BuildContext
     // by tracking all input files build-avoidance API is able to determine
@@ -45,7 +31,7 @@ public class ResourceFilteringMockup {
       // build. the current instance has not associated outputs nor messages.
 
       // mapping input->output files is outside of the scope of build-avoidance API
-      File outputFile = mapOutputFile(sourceDirectory, input.getResource(), outputDirectory);
+      File outputFile = getOutputFile(input.getResource());
 
       // all output files and their relationship to input files must be registered with
       // BuildAvoidance framework
@@ -81,13 +67,13 @@ public class ResourceFilteringMockup {
     // it triggers build failure if there any new or not cleared error messages
   }
 
-  private void filter(File inputFile, OutputStream os) {
-    // TODO Auto-generated method stub
-  }
-
-  private File mapOutputFile(File sourceDirectory, File sourceFile, File outputDirectory) {
+  private File getOutputFile(File resource) {
     // TODO Auto-generated method stub
     return null;
+  }
+
+  private void filter(File inputFile, OutputStream os) {
+    // TODO Auto-generated method stub
   }
 
 }

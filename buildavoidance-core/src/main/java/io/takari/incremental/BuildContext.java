@@ -52,13 +52,9 @@ public interface BuildContext {
   }
 
   /**
-   * Convenience method fully equivalent to
    * 
-   * <code>
-   *     FileSet fileSet = context.fileSetBuild().fromFile(file);
-   *     Iterator&lt;Input> iterator = context.processInputs(fileSet).iterator();
-   *     Input input = iterator.hasNext()? iterator.next(): null;
-   * </code>
+   * XXX decide if the same input should be "processed" multiple times or not. Tentatively, the same
+   * input is only processed once.
    * 
    * @return registered input or {@code null} if the input file does not require processing
    * @throws IllegalArgumentException if inputFile does not exist or cannot be read
@@ -66,14 +62,9 @@ public interface BuildContext {
   public Input<File> processInput(File inputFile);
 
   /**
-   * <p>
-   * XXX decide if the same input should be "processed" multiple times or not. Tentatively, the same
-   * input is only processed once.
-   * 
-   * @param fileSet
-   * @return
+   * Convenience method
    */
-  public Iterable<? extends Input<File>> processInputs(FileSet fileSet);
+  public Iterable<? extends Input<File>> processInputs(Iterable<File> inputFiles);
 
   public Output<File> registerOutput(File outputFile);
 
@@ -96,15 +87,5 @@ public interface BuildContext {
    * @throws IllegalArgumentException if inputFile does not exist or cannot be read
    */
   public Input<File> registerInput(File inputFile);
-
-  /**
-   * Returns new uninitialized {@link FileSetBuilder} instance.
-   * <p>
-   * Use of {@link FileSet}s is strongly recommended over direct filesystem scanning because it
-   * provides potentially drastically better performance inside Eclipse workspace.
-   * 
-   * @return new file set builder
-   */
-  public FileSetBuilder fileSetBuilder();
 
 }

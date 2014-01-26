@@ -2,12 +2,12 @@ package io.takari.incremental.demo;
 
 import io.takari.incremental.BuildContext;
 import io.takari.incremental.BuildContext.Input;
-import io.takari.incremental.FileSet;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -20,7 +20,7 @@ public class InputAggregationMockup {
   /** @Injected */
   BuildContext context;
 
-  public void aggregate(FileSet fileSet) throws IOException {
+  public void aggregate(Collection<File> fileSet) throws IOException {
 
     // this is for demo purposes only, real code most likely will also collect per-input data
     Set<BuildContext.Input<File>> inputs = new LinkedHashSet<BuildContext.Input<File>>();

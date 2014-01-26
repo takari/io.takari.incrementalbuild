@@ -66,9 +66,9 @@ public class DefaultBuildContextTest {
     context.registerOutput(outputFile);
 
     // is not deleted by repeated deleteStaleOutputs
-    context.deleteStaleOutputs();
+    context.deleteOrphanedOutputs();
     Assert.assertTrue(outputFile.canRead());
-    context.deleteStaleOutputs();
+    context.deleteOrphanedOutputs();
     Assert.assertTrue(outputFile.canRead());
 
     // is not deleted by commit

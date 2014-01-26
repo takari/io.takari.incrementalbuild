@@ -1,8 +1,6 @@
 package io.takari.incremental.internal;
 
 import io.takari.incremental.BuildContext;
-import io.takari.incremental.FileSet;
-import io.takari.incremental.FileSetBuilder;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -234,24 +232,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   @Override
-  public Iterable<DefaultInput> processInputs(FileSet fileSet) {
+  public Iterable<DefaultInput> processInputs(Iterable<File> inputFiles) {
     // reminder to self: don't optimize prematurely
 
     Set<DefaultInput> result = new LinkedHashSet<DefaultInput>();
 
-    for (File inputFile : fileSet) {
-
-      // can return the same input twice, if called concurrently from multiple threads
-
-      if (inputs.containsKey(inputFile)) {
-        // skip, this inputFile has been processed already
-        continue;
-      }
-
-      final DefaultInput oldInput = oldState.getInputs().get(inputFile);
-      if (oldInput == null || oldInput.isProcessingRequired()) {
-        // this is new or changed input file
-        result.add(registerInput(inputFile));
+    for (File inputFile : inputFiles) {
+      DefaultInput input = processInput(inputFile);
+      if (input != null) {
+        result.add(input);
       }
     }
 
@@ -264,7 +253,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * @return
    * @throws IOException if a stale output file cannot be deleted.
    */
-  public Iterable<DefaultOutput> deleteStaleOutputs() throws IOException {
+  public Iterable<DefaultOutput> deleteOrphanedOutputs() throws IOException {
     if (oldState == null) {
       return Collections.emptyList();
     }
@@ -348,12 +337,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       log.debug("Could not normalize file {}", file, e);
       return file.getAbsoluteFile();
     }
-  }
-
-  @Override
-  public FileSetBuilder fileSetBuilder() {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   // association management
@@ -517,7 +500,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public void commit() throws BuildFailureException, IOException {
-    deleteStaleOutputs();
+    deleteOrphanedOutputs();
 
     // copy relevant parts of the old state
 
