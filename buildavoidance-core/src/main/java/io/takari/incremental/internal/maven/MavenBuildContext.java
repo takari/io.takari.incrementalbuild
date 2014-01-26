@@ -3,13 +3,17 @@ package io.takari.incremental.internal.maven;
 import io.takari.incremental.internal.DefaultBuildContext;
 import io.takari.incremental.internal.DefaultInput;
 
+import java.io.IOException;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.apache.maven.execution.MojoExecutionEvent;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.execution.scope.WeakMojoExecutionListener;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.project.MavenProject;
 
 /**
  * Maven specific BuildContext implementation that provides
@@ -36,27 +40,26 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
       WeakMojoExecutionListener {
 
   @Inject
-  public MavenBuildContext(MojoConfigurationDigester digester) {
-    super(null, digester.digest());
+  public MavenBuildContext(MojoConfigurationDigester digester,
+      MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution)
+      throws IOException {
+    super(conventions.getExecuteStateLocation(project, execution), digester.digest());
   }
 
   @Override
-  public void beforeMojoExecution(MojoExecutionEvent event) throws MojoExecutionException {
-    // TODO Auto-generated method stub
-
-  }
+  public void beforeMojoExecution(MojoExecutionEvent event) throws MojoExecutionException {}
 
   @Override
   public void afterMojoExecutionSuccess(MojoExecutionEvent event) throws MojoExecutionException {
-    // TODO Auto-generated method stub
-
+    try {
+      commit();
+    } catch (IOException e) {
+      throw new MojoExecutionException("Could not maintain incremental build state", e);
+    }
   }
 
   @Override
-  public void afterExecutionFailure(MojoExecutionEvent event) {
-    // TODO Auto-generated method stub
-
-  }
+  public void afterExecutionFailure(MojoExecutionEvent event) {}
 
   @Override
   protected void logMessage(DefaultInput input, int line, int column, String message, int severity,

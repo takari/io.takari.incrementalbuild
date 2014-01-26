@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
@@ -26,15 +25,7 @@ public class ClasspathDigester {
   private final MessageDigest digester;
 
   public ClasspathDigester() {
-    this.digester = newMessageDigester();
-  }
-
-  private static MessageDigest newMessageDigester() {
-    try {
-      return MessageDigest.getInstance("SHA1");
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("Unsupported JVM", e);
-    }
+    this.digester = SHA1Digester.newInstance();
   }
 
   public byte[] digest(List<Artifact> artifacts) throws IOException {
