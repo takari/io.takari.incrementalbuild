@@ -122,7 +122,7 @@ public class DefaultBuildContextTest {
     context = newBuildContext();
     Assert.assertNotNull(context.processInput(inputFile));
 
-    // input is modified and registered for processing
+    // input was modified and registered for processing
     // but actual processing has not happened yet
     // there is no association between (new) input and (old) output
     // assume the (old) output is orphaned and delete it
@@ -210,6 +210,26 @@ public class DefaultBuildContextTest {
     context = newBuildContext();
     context.commit();
     Assert.assertFalse(outputFile.canRead());
+  }
+
+  @Test
+  public void testCommit_staleOutputCleanup() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile1 = temp.newFile("outputFile1");
+    File outputFile2 = temp.newFile("outputFile2");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile1);
+    input.associateOutput(outputFile2);
+    context.commit();
+
+    context = newBuildContext();
+    input = context.registerInput(inputFile);
+    input.associateOutput(outputFile1);
+    context.commit();
+
+    Assert.assertFalse(outputFile2.canRead());
   }
 
   @Test
