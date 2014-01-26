@@ -105,7 +105,7 @@ public class DefaultBuildContextTest {
   }
 
   @Test
-  public void testDeleteOrphanedOutputs_retainStaleOutputs() throws Exception {
+  public void testDeleteOrphanedOutputs_inputProcessingPending() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");
 
@@ -114,14 +114,18 @@ public class DefaultBuildContextTest {
     input.associateOutput(outputFile);
     context.commit();
 
-    // input is modified and registered for processing
-    // output is not orphaned because input still exists
+    // modify input
     Files.append("test", inputFile, Charsets.UTF_8);
     context = newBuildContext();
     Assert.assertNotNull(context.processInput(inputFile));
-    context.deleteOrphanedOutputs();
 
-    Assert.assertTrue(outputFile.canRead());
+    // input is modified and registered for processing
+    // but actual processing has not happened yet
+    // there is no association between (new) input and (old) output
+    // assume the (old) output is orphaned and delete it
+    // (new) output will be generate as needed when input is processed
+    context.deleteOrphanedOutputs();
+    Assert.assertFalse(outputFile.canRead());
   }
 
   @Test
