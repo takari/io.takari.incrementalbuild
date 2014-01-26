@@ -356,6 +356,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       outputs = putIfAbsent(inputOutputs, inputFile, new LinkedHashSet<DefaultOutput>());
     }
     outputs.add(output); // XXX NOT THREAD SAFE
+
+    File outputFile = output.getResource();
+    Collection<DefaultInput> inputs = outputInputs.get(outputFile);
+    if (inputs == null) {
+      inputs = putIfAbsent(outputInputs, outputFile, new LinkedHashSet<DefaultInput>());
+    }
+    inputs.add(input); // XXX NOT THREAD SAFE
   }
 
   @Override

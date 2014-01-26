@@ -4,19 +4,18 @@ import io.takari.incremental.internal.DefaultBuildContext;
 import io.takari.incremental.internal.DefaultInput;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.Collections;
 import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.rules.TemporaryFolder;
 
 public class DefaultBuildContextTest {
 
   @Rule
-  public final TestName name = new TestName();
+  public final TemporaryFolder temp = new TemporaryFolder();
 
   private static class TestBuildContext extends DefaultBuildContext<Exception> {
 
@@ -35,8 +34,7 @@ public class DefaultBuildContextTest {
   }
 
   private DefaultBuildContext<?> newBuildContext() {
-    File stateFile =
-        new File("target/", getClass().getSimpleName() + "_" + name.getMethodName() + ".ctx");
+    File stateFile = new File(temp.getRoot(), "buildstate.ctx");
     return new TestBuildContext(stateFile, Collections.<String, byte[]>emptyMap());
   }
 
@@ -59,10 +57,7 @@ public class DefaultBuildContextTest {
   public void testOutputWithoutInputs() throws Exception {
     DefaultBuildContext<?> context = newBuildContext();
 
-    File outputFile = new File("target/output_without_inputs");
-    new FileOutputStream(outputFile).close();
-    Assert.assertTrue(outputFile.canRead());
-
+    File outputFile = temp.newFile("output_without_inputs");
     context.registerOutput(outputFile);
 
     // is not deleted by repeated deleteStaleOutputs
@@ -86,4 +81,56 @@ public class DefaultBuildContextTest {
     context.commit();
     Assert.assertFalse(outputFile.canRead());
   }
+
+  @Test
+  public void testDeleteOrphanedOutputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile);
+    context.commit();
+
+    Assert.assertTrue(inputFile.delete());
+
+    context = newBuildContext();
+    context.deleteOrphanedOutputs();
+
+    Assert.assertFalse(outputFile.canRead());
+  }
+
+  @Test
+  public void testDeleteOrphanedOutputs_retainStaleOutputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile);
+    context.commit();
+
+    context = newBuildContext();
+    context.registerInput(inputFile);
+    context.deleteOrphanedOutputs();
+
+    Assert.assertTrue(outputFile.canRead());
+  }
+
+  @Test
+  public void testDeleteOrphanedOutputs_retainCarriedOverOutputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile);
+    context.commit();
+
+    context = newBuildContext();
+    context.deleteOrphanedOutputs();
+
+    Assert.assertTrue(outputFile.canRead());
+  }
+
 }
