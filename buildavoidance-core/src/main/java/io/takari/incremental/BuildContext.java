@@ -53,6 +53,22 @@ public interface BuildContext {
   }
 
   /**
+   * Registers specified input {@code File} with this build context.
+   * <p>
+   * This method can be invoked multiple times for the same input file. During the first invocation
+   * internal data structures corresponding to the input file are initialized with clean state, i.e.
+   * no associated output files, no message, etc. During subsequent invocations the internal data
+   * structures are not modified.
+   * <p>
+   * Invocation of this method forces processing of the registered input file by build avoidance
+   * framework even if the input file has not changed since last build.
+   * 
+   * @return {@link Input} representing the input file, never {@code null}.
+   * @throws IllegalArgumentException if inputFile does not exist or cannot be read
+   */
+  public Input<File> registerInput(File inputFile);
+
+  /**
    * 
    * XXX decide if the same input should be "processed" multiple times or not. Tentatively, the same
    * input is only processed once.
@@ -63,30 +79,13 @@ public interface BuildContext {
   public Input<File> processInput(File inputFile);
 
   /**
-   * Convenience method
+   * XXX decide if the same input should be "processed" multiple times or not. Tentatively, the same
+   * input is only processed once.
    */
   public Iterable<? extends Input<File>> processInputs(Iterable<File> inputFiles);
 
   public Output<File> registerOutput(File outputFile);
 
   public Output<File> getOldOutput(File outputFile);
-
-  /**
-   * Registers specified input {@code File} with this build context.
-   * <p>
-   * The same {@link Input} instance is returned if this method is invoked multiple times during the
-   * same build. During the first invocation {@link Input} is initialized with clean state, i.e. no
-   * associated output files, no message, etc. The same initialized instance is returned as is
-   * during subsequent invocations of this method.
-   * <p>
-   * Invocation of this method forces processing of the registered input file by build avoidance
-   * framework even if the input file has not changed since last build.
-   * <p>
-   * XXX decide if this method returns the same or equal instance
-   * 
-   * @return {@link Input} representing the input file, never {@code null}.
-   * @throws IllegalArgumentException if inputFile does not exist or cannot be read
-   */
-  public Input<File> registerInput(File inputFile);
 
 }
