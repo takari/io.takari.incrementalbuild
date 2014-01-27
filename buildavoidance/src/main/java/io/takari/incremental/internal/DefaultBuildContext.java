@@ -287,14 +287,19 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   // low-level methods
 
   /**
-   * Deletes outputs that were produced from inputs that no longer exist or are not part of build
-   * input set (due to configuration change, for example).
+   * Deletes outputs that were registered during previous build and are neither registered nor
+   * associated with any existing inputs during the current build.
+   * <p>
+   * If {@code aggressive == false}, preserves outputs associated with existing inputs during the
+   * previous build. This is useful if generator needs access to old output files during multi-round
+   * build. For example, java incremental compiler needs to compare old and new version of class
+   * files to determine if changes need to be propagated.
    * 
    * @return deleted outputs
    * 
    * @throws IOException if an orphaned output file cannot be deleted.
    */
-  public Iterable<DefaultOutput> deleteOrphanedOutputs() throws IOException {
+  public Iterable<DefaultOutput> deleteOrphanedOutputs(boolean aggresive) throws IOException {
     if (oldState == null) {
       return Collections.emptyList();
     }
@@ -311,6 +316,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
       for (DefaultInput oldInput : oldOutput.getValue().getAssociatedInputs()) {
         final File inputFile = oldInput.getResource();
+
+        if (!aggresive && FileState.isPresent(inputFile)) {
+          // inputFile is present and aggressive==false, let the caller deal with the output
+          continue oldOutputs;
+        }
 
         if (uptodateInputs.contains(inputFile)) {
           // old input did not change and its associated state is carried over as-is
@@ -557,7 +567,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public void commit() throws BuildFailureException, IOException {
-    deleteOrphanedOutputs();
+    deleteOrphanedOutputs(true);
 
     // carry over relevant parts of the old state
 

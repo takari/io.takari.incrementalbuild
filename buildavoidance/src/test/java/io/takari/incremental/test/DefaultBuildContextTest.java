@@ -51,9 +51,9 @@ public class DefaultBuildContextTest {
     context.registerOutput(outputFile);
 
     // is not deleted by repeated deleteStaleOutputs
-    context.deleteOrphanedOutputs();
+    context.deleteOrphanedOutputs(true);
     Assert.assertTrue(outputFile.canRead());
-    context.deleteOrphanedOutputs();
+    context.deleteOrphanedOutputs(true);
     Assert.assertTrue(outputFile.canRead());
 
     // is not deleted by commit
@@ -85,7 +85,7 @@ public class DefaultBuildContextTest {
     // deleted input
     Assert.assertTrue(inputFile.delete());
     context = newBuildContext();
-    context.deleteOrphanedOutputs();
+    context.deleteOrphanedOutputs(true);
 
     Assert.assertFalse(outputFile.canRead());
   }
@@ -110,7 +110,7 @@ public class DefaultBuildContextTest {
     // there is no association between (new) input and (old) output
     // assume the (old) output is orphaned and delete it
     // (new) output will be generate as needed when (new) input is processed
-    context.deleteOrphanedOutputs();
+    context.deleteOrphanedOutputs(true);
     Assert.assertFalse(outputFile.canRead());
   }
 
@@ -126,7 +126,7 @@ public class DefaultBuildContextTest {
 
     context = newBuildContext();
     Assert.assertNull(context.processInput(inputFile));
-    context.deleteOrphanedOutputs();
+    context.deleteOrphanedOutputs(true);
 
     Assert.assertTrue(outputFile.canRead());
   }
