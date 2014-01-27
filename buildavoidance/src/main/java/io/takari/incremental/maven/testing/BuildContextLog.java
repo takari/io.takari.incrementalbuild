@@ -3,7 +3,10 @@ package io.takari.incremental.maven.testing;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BuildContextLog {
 
@@ -11,7 +14,7 @@ public class BuildContextLog {
 
   private final List<File> deletedOutputs = new ArrayList<File>();
 
-  private final List<String> messages = new ArrayList<String>();
+  private final Map<File, List<String>> inputMessages = new HashMap<File, List<String>>();
 
   public void addRegisterOutput(File outputFile) {
     registeredOutputs.add(outputFile);
@@ -29,18 +32,24 @@ public class BuildContextLog {
     return deletedOutputs;
   }
 
-  public void addMessage(String message) {
+  public void addMessage(File inputFile, String message) {
+    List<String> messages = inputMessages.get(inputFile);
+    if (messages == null) {
+      messages = new ArrayList<String>();
+      inputMessages.put(inputFile, messages);
+    }
     messages.add(message);
   }
 
-  public Collection<String> getMessages(File file) {
-    return messages;
+  public Collection<String> getMessages(File inputFile) {
+    List<String> messages = inputMessages.get(inputFile);
+    return messages != null ? messages : Collections.<String>emptyList();
   }
 
   public void clear() {
     registeredOutputs.clear();
     deletedOutputs.clear();
-    messages.clear();
+    inputMessages.clear();
   }
 
 }

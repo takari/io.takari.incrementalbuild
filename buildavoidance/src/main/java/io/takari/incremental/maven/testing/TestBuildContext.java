@@ -44,7 +44,7 @@ class TestBuildContext extends MavenBuildContext {
       Throwable cause) {
     String msg = String.format("%s %s [%d:%d] %s", getSeverityStr(severity), //
         input.getResource().getName(), line, column, message);
-    logger.addMessage(msg);
+    logger.addMessage(input.getResource(), msg);
     super.logMessage(input, line, column, message, severity, cause);
   }
 
