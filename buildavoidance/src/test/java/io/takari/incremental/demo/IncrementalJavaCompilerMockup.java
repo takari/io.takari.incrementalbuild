@@ -46,7 +46,7 @@ public class IncrementalJavaCompilerMockup {
     // at this point all inputs were registered with the build context and build-avoidance can
     // determine and delete all "orphaned" outputs, i.e. outputs that were produced from inputs
     // that no longer exist or not part of compiler configuration
-    for (DefaultOutput deleted : context.deleteOrphanedOutputs(false)) {
+    for (DefaultOutput deleted : context.deleteStaleOutputs(false)) {
       // find and enqueue all affected inputs
       enqueueAffectedInputs(deleted);
     }

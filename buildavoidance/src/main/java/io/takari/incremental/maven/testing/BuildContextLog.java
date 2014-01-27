@@ -9,6 +9,8 @@ public class BuildContextLog {
 
   private final List<File> registeredOutputs = new ArrayList<File>();
 
+  private final List<File> deletedOutputs = new ArrayList<File>();
+
   private final List<String> messages = new ArrayList<String>();
 
   public void addRegisterOutput(File outputFile) {
@@ -19,12 +21,21 @@ public class BuildContextLog {
     return registeredOutputs;
   }
 
+  public void addDeletedOutput(File outputFile) {
+    deletedOutputs.add(outputFile);
+  }
+
+  public Collection<File> getDeletedOutputs() {
+    return deletedOutputs;
+  }
+
   public Collection<String> getMessages(File file) {
     return messages;
   }
 
   public void clear() {
     registeredOutputs.clear();
+    deletedOutputs.clear();
     messages.clear();
   }
 

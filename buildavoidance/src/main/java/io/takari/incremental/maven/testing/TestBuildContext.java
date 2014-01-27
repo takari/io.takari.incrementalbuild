@@ -31,4 +31,10 @@ class TestBuildContext extends MavenBuildContext {
     logger.addRegisterOutput(output.getResource());
     return output;
   }
+
+  @Override
+  protected void deleteStaleOutput(File outputFile) throws IOException {
+    logger.addDeletedOutput(outputFile);
+    super.deleteStaleOutput(outputFile);
+  }
 }

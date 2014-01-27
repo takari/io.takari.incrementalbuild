@@ -5,7 +5,9 @@ import io.takari.incremental.internal.DefaultInput;
 import io.takari.incremental.internal.DefaultOutput;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -51,9 +53,9 @@ public class DefaultBuildContextTest {
     context.registerOutput(outputFile);
 
     // is not deleted by repeated deleteStaleOutputs
-    context.deleteOrphanedOutputs(true);
+    context.deleteStaleOutputs(true);
     Assert.assertTrue(outputFile.canRead());
-    context.deleteOrphanedOutputs(true);
+    context.deleteStaleOutputs(true);
     Assert.assertTrue(outputFile.canRead());
 
     // is not deleted by commit
@@ -73,7 +75,7 @@ public class DefaultBuildContextTest {
   }
 
   @Test
-  public void testDeleteOrphanedOutputs() throws Exception {
+  public void testDeleteStaleOutputs() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");
 
@@ -85,13 +87,28 @@ public class DefaultBuildContextTest {
     // deleted input
     Assert.assertTrue(inputFile.delete());
     context = newBuildContext();
-    context.deleteOrphanedOutputs(true);
-
+    Assert.assertEquals(1, toList(context.deleteStaleOutputs(true)).size());
     Assert.assertFalse(outputFile.canRead());
+    // same output can be deleted only once
+    Assert.assertEquals(0, toList(context.deleteStaleOutputs(true)).size());
+
+    context.commit();
+
+    // deleted outputs are not carried over
+    context = newBuildContext();
+    Assert.assertEquals(0, toList(context.deleteStaleOutputs(true)).size());
+  }
+
+  private static <T> List<T> toList(Iterable<T> iterable) {
+    List<T> result = new ArrayList<T>();
+    for (T t : iterable) {
+      result.add(t);
+    }
+    return result;
   }
 
   @Test
-  public void testDeleteOrphanedOutputs_inputProcessingPending() throws Exception {
+  public void testDeleteStaleOutputs_inputProcessingPending() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");
 
@@ -110,12 +127,12 @@ public class DefaultBuildContextTest {
     // there is no association between (new) input and (old) output
     // assume the (old) output is orphaned and delete it
     // (new) output will be generate as needed when (new) input is processed
-    context.deleteOrphanedOutputs(true);
+    context.deleteStaleOutputs(true);
     Assert.assertFalse(outputFile.canRead());
   }
 
   @Test
-  public void testDeleteOrphanedOutputs_retainCarriedOverOutputs() throws Exception {
+  public void testDeleteStaleOutputs_retainCarriedOverOutputs() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");
 
@@ -126,9 +143,31 @@ public class DefaultBuildContextTest {
 
     context = newBuildContext();
     Assert.assertNull(context.processInput(inputFile));
-    context.deleteOrphanedOutputs(true);
+    context.deleteStaleOutputs(true);
 
     Assert.assertTrue(outputFile.canRead());
+  }
+
+  @Test
+  public void testDeleteStaleOutputs_nonEager() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.associateOutput(outputFile);
+    context.commit();
+
+    context = newBuildContext();
+    input = context.registerInput(inputFile);
+
+    // stale output is preserved during non-eager delete
+    Assert.assertEquals(0, toList(context.deleteStaleOutputs(false)).size());
+    Assert.assertTrue(outputFile.canRead());
+
+    // stale output is removed during commit after non-eager delete
+    context.commit();
+    Assert.assertFalse(outputFile.canRead());
   }
 
   @Test

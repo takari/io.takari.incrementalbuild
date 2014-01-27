@@ -79,6 +79,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private final ConcurrentMap<File, DefaultOutput> outputs =
       new ConcurrentHashMap<File, DefaultOutput>();
 
+  private final Set<File> deletedOutputs = new HashSet<File>();
+
   // direct associations
 
   private final ConcurrentMap<File, Collection<DefaultOutput>> inputOutputs =
@@ -287,10 +289,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   // low-level methods
 
   /**
-   * Deletes outputs that were registered during previous build and are neither registered nor
-   * associated with any existing inputs during the current build.
+   * Deletes outputs that were registered during the previous build but not the current build.
+   * Usually not called directly, since it is automatically invoked during {@link #commit()}.
    * <p>
-   * If {@code aggressive == false}, preserves outputs associated with existing inputs during the
+   * Result includes DefaultOutput instances removed from the state even if underlying file did not
+   * exist.
+   * <p>
+   * If {@code eager == false}, preserves outputs associated with existing inputs during the
    * previous build. This is useful if generator needs access to old output files during multi-round
    * build. For example, java incremental compiler needs to compare old and new version of class
    * files to determine if changes need to be propagated.
@@ -299,7 +304,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * 
    * @throws IOException if an orphaned output file cannot be deleted.
    */
-  public Iterable<DefaultOutput> deleteOrphanedOutputs(boolean aggresive) throws IOException {
+  public Iterable<DefaultOutput> deleteStaleOutputs(boolean eager) throws IOException {
     if (oldState == null) {
       return Collections.emptyList();
     }
@@ -317,7 +322,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       for (DefaultInput oldInput : oldOutput.getValue().getAssociatedInputs()) {
         final File inputFile = oldInput.getResource();
 
-        if (!aggresive && FileState.isPresent(inputFile)) {
+        if (!eager && FileState.isPresent(inputFile)) {
           // inputFile is present and aggressive==false, let the caller deal with the output
           continue oldOutputs;
         }
@@ -337,13 +342,22 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         }
       }
 
-      if (outputFile.exists() && !outputFile.delete()) {
-        throw new IOException("Could not delete file " + outputFile);
+      // don't double-delete already delete outputs
+      if (!deletedOutputs.add(outputFile)) {
+        continue oldOutputs;
       }
+
+      deleteStaleOutput(outputFile);
 
       deleted.add(oldOutput.getValue());
     }
     return deleted;
+  }
+
+  protected void deleteStaleOutput(File outputFile) throws IOException {
+    if (outputFile.exists() && !outputFile.delete()) {
+      throw new IOException("Could not delete file " + outputFile);
+    }
   }
 
   private static <K, V> V putIfAbsent(ConcurrentMap<K, V> map, K key, V value) {
@@ -567,7 +581,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public void commit() throws BuildFailureException, IOException {
-    deleteOrphanedOutputs(true);
+    deleteStaleOutputs(true);
 
     // carry over relevant parts of the old state
 
