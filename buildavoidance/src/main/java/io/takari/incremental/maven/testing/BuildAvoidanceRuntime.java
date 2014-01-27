@@ -19,8 +19,8 @@ import org.junit.Ignore;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 
-@Ignore
-class AbstractBuildAvoidanceTest extends AbstractMojoTestCase {
+@Ignore("tells eclipse junit launcher not to look here")
+class BuildAvoidanceRuntime extends AbstractMojoTestCase {
 
   @Override
   protected void addGuiceModules(List<Module> modules) {

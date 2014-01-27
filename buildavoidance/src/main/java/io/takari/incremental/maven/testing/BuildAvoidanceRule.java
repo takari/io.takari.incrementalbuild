@@ -14,7 +14,7 @@ import org.apache.maven.project.MavenProject;
 public class BuildAvoidanceRule extends MojoRule {
 
   public BuildAvoidanceRule() {
-    super(new AbstractBuildAvoidanceTest());
+    super(new BuildAvoidanceRuntime());
   }
 
   public void executeMojo(MavenSession session, MavenProject project, MojoExecution execution)
