@@ -3,7 +3,7 @@ package io.takari.incremental.test;
 import io.takari.incremental.BuildContext;
 import io.takari.incremental.BuildContext.Input;
 import io.takari.incremental.BuildContext.Output;
-import io.takari.incremental.internal.DefaultBuildContext;
+import io.takari.incremental.spi.DefaultBuildContext;
 
 import java.io.File;
 import java.util.Collections;

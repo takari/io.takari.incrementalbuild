@@ -1,7 +1,7 @@
 package io.takari.incremental.internal.maven;
 
-import io.takari.incremental.internal.DefaultBuildContext;
-import io.takari.incremental.internal.DefaultInput;
+import io.takari.incremental.spi.DefaultBuildContext;
+import io.takari.incremental.spi.DefaultInput;
 
 import java.io.IOException;
 

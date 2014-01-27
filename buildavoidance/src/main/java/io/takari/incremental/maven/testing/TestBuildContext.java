@@ -1,10 +1,10 @@
 package io.takari.incremental.maven.testing;
 
-import io.takari.incremental.internal.DefaultInput;
-import io.takari.incremental.internal.DefaultOutput;
 import io.takari.incremental.internal.maven.MavenBuildContext;
 import io.takari.incremental.internal.maven.MavenIncrementalConventions;
 import io.takari.incremental.internal.maven.MojoConfigurationDigester;
+import io.takari.incremental.spi.DefaultInput;
+import io.takari.incremental.spi.DefaultOutput;
 
 import java.io.File;
 import java.io.IOException;

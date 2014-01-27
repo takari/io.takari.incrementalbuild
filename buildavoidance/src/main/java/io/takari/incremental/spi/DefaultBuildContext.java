@@ -1,4 +1,4 @@
-package io.takari.incremental.internal;
+package io.takari.incremental.spi;
 
 import io.takari.incremental.BuildContext;
 
