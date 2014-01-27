@@ -4,6 +4,8 @@ import io.takari.incremental.BuildContext;
 
 import java.util.List;
 
+import javax.inject.Singleton;
+
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.execution.scope.internal.MojoExecutionScope;
@@ -38,6 +40,7 @@ class AbstractBuildAvoidanceTest extends AbstractMojoTestCase {
             .in(scope);
 
         bind(BuildContext.class).to(TestBuildContext.class).in(scope);
+        bind(BuildContextLog.class).in(Singleton.class);
       }
     });
   }

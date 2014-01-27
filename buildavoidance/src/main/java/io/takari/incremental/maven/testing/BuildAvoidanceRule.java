@@ -1,7 +1,5 @@
 package io.takari.incremental.maven.testing;
 
-import io.takari.incremental.BuildContext;
-
 import java.io.File;
 
 import org.apache.maven.execution.MavenSession;
@@ -51,6 +49,6 @@ public class BuildAvoidanceRule extends MojoRule {
   }
 
   public BuildContextLog getBuildContext() throws Exception {
-    return (BuildContextLog) lookup(BuildContext.class);
+    return lookup(BuildContextLog.class);
   }
 }
