@@ -296,4 +296,21 @@ public class DefaultBuildContextTest {
     context = newBuildContext();
     Assert.assertNotNull(context.processInput(inputFile));
   }
+
+  @Test
+  public void testGetDependentInputs_deletedInput() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile);
+    input.addRequirement("a", "b");
+    context.commit();
+
+    // delete the input
+    Assert.assertTrue(inputFile.delete());
+
+    // the input does not exist and therefor does not require the capability
+    context = newBuildContext();
+    Assert.assertEquals(0, toList(context.getDependentInputs("a", "b")).size());
+  }
 }

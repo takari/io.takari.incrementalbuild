@@ -29,6 +29,10 @@ public class BuildContextLog {
     return deletedOutputs;
   }
 
+  public void addMessage(String message) {
+    messages.add(message);
+  }
+
   public Collection<String> getMessages(File file) {
     return messages;
   }

@@ -1,5 +1,6 @@
 package io.takari.incremental.maven.testing;
 
+import io.takari.incremental.internal.DefaultInput;
 import io.takari.incremental.internal.DefaultOutput;
 import io.takari.incremental.internal.maven.MavenBuildContext;
 import io.takari.incremental.internal.maven.MavenIncrementalConventions;
@@ -36,5 +37,24 @@ class TestBuildContext extends MavenBuildContext {
   protected void deleteStaleOutput(File outputFile) throws IOException {
     logger.addDeletedOutput(outputFile);
     super.deleteStaleOutput(outputFile);
+  }
+
+  @Override
+  protected void logMessage(DefaultInput input, int line, int column, String message, int severity,
+      Throwable cause) {
+    String msg = String.format("%s %s [%d:%d] %s", getSeverityStr(severity), //
+        input.getResource().getName(), line, column, message);
+    logger.addMessage(msg);
+    super.logMessage(input, line, column, message, severity, cause);
+  }
+
+  private String getSeverityStr(int severity) {
+    switch (severity) {
+      case SEVERITY_ERROR:
+        return "ERROR";
+      case SEVERITY_WARNING:
+        return "WARNING";
+    }
+    return "UNKNOWN(" + severity + ")";
   }
 }

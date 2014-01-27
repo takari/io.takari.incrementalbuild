@@ -17,7 +17,7 @@ class TestBuildContext extends DefaultBuildContext<Exception> {
       Throwable cause) {}
 
   @Override
-  protected Exception newBuildFailureException() {
+  protected Exception newBuildFailureException(int errorCount) {
     return new Exception();
   }
 }

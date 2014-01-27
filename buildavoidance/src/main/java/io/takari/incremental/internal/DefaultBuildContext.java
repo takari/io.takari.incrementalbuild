@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -123,10 +124,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       new ConcurrentHashMap<File, Collection<Message>>();
 
   /**
-   * Indicates that error messages were reported during this build or not cleared from the previous
-   * build.
+   * Number of error messages
    */
-  private volatile boolean failed;
+  private final AtomicInteger errorCount = new AtomicInteger();
 
   public DefaultBuildContext(File stateFile, Map<String, byte[]> configuration) {
     // preconditions
@@ -535,7 +535,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (oldState != null) {
       for (DefaultInput oldInput : oldState.getDependentInputs(qualifier, localName)) {
         File inputFile = oldInput.getResource();
-        if (!result.containsKey(inputFile)) {
+        if (!result.containsKey(inputFile) && FileState.isPresent(inputFile)) {
           result.put(inputFile, registerInput(inputFile));
         }
       }
@@ -571,10 +571,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     File inputFile = input.getResource();
     Collection<Message> messages = this.inputMessages.get(inputFile);
     if (messages == null) {
-      messages = putIfAbsent(inputMessages, inputFile, new LinkedHashSet<Message>());
+      messages = putIfAbsent(inputMessages, inputFile, new ArrayList<Message>());
     }
     messages.add(new Message(line, column, message, severity, cause)); // XXX NOT THREAD SAFE
-    failed = failed || severity == SEVERITY_ERROR;
+    if (severity == SEVERITY_ERROR) {
+      errorCount.incrementAndGet();
+    }
 
     // echo message
     logMessage(input, line, column, message, severity, cause);
@@ -624,13 +626,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           // copy messages
           Collection<Message> messages = oldState.getInputMessages(inputFile);
           if (messages != null) {
-            inputMessages.put(inputFile, new LinkedHashSet<Message>(messages));
+            inputMessages.put(inputFile, new ArrayList<Message>(messages));
 
             // replay old messages
             for (Message message : messages) {
               logMessage(input, message.line, message.column, message.message, message.severity,
                   message.cause);
-              failed = failed || message.severity == SEVERITY_ERROR;
+              if (message.severity == SEVERITY_ERROR) {
+                errorCount.incrementAndGet();
+              }
             }
           }
         }
@@ -639,13 +643,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     storeState();
 
-    if (failed) {
-      throw newBuildFailureException();
+    if (errorCount.get() > 0) {
+      throw newBuildFailureException(errorCount.get());
     }
   }
 
   protected abstract void logMessage(DefaultInput input, int line, int column, String message,
       int severity, Throwable cause);
 
-  protected abstract BuildFailureException newBuildFailureException();
+  // XXX not too happy with errorCount parameter
+  protected abstract BuildFailureException newBuildFailureException(int errorCount);
 }
