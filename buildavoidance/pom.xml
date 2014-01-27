@@ -32,13 +32,21 @@
       <scope>optional</scope>
     </dependency>
 
+  <!-- maven test support -->
+  <dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <version>${junit.version}</version>
+    <scope>optional</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.maven.plugin-testing</groupId>
+    <artifactId>maven-plugin-testing-harness</artifactId>
+    <version>3.1.0-SNAPSHOT</version>
+    <scope>optional</scope>
+  </dependency>
+
     <!-- test dependencies -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
