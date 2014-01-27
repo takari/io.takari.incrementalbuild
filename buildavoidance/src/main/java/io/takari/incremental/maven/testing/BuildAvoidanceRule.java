@@ -48,7 +48,7 @@ public class BuildAvoidanceRule extends MojoRule {
     executeMojo(session, project, execution);
   }
 
-  public BuildContextLog getBuildContext() throws Exception {
+  public BuildContextLog getBuildContextLog() throws Exception {
     return lookup(BuildContextLog.class);
   }
 }

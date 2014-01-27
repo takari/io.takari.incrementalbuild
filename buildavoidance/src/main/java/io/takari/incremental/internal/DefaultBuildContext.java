@@ -575,7 +575,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           for (DefaultOutput oldOutput : oldState.getAssociatedOutputs(inputFile)) {
             File outputFile = oldOutput.getResource();
 
-            associate(input, registerOutput(outputFile));
+            associate(input, putIfAbsent(outputs, outputFile, new DefaultOutput(this, outputFile)));
 
             Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
             if (capabilities != null) {
