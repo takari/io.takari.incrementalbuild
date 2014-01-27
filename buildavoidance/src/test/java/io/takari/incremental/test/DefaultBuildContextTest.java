@@ -242,4 +242,19 @@ public class DefaultBuildContextTest {
     context.commit();
     Assert.assertTrue(stateFile.canRead());
   }
+
+  @Test
+  public void testIncludedInputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File includedFile = temp.newFile("includedFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    context.registerInput(inputFile).associateIncludedInput(includedFile);
+    context.commit();
+
+    Files.append("test", inputFile, Charsets.UTF_8);
+
+    context = newBuildContext();
+    Assert.assertNotNull(context.processInput(inputFile));
+  }
 }
