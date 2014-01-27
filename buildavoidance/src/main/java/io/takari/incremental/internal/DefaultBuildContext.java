@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,7 +179,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     // TODO verify stateFile location has not changed since last build
     try {
       ObjectInputStream is =
-          new ObjectInputStream(new BufferedInputStream(new FileInputStream(stateFile)));
+          new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(
+              stateFile))));
       try {
         return (DefaultBuildContextState) is.readObject();
       } finally {
@@ -207,8 +210,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
             outputInputs, inputIncludedInputs, inputRequirements, requirementInputs,
             outputCapabilities, inputAttributes, inputMessages);
 
+    File parent = stateFile.getParentFile();
+    if (!parent.isDirectory() && !parent.mkdirs()) {
+      throw new IOException("Could not create direcotyr " + parent);
+    }
+
     ObjectOutputStream os =
-        new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile))) {
+        new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(
+            stateFile)))) {
           {
             enableReplaceObject(true);
           }

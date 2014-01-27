@@ -8,11 +8,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
+import javax.inject.Inject;
+
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 
 class TestBuildContext extends MavenBuildContext implements BuildContextLog {
 
+  @Inject
   public TestBuildContext(MojoConfigurationDigester digester,
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution)
       throws IOException {

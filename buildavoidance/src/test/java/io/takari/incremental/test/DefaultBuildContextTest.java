@@ -6,7 +6,6 @@ import io.takari.incremental.internal.DefaultOutput;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -20,22 +19,6 @@ public class DefaultBuildContextTest {
 
   @Rule
   public final TemporaryFolder temp = new TemporaryFolder();
-
-  private static class TestBuildContext extends DefaultBuildContext<Exception> {
-
-    public TestBuildContext(File stateFile, Map<String, byte[]> configuration) {
-      super(stateFile, configuration);
-    }
-
-    @Override
-    protected void logMessage(DefaultInput input, int line, int column, String message,
-        int severity, Throwable cause) {}
-
-    @Override
-    protected Exception newBuildFailureException() {
-      return new Exception();
-    }
-  }
 
   private DefaultBuildContext<?> newBuildContext() {
     File stateFile = new File(temp.getRoot(), "buildstate.ctx");
@@ -249,5 +232,14 @@ public class DefaultBuildContextTest {
     DefaultInput oldInput = oldOutput.getAssociatedInputs().iterator().next();
     Assert.assertEquals(input.getResource(), oldInput.getResource());
     Assert.assertFalse(oldInput.isProcessingRequired());
+  }
+
+  @Test
+  public void testCreateStateParentDirectory() throws Exception {
+    File stateFile = new File(temp.getRoot(), "sub/dir/buildstate.ctx");
+    TestBuildContext context =
+        new TestBuildContext(stateFile, Collections.<String, byte[]>emptyMap());
+    context.commit();
+    Assert.assertTrue(stateFile.canRead());
   }
 }

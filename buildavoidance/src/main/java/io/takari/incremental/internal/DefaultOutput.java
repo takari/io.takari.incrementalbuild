@@ -33,6 +33,10 @@ public class DefaultOutput implements BuildContext.Output<File>, Serializable {
   @Override
   public OutputStream newOutputStream() throws IOException {
     // XXX oldState must be read-only
+    File parent = file.getParentFile();
+    if (!parent.isDirectory() && !parent.mkdirs()) {
+      throw new IOException("Could not create directory " + parent);
+    }
     return new FileOutputStream(file);
   }
 

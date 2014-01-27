@@ -12,10 +12,12 @@ import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.ContainerConfiguration;
 import org.codehaus.plexus.PlexusConstants;
+import org.junit.Ignore;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 
+@Ignore
 class AbstractBuildAvoidanceTest extends AbstractMojoTestCase {
 
   @Override
