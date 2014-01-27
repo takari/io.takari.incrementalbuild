@@ -71,6 +71,6 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
   @Override
   protected MojoExecutionException newBuildFailureException(int errorCount) {
     return new MojoExecutionException(errorCount
-        + " error(s) encountered, see previous messages for details");
+        + " error(s) encountered, see previous message(s) for details");
   }
 }
