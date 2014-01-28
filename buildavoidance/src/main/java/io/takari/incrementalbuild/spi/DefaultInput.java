@@ -1,6 +1,6 @@
-package io.takari.incremental.spi;
+package io.takari.incrementalbuild.spi;
 
-import io.takari.incremental.BuildContext;
+import io.takari.incrementalbuild.BuildContext;
 
 import java.io.File;
 import java.io.Serializable;

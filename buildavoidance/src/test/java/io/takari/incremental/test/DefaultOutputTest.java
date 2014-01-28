@@ -1,9 +1,9 @@
 package io.takari.incremental.test;
 
-import io.takari.incremental.BuildContext;
-import io.takari.incremental.BuildContext.Input;
-import io.takari.incremental.BuildContext.Output;
-import io.takari.incremental.spi.DefaultBuildContext;
+import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.BuildContext.Input;
+import io.takari.incrementalbuild.BuildContext.Output;
+import io.takari.incrementalbuild.spi.DefaultBuildContext;
 
 import java.io.File;
 import java.util.Collections;

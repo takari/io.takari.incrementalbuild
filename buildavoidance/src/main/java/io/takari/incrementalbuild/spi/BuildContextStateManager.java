@@ -1,4 +1,4 @@
-package io.takari.incremental.spi;
+package io.takari.incrementalbuild.spi;
 
 import java.io.File;
 import java.io.Serializable;

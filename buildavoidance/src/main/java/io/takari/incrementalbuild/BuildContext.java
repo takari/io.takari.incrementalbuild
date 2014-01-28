@@ -1,4 +1,4 @@
-package io.takari.incremental;
+package io.takari.incrementalbuild;
 
 import java.io.File;
 import java.io.IOException;

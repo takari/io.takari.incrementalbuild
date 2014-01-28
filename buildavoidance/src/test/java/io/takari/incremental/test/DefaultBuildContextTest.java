@@ -1,8 +1,8 @@
 package io.takari.incremental.test;
 
-import io.takari.incremental.spi.DefaultBuildContext;
-import io.takari.incremental.spi.DefaultInput;
-import io.takari.incremental.spi.DefaultOutput;
+import io.takari.incrementalbuild.spi.DefaultBuildContext;
+import io.takari.incrementalbuild.spi.DefaultInput;
+import io.takari.incrementalbuild.spi.DefaultOutput;
 
 import java.io.File;
 import java.util.ArrayList;

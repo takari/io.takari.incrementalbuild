@@ -1,4 +1,4 @@
-package io.takari.incremental.internal.maven;
+package io.takari.incrementalbuild.internal.maven;
 
 import java.io.File;
 import java.io.FileInputStream;

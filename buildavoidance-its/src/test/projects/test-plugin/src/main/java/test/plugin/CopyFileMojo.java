@@ -1,6 +1,6 @@
 package test.plugin;
 
-import io.takari.incremental.BuildContext;
+import io.takari.incrementalbuild.BuildContext;
 
 import java.io.File;
 import java.io.FileInputStream;

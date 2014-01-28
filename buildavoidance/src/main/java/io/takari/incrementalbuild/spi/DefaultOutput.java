@@ -1,7 +1,7 @@
-package io.takari.incremental.spi;
+package io.takari.incrementalbuild.spi;
 
-import io.takari.incremental.BuildContext;
-import io.takari.incremental.BuildContext.Input;
+import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.BuildContext.Input;
 
 import java.io.File;
 import java.io.FileOutputStream;

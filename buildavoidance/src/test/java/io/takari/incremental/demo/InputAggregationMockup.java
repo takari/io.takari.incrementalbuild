@@ -1,8 +1,8 @@
 package io.takari.incremental.demo;
 
-import io.takari.incremental.BuildContext;
-import io.takari.incremental.BuildContext.Input;
-import io.takari.incremental.BuildContext.Output;
+import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.BuildContext.Input;
+import io.takari.incrementalbuild.BuildContext.Output;
 
 import java.io.File;
 import java.io.IOException;

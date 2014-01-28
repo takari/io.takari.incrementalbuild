@@ -1,6 +1,6 @@
 package io.takari.incremental.demo;
 
-import io.takari.incremental.BuildContext;
+import io.takari.incrementalbuild.BuildContext;
 
 import java.io.File;
 

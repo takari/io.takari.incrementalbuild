@@ -1,4 +1,4 @@
-package io.takari.incremental.internal.maven;
+package io.takari.incrementalbuild.internal.maven;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

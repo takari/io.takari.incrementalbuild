@@ -1,4 +1,4 @@
-package io.takari.incremental.maven.testing;
+package io.takari.incrementalbuild.maven.testing;
 
 import java.io.File;
 import java.util.ArrayList;

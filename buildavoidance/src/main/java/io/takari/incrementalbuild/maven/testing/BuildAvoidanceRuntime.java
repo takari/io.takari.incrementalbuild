@@ -1,6 +1,6 @@
-package io.takari.incremental.maven.testing;
+package io.takari.incrementalbuild.maven.testing;
 
-import io.takari.incremental.BuildContext;
+import io.takari.incrementalbuild.BuildContext;
 
 import java.util.List;
 
