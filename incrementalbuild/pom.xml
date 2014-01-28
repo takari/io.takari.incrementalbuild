@@ -4,10 +4,10 @@
 
   <parent>
     <groupId>io.takari</groupId>
-    <artifactId>buildavoidance-parent</artifactId>
+    <artifactId>incrementalbuild-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>buildavoidance</artifactId>
+  <artifactId>incrementalbuild</artifactId>
 
   <dependencies>
 
