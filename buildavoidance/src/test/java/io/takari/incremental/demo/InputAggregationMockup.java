@@ -8,14 +8,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-// new aggregate output needs to be produced if there are new "interesting" inputs
-// or when any of the inputs aggregated during previous build was changed or deleted
-// if new aggregate is generated, all interesting inputs must be aggregated in the
-// output regardless if they changed since last build or not.
 public class InputAggregationMockup {
 
   private static final String KEY_INCREMENTAL_DATA = "mockup.data";
@@ -25,87 +23,96 @@ public class InputAggregationMockup {
 
   public void aggregate(Collection<File> fileSet) throws IOException {
 
-    // this is for demo purposes only, real code most likely will also collect per-input data
-    Map<File, BuildContext.Input<File>> inputs =
-        new LinkedHashMap<File, BuildContext.Input<File>>();
+    File outputFile = getOutputFile();
 
-    // this iterates on any new/modified inputs from the fileset
+    // always recreate Output state
+    BuildContext.Output<File> output = context.registerOutput(outputFile);
+
+    Set<File> processed = new HashSet<File>();
+
+    // this is the application data extracted from the inputs and written to the output
+    List<Serializable> aggreagateData = new ArrayList<Serializable>();
+
+    // indicates that new Output needs to be written
+    boolean writeAggregateData = false;
+
+    // this iterates over all new/modified inputs from the fileset
     for (BuildContext.Input<File> input : context.processInputs(fileSet)) {
       File inputFile = input.getResource();
 
-      // Not all new/changed inputs need to be aggregated. For example, for maven plugin.xml
-      // only classes annotated with @Mojo need to be looked at. as indicated above, real
-      // code will likely capture both interesting inputs and data to be aggregated
-      if (isInteresting(inputFile)) {
-        inputs.put(inputFile, input);
+      // extract the data from the input. this is application-specific logic.
+      // note that not all inputs will have relevant data
+      Serializable data = extractData(input.getResource());
 
-        // capture partial state in Input named property.
-        // it will be persisted as part of BuildContext state and will be available during
-        // subsequent builds
-        input.setValue(KEY_INCREMENTAL_DATA, process(input));
+      if (data != null) {
+        // collect the data to be aggregated
+        aggreagateData.add(data);
+
+        // persist the data in Input attribute for use during future builds
+        // as long as the input does not change, the attribute value will be used without the need
+        // to extract data from the input again
+        input.setValue(KEY_INCREMENTAL_DATA, data);
+
+        // associate input and output. this will be used during future builds to determine deleted
+        // outputs
+        output.associateInput(input);
+      }
+
+      // mark inputFile as processed to make sure it is looked at only once
+      processed.add(inputFile);
+    }
+
+    // process inputs associated with the output during the previous build
+    Output<File> oldOutput = context.getOldOutput(outputFile);
+    if (oldOutput != null) {
+      for (BuildContext.Input<File> oldInput : oldOutput.getAssociatedInputs()) {
+        File inputFile = oldInput.getResource();
+
+        if (!processed.add(inputFile)) {
+          // don't process the same changed inputFile twice
+          continue;
+        }
+
+        if (!fileSet.contains(inputFile) || !inputFile.canRead()) {
+          // the old input file was is not part of fileSet or was deleted
+          // the aggregate must be regenerated (but without this input file)
+          writeAggregateData = true;
+        } else {
+          // the input file has not changed since previous build
+          // reuse the data extracted from the input during earlier build
+          Serializable data = oldInput.getValue(KEY_INCREMENTAL_DATA, Serializable.class);
+          aggreagateData.add(data);
+          // carry over (old) input state as is and associate it with the (new) output
+          Input<File> input = context.registerInput(inputFile);
+          input.setValue(KEY_INCREMENTAL_DATA, data);
+          output.associateInput(input);
+        }
       }
     }
 
-    if (!inputs.isEmpty()) {
-      File outputFile = getOutputFile();
-
-      // collect old inputs that still part of fileSet and do not require processing
-      // inputs that were deleted do not require processing (obviously)
-      // inputs that require processing were processed above already
-      Output<File> oldOutput = context.getOldOutput(outputFile);
-      if (oldOutput != null) {
-        for (BuildContext.Input<File> oldInput : oldOutput.getAssociatedInputs()) {
-          File inputFile = oldInput.getResource();
-          if (!inputs.containsKey(inputFile) && fileSet.contains(inputFile)
-              && !oldInput.isProcessingRequired()) {
-            // register input file with build context and copy the old value of the named property
-            Input<File> input = context.registerInput(oldInput.getResource());
-            input.setValue(KEY_INCREMENTAL_DATA,
-                oldInput.getValue(KEY_INCREMENTAL_DATA, String.class));
-            inputs.put(inputFile, input);
-          }
-        }
-      }
-
-      // register new "clean" output with the build context, then associate all relevant inputs
-      BuildContext.Output<File> output = context.registerOutput(outputFile);
+    if (writeAggregateData) {
       OutputStream os = output.newOutputStream();
       try {
-        for (BuildContext.Input<File> input : inputs.values()) {
-
-          // inputs and outputs have symmetrical many-to-many relation
-          output.associateInput(input);
-
-          // append aggregator with data specific to the current input
-          // then write everything to an xml/json/etc file
-          contributeToAggregate(input, os);
-        }
+        writeAggregate(os, aggreagateData);
       } finally {
         os.close();
       }
     }
 
-    // output will be deleted as orphaned if it does not have any associated inputs
-    // TODO example that shows how to generate empty output even if all inputs are deleted
   }
 
-  private Serializable process(Input<File> input) {
+  private void writeAggregate(OutputStream os, List<Serializable> aggreagateData) {
+    // TODO Auto-generated method stub
+
+  }
+
+  private Serializable extractData(File resource) {
     // TODO Auto-generated method stub
     return null;
-  }
-
-  private void contributeToAggregate(Input<File> input, OutputStream os) {
-    // TODO Auto-generated method stub
-
   }
 
   private File getOutputFile() {
     // TODO Auto-generated method stub
     return null;
-  }
-
-  private boolean isInteresting(File inputFile) {
-    // TODO Auto-generated method stub
-    return false;
   }
 }
