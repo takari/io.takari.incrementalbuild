@@ -294,8 +294,13 @@ public class DefaultBuildContextTest {
     // delete the input
     Assert.assertTrue(inputFile.delete());
 
-    // the input does not exist and therefor does not require the capability
+    // the input does not exist and therefore does not require the capability
     context = newBuildContext();
     Assert.assertEquals(0, toList(context.getDependentInputs("a", "b")).size());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testRegisterInput_nullInput() throws Exception {
+    newBuildContext().registerInput(null);
   }
 }

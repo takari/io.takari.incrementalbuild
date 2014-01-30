@@ -26,8 +26,6 @@ class FileState implements Serializable {
 
   // TODO find a better place
   public static boolean isPresent(File file) {
-    return file.isFile() && file.canRead();
+    return file != null && file.isFile() && file.canRead();
   }
-
-
 }

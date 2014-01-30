@@ -29,7 +29,7 @@ public class CopyFileMojo extends AbstractMojo {
   private File output;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
-    BuildContext.Input<File> input = context.processInput(this.input);
+    BuildContext.Input<File> input = context.registerInput(this.input).process();
     if (input != null) {
       try {
         InputStream is = new FileInputStream(input.getResource());

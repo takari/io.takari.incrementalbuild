@@ -1,5 +1,0 @@
-Hello World,
-
-today we're running Java ${java.version} on ${os.name} ${os.version}
-
-Enjoy

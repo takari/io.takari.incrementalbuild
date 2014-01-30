@@ -15,7 +15,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>io.takari.buildavoidance.test</groupId>
+        <groupId>io.takari.incrementalbuild.test</groupId>
         <artifactId>test-plugin</artifactId>
         <version>0.0.1-SNAPSHOT</version>
         <executions>
@@ -24,10 +24,12 @@
             <goals>
               <goal>copyfile</goal>
             </goals>
+            <configuration>
+              <input>input.txt</input>
+              <output>target/output.txt</output>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-        </configuration>
       </plugin>
     </plugins>
   </build>
