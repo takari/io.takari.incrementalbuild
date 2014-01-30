@@ -9,13 +9,11 @@ public class IncludedInputFilesMockup {
 
   public void generate(File inputFile, File includedFile) {
 
-    BuildContext.Input<File> input = context.processInput(inputFile);
+    BuildContext.Input<File> input = context.registerInput(inputFile).process();
 
-    if (input != null) {
-      // creates association between input and included files
-      // input file requires processing when any of its included files changes
-      input.associateIncludedInput(includedFile);
-    }
+    // creates association between input and included files
+    // input file requires processing when any of its included files changes
+    input.associateIncludedInput(includedFile);
 
     // XXX deal will error/warning messages in included files
     // current thinking is to associate the messages with (input,includedInput) tuple

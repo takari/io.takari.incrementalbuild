@@ -21,7 +21,7 @@ class FileState implements Serializable {
   }
 
   public boolean isUptodate(File file) {
-    return length == file.length() && lastModified == file.lastModified();
+    return isPresent(file) && length == file.length() && lastModified == file.lastModified();
   }
 
   // TODO find a better place

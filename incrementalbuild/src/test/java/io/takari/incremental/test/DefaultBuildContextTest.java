@@ -1,8 +1,10 @@
 package io.takari.incremental.test;
 
+import static io.takari.incrementalbuild.BuildContext.ResourceStatus.MODIFIED;
+import static io.takari.incrementalbuild.BuildContext.ResourceStatus.NEW;
+import static io.takari.incrementalbuild.BuildContext.ResourceStatus.UNMODIFIED;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 import io.takari.incrementalbuild.spi.DefaultInput;
-import io.takari.incrementalbuild.spi.DefaultOutput;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -42,7 +44,8 @@ public class DefaultBuildContextTest {
     File file = new File("src/test/resources/simplelogger.properties");
     Assert.assertTrue(file.exists() && file.canRead());
     DefaultBuildContext<?> context = newBuildContext();
-    Assert.assertSame(context.registerInput(file), context.registerInput(file));
+    Assert.assertNotNull(context.registerInput(file));
+    Assert.assertNotNull(context.registerInput(file));
   }
 
   @Test
@@ -50,7 +53,7 @@ public class DefaultBuildContextTest {
     DefaultBuildContext<?> context = newBuildContext();
 
     File outputFile = temp.newFile("output_without_inputs");
-    context.registerOutput(outputFile);
+    context.processOutput(outputFile);
 
     // is not deleted by repeated deleteStaleOutputs
     context.deleteStaleOutputs(true);
@@ -64,7 +67,7 @@ public class DefaultBuildContextTest {
 
     // is not deleted after rebuild with re-registration
     context = newBuildContext();
-    context.registerOutput(outputFile);
+    context.processOutput(outputFile);
     context.commit();
     Assert.assertTrue(outputFile.canRead());
 
@@ -80,7 +83,7 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -113,14 +116,15 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
     // modify input
-    Files.append("test", inputFile, Charsets.UTF_8);
+    Files.append("test", inputFile, Charsets.UTF_8); // TODO does not matter
     context = newBuildContext();
-    Assert.assertNotNull(context.processInput(inputFile));
+    input = context.registerInput(inputFile).process();
+    context.processInput(input);
 
     // input was modified and registered for processing
     // but actual processing has not happened yet
@@ -137,12 +141,12 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
     context = newBuildContext();
-    Assert.assertNull(context.processInput(inputFile));
+    context.registerInput(inputFile);
     context.deleteStaleOutputs(true);
 
     Assert.assertTrue(outputFile.canRead());
@@ -154,12 +158,12 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
     context = newBuildContext();
-    input = context.registerInput(inputFile);
+    input = context.registerInput(inputFile).process();
 
     // stale output is preserved during non-eager delete
     Assert.assertEquals(0, toList(context.deleteStaleOutputs(false)).size());
@@ -171,29 +175,28 @@ public class DefaultBuildContextTest {
   }
 
   @Test
-  public void testProcessInput() throws Exception {
+  public void testGetInputStatus() throws Exception {
     File inputFile = temp.newFile("inputFile");
 
     // initial build
     DefaultBuildContext<?> context = newBuildContext();
     // first time invocation returns Input for processing
-    Assert.assertNotNull(context.processInput(inputFile));
-    // second invocation returns null
-    Assert.assertNull(context.processInput(inputFile));
+    Assert.assertEquals(NEW, context.registerInput(inputFile).getStatus());
+    // second invocation still returns NEW
+    Assert.assertEquals(NEW, context.registerInput(inputFile).getStatus());
     context.commit();
 
     // new build
     context = newBuildContext();
-    // null if input file was not modified since last build
-    Assert.assertNull(context.processInput(inputFile));
+    // input file was not modified since last build
+    Assert.assertEquals(UNMODIFIED, context.registerInput(inputFile).getStatus());
     context.commit();
 
     // new build
     Files.append("test", inputFile, Charsets.UTF_8);
     context = newBuildContext();
     // Input if input file was modified since last build
-    Assert.assertNotNull(context.processInput(inputFile));
-    Assert.assertNull(context.processInput(inputFile));
+    Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
   }
 
   @Test(expected = IllegalStateException.class)
@@ -202,15 +205,15 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
     context = newBuildContext();
-    Assert.assertNull(context.processInput(inputFile));
+    context.registerInput(inputFile);
 
     // this is incorrect use of build-avoidance API
-    // even though the input has changed, it was changed after it was registered for processing
+    // input has changed after it was registered for processing
     // IllegalStateException is raised to prevent unexpected process/not-process flip-flop
     Files.append("test", inputFile, Charsets.UTF_8);
     context.commit();
@@ -223,7 +226,7 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -241,36 +244,18 @@ public class DefaultBuildContextTest {
     File outputFile2 = temp.newFile("outputFile2");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile1);
     input.associateOutput(outputFile2);
     context.commit();
 
     context = newBuildContext();
-    input = context.registerInput(inputFile);
+    input = context.registerInput(inputFile).process();
+    context.processInput(input);
     input.associateOutput(outputFile1);
     context.commit();
 
     Assert.assertFalse(outputFile2.canRead());
-  }
-
-  @Test
-  public void testInputProcessingRequired_deletedInput() throws Exception {
-    File inputFile = temp.newFile("inputFile");
-    File outputFile = temp.newFile("outputFile");
-
-    DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
-    input.associateOutput(outputFile);
-    context.commit();
-
-    Assert.assertTrue(inputFile.delete());
-
-    context = newBuildContext();
-    DefaultOutput oldOutput = context.getOldOutput(outputFile);
-    DefaultInput oldInput = oldOutput.getAssociatedInputs().iterator().next();
-    Assert.assertEquals(input.getResource(), oldInput.getResource());
-    Assert.assertFalse(oldInput.isProcessingRequired());
   }
 
   @Test
@@ -288,13 +273,13 @@ public class DefaultBuildContextTest {
     File includedFile = temp.newFile("includedFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    context.registerInput(inputFile).associateIncludedInput(includedFile);
+    context.registerInput(inputFile).process().associateIncludedInput(includedFile);
     context.commit();
 
     Files.append("test", inputFile, Charsets.UTF_8);
 
     context = newBuildContext();
-    Assert.assertNotNull(context.processInput(inputFile));
+    Assert.assertNotNull(context.registerInput(inputFile));
   }
 
   @Test
@@ -302,7 +287,7 @@ public class DefaultBuildContextTest {
     File inputFile = temp.newFile("inputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile);
+    DefaultInput input = context.registerInput(inputFile).process();
     input.addRequirement("a", "b");
     context.commit();
 

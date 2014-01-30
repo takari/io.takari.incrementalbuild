@@ -38,14 +38,39 @@ import org.slf4j.LoggerFactory;
 
 public abstract class DefaultBuildContext<BuildFailureException extends Exception>
     implements
-      BuildContext,
-      BuildContextStateManager {
+      BuildContext {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   private final File stateFile;
 
   private final DefaultBuildContextState oldState;
+
+  private final BuildContextState oldStateAdaptor;
+
+  private final BuildContextState stateAdaptor = new BuildContextState() {
+
+    @Override
+    public <V extends Serializable> V getPropertyValue(File input, String key, Class<V> clazz) {
+      Map<String, Serializable> attributes = inputAttributes.get(input);
+      return attributes != null ? clazz.cast(attributes.get(key)) : null;
+    }
+
+    @Override
+    public Collection<String> getOutputCapabilities(File outputFile, String qualifier) {
+      return DefaultBuildContext.this.getOutputCapabilities(outputFile, qualifier);
+    }
+
+    @Override
+    public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs(File file) {
+      return DefaultBuildContext.this.getAssociatedOutputs(file);
+    }
+
+    @Override
+    public Iterable<? extends InputMetadata<File>> getAssociatedInputs(File file) {
+      return DefaultBuildContext.this.getAssociatedInputs(file);
+    }
+  };
 
   private final Map<String, byte[]> configuration;
 
@@ -58,37 +83,32 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   // inputs and outputs
 
   /**
-   * Timestamps/hashes of all input files.
+   * All inputs registered during this build.
    */
-  private final ConcurrentMap<File, FileState> inputFiles =
+  private final ConcurrentMap<File, FileState> registeredInputs =
       new ConcurrentHashMap<File, FileState>();
 
   /**
-   * Requested inputs that do not require processing. These will be carried over during commit.
+   * All inputs selected for processing during this build.
    */
-  private final Set<File> uptodateInputs = new HashSet<File>();
-
-  /**
-   * Inputs registered with this build context during this build.
-   */
-  private final ConcurrentMap<File, DefaultInput> inputs =
+  private final ConcurrentMap<File, DefaultInput> processedInputs =
       new ConcurrentHashMap<File, DefaultInput>();
 
   /**
    * Outputs registered with this build context during this build.
    */
-  private final ConcurrentMap<File, DefaultOutput> outputs =
+  private final ConcurrentMap<File, DefaultOutput> processedOutputs =
       new ConcurrentHashMap<File, DefaultOutput>();
 
   private final Set<File> deletedOutputs = new HashSet<File>();
 
   // direct associations
 
-  private final ConcurrentMap<File, Collection<DefaultOutput>> inputOutputs =
-      new ConcurrentHashMap<File, Collection<DefaultOutput>>();
+  private final ConcurrentMap<File, Collection<File>> inputOutputs =
+      new ConcurrentHashMap<File, Collection<File>>();
 
-  private final ConcurrentMap<File, Collection<DefaultInput>> outputInputs =
-      new ConcurrentHashMap<File, Collection<DefaultInput>>();
+  private final ConcurrentMap<File, Collection<File>> outputInputs =
+      new ConcurrentHashMap<File, Collection<File>>();
 
   private final ConcurrentMap<File, Collection<File>> inputIncludedInputs =
       new ConcurrentHashMap<File, Collection<File>>();
@@ -101,8 +121,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   /**
    * Maps requirement qname to all input that require it.
    */
-  private final ConcurrentMap<QualifiedName, Collection<DefaultInput>> requirementInputs =
-      new ConcurrentHashMap<QualifiedName, Collection<DefaultInput>>();
+  private final ConcurrentMap<QualifiedName, Collection<File>> requirementInputs =
+      new ConcurrentHashMap<QualifiedName, Collection<File>>();
 
   /**
    * Maps output file to capabilities provided by it.
@@ -139,6 +159,49 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     this.stateFile = stateFile;
     this.oldState = loadState(stateFile);
+
+    BuildContextState oldStateAdaptor = null;
+    if (oldState != null) {
+      oldStateAdaptor = new BuildContextState() {
+
+        @Override
+        public <V extends Serializable> V getPropertyValue(File input, String key, Class<V> clazz) {
+          return oldState.getValue(input, key, clazz);
+        }
+
+        @Override
+        public Collection<String> getOutputCapabilities(File outputFile, String qualifier) {
+          return oldState.getCapabilities(outputFile, qualifier);
+        }
+
+        @Override
+        public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs(File inputFIle) {
+          Collection<File> outputFiles = oldState.getAssociatedOutputs(inputFIle);
+          if (outputFiles == null || outputFiles.isEmpty()) {
+            return Collections.emptyList();
+          }
+          List<OutputMetadata<File>> result = new ArrayList<BuildContext.OutputMetadata<File>>();
+          for (File outputFile : outputFiles) {
+            result.add(new DefaultOutputMetadata(DefaultBuildContext.this, this, outputFile));
+          }
+          return result;
+        }
+
+        @Override
+        public Iterable<? extends InputMetadata<File>> getAssociatedInputs(File outputFile) {
+          Collection<File> inputFiles = oldState.getAssociatedInputs(outputFile);
+          if (inputFiles == null || inputFiles.isEmpty()) {
+            return Collections.emptyList();
+          }
+          List<InputMetadata<File>> result = new ArrayList<BuildContext.InputMetadata<File>>();
+          for (File inputFile : inputFiles) {
+            result.add(new DefaultInputMetadata(DefaultBuildContext.this, this, inputFile));
+          }
+          return result;
+        }
+      };
+    }
+    this.oldStateAdaptor = oldStateAdaptor;
 
     // TODO clone byte arrays too?
     this.configuration = new HashMap<String, byte[]>(configuration);
@@ -202,15 +265,16 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private void storeState() throws IOException {
     // timestamp output files
-    final Map<File, FileState> files = new HashMap<File, FileState>(inputFiles);
-    for (File output : outputs.keySet()) {
+    final Map<File, FileState> files = new HashMap<File, FileState>(registeredInputs);
+    for (File output : processedOutputs.keySet()) {
       files.put(output, new FileState(output));
     }
 
     final DefaultBuildContextState state =
-        new DefaultBuildContextState(configuration, files, inputs, outputs, inputOutputs,
-            outputInputs, inputIncludedInputs, inputRequirements, requirementInputs,
-            outputCapabilities, inputAttributes, inputMessages);
+        new DefaultBuildContextState(configuration, files, registeredInputs.keySet(),
+            processedOutputs.keySet(), inputOutputs, outputInputs, inputIncludedInputs,
+            inputRequirements, requirementInputs, outputCapabilities, inputAttributes,
+            inputMessages);
 
     File parent = stateFile.getParentFile();
     if (!parent.isDirectory() && !parent.mkdirs()) {
@@ -244,46 +308,62 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
   }
 
-  @Override
-  public DefaultInput processInput(File inputFile) {
-    inputFile = normalize(inputFile);
-    if (inputs.containsKey(inputFile)) {
-      // skip, inputFile has been processed already
-      return null;
+  public DefaultInput processInput(InputMetadata<File> inputMetadata) {
+    if (inputMetadata instanceof DefaultInput && ((DefaultInput) inputMetadata).context == this) {
+      return (DefaultInput) inputMetadata;
     }
-    if (escalated || oldState == null) {
-      return registerInput(inputFile);
+
+    if (!(inputMetadata instanceof DefaultInputMetadata)
+        || ((DefaultInputMetadata) inputMetadata).context != this) {
+      throw new IllegalArgumentException();
     }
-    final DefaultInput oldInput = oldState.getInputs().get(inputFile);
-    if (oldInput == null || oldInput.isProcessingRequired()) {
-      return registerInput(inputFile);
+
+    File inputFile = inputMetadata.getResource();
+    if (!registeredInputs.containsKey(inputFile)) {
+      throw new IllegalArgumentException("Unregistered input file " + inputFile);
     }
-    uptodateInputs.add(inputFile);
-    putInputFileState(inputFile, oldState.getFileState(inputFile));
-    return null;
+
+
+    DefaultInput input = processedInputs.get(inputFile);
+    if (input == null) {
+      input = putIfAbsent(processedInputs, inputFile, new DefaultInput(this, inputFile));
+    }
+
+    return input;
   }
 
   private void putInputFileState(File inputFile, FileState fileState) {
-    FileState oldFileState = inputFiles.put(inputFile, fileState);
+    FileState oldFileState = registeredInputs.put(inputFile, fileState);
     if (oldFileState != null && !FileState.equals(oldFileState, fileState)) {
       throw new IllegalStateException("Unexpected input file change " + inputFile);
     }
   }
 
   @Override
-  public Iterable<DefaultInput> processInputs(Iterable<File> inputFiles) {
-    // reminder to self: don't optimize prematurely
-
-    Set<DefaultInput> result = new LinkedHashSet<DefaultInput>();
-
-    for (File inputFile : inputFiles) {
-      DefaultInput input = processInput(inputFile);
+  public Iterable<DefaultInput> registerAndProcessInputs(Iterable<File> inputFiles) {
+    List<DefaultInput> inputs = new ArrayList<DefaultInput>();
+    for (DefaultInputMetadata metadata : registerInputs(inputFiles)) {
+      DefaultInput input = processedInputs.get(metadata.getResource());
+      if (input == null) {
+        if (metadata.getStatus() != ResourceStatus.UNMODIFIED
+            || !isUptodate(metadata.getAssociatedOutputs())) {
+          input = processInput(metadata);
+        }
+      }
       if (input != null) {
-        result.add(input);
+        inputs.add(input);
       }
     }
+    return inputs;
+  }
 
-    return result;
+  private boolean isUptodate(Iterable<? extends OutputMetadata<File>> outputs) {
+    for (OutputMetadata<File> output : outputs) {
+      if (output.getStatus() != ResourceStatus.UNMODIFIED) {
+        return false;
+      }
+    }
+    return true;
   }
 
   // low-level methods
@@ -304,52 +384,42 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * 
    * @throws IOException if an orphaned output file cannot be deleted.
    */
-  public Iterable<DefaultOutput> deleteStaleOutputs(boolean eager) throws IOException {
+  public Iterable<DefaultOutputMetadata> deleteStaleOutputs(boolean eager) throws IOException {
     if (oldState == null) {
       return Collections.emptyList();
     }
 
-    List<DefaultOutput> deleted = new ArrayList<DefaultOutput>();
+    List<DefaultOutputMetadata> deleted = new ArrayList<DefaultOutputMetadata>();
 
-    oldOutputs: for (Map.Entry<File, DefaultOutput> oldOutput : oldState.getOutputs().entrySet()) {
-      final File outputFile = oldOutput.getKey();
-
+    oldOutputs: for (File outputFile : oldState.getOutputFiles()) {
       // keep if output file was registered during this build
-      if (outputs.containsKey(outputFile)) {
+      if (processedOutputs.containsKey(outputFile)) {
         continue oldOutputs;
       }
 
-      for (DefaultInput oldInput : oldOutput.getValue().getAssociatedInputs()) {
-        final File inputFile = oldInput.getResource();
+      for (File inputFile : oldState.getAssociatedInputs(outputFile)) {
 
-        if (!eager && FileState.isPresent(inputFile)) {
-          // inputFile is present and aggressive==false, let the caller deal with the output
+        // input is registered and not processed, not orphaned
+        if (registeredInputs.containsKey(inputFile) && !processedInputs.containsKey(inputFile)) {
           continue oldOutputs;
         }
 
-        if (uptodateInputs.contains(inputFile)) {
-          // old input did not change and its associated state is carried over as-is
-          // the oldOutput is not orphaned (but may or may not be stale)
+        final DefaultInput input = processedInputs.get(inputFile);
+        // if not eager, let the caller deal with the outputs
+        if (input != null && (!eager || input.isAssociatedOutput(outputFile))) {
+          // the oldOutput is associated with an input, not orphaned
           continue oldOutputs;
-        }
-
-        if (inputs.containsKey(inputFile)) {
-          final DefaultInput input = inputs.get(inputFile);
-          if (input == null || input.isAssociatedOutput(outputFile)) {
-            // the oldOutput is associated with an input, not orphaned
-            continue oldOutputs;
-          }
         }
       }
 
-      // don't double-delete already delete outputs
+      // don't double-delete already deleted outputs
       if (!deletedOutputs.add(outputFile)) {
         continue oldOutputs;
       }
 
       deleteStaleOutput(outputFile);
 
-      deleted.add(oldOutput.getValue());
+      deleted.add(new DefaultOutputMetadata(this, oldStateAdaptor, outputFile));
     }
     return deleted;
   }
@@ -367,24 +437,48 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   @Override
-  public DefaultOutput registerOutput(File outputFile) {
+  public DefaultOutput processOutput(File outputFile) {
     outputFile = normalize(outputFile);
 
-    DefaultOutput output = outputs.get(outputFile);
+    DefaultOutput output = processedOutputs.get(outputFile);
     if (output == null) {
-      output = putIfAbsent(outputs, outputFile, new DefaultOutput(this, outputFile));
+      output = putIfAbsent(processedOutputs, outputFile, new DefaultOutput(this, outputFile));
     }
 
     return output;
   }
 
-  @Override
-  public DefaultOutput getOldOutput(File outputFile) {
-    return oldState.getOutputs().get(normalize(outputFile));
+  public DefaultOutputMetadata getOldOutput(File outputFile) {
+    outputFile = normalize(outputFile);
+    if (oldState == null || !oldState.getOutputFiles().contains(outputFile)) {
+      return null;
+    }
+    return new DefaultOutputMetadata(this, oldStateAdaptor, outputFile);
+  }
+
+  public DefaultInputMetadata getOldInput(File inputFile) {
+    if (oldState == null || !oldState.getInputFiles().contains(inputFile)) {
+      return null;
+    }
+    return new DefaultInputMetadata(this, oldStateAdaptor, inputFile);
+  }
+
+  public ResourceStatus getInputStatus(File inputFile) {
+    if (!registeredInputs.containsKey(inputFile)) {
+      throw new IllegalArgumentException("Unregistered input file " + inputFile);
+    }
+    if (oldState == null) {
+      return ResourceStatus.NEW;
+    }
+    ResourceStatus status = oldState.getInputStatus(inputFile);
+    if (status == ResourceStatus.UNMODIFIED && escalated) {
+      status = ResourceStatus.MODIFIED;
+    }
+    return status;
   }
 
   @Override
-  public DefaultInput registerInput(File inputFile) {
+  public DefaultInputMetadata registerInput(File inputFile) {
     if (!FileState.isPresent(inputFile)) {
       throw new IllegalArgumentException("Input file does not exist or cannot be read " + inputFile);
     }
@@ -393,14 +487,19 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     putInputFileState(inputFile, new FileState(inputFile));
 
-    uptodateInputs.remove(inputFile);
+    // XXX this returns different instance each invocation. This should not be a problem because
+    // each instance is a stateless flyweight.
 
-    DefaultInput result = inputs.get(inputFile);
-    if (result == null) {
-      result = putIfAbsent(inputs, inputFile, new DefaultInput(this, inputFile));
+    return new DefaultInputMetadata(this, stateAdaptor, inputFile);
+  }
+
+  @Override
+  public Iterable<DefaultInputMetadata> registerInputs(Iterable<File> inputFiles) {
+    Map<File, DefaultInputMetadata> result = new LinkedHashMap<File, DefaultInputMetadata>();
+    for (File inputFile : inputFiles) {
+      result.put(inputFile, registerInput(inputFile));
     }
-
-    return result;
+    return result.values();
   }
 
   private File normalize(File file) {
@@ -414,46 +513,61 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // association management
 
-  @Override
   public DefaultOutput associateOutput(DefaultInput input, File outputFile) {
-    DefaultOutput output = registerOutput(outputFile);
+    DefaultOutput output = processOutput(outputFile);
     associate(input, output);
     return output;
   }
 
-  @Override
-  public void associate(DefaultInput input, DefaultOutput output) {
+  public void associate(InputMetadata<File> input, DefaultOutput output) {
     File inputFile = input.getResource();
-    Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
-    if (outputs == null) {
-      outputs = putIfAbsent(inputOutputs, inputFile, new LinkedHashSet<DefaultOutput>());
+    if (!processedInputs.containsKey(inputFile)) {
+      throw new IllegalStateException("Input is not processed " + inputFile);
     }
-    outputs.add(output); // XXX NOT THREAD SAFE
 
     File outputFile = output.getResource();
-    Collection<DefaultInput> inputs = outputInputs.get(outputFile);
+    Collection<File> outputs = inputOutputs.get(inputFile);
+    if (outputs == null) {
+      outputs = putIfAbsent(inputOutputs, inputFile, new LinkedHashSet<File>());
+    }
+    outputs.add(outputFile); // XXX NOT THREAD SAFE
+
+    Collection<File> inputs = outputInputs.get(outputFile);
     if (inputs == null) {
-      inputs = putIfAbsent(outputInputs, outputFile, new LinkedHashSet<DefaultInput>());
+      inputs = putIfAbsent(outputInputs, outputFile, new LinkedHashSet<File>());
     }
-    inputs.add(input); // XXX NOT THREAD SAFE
+    inputs.add(inputFile); // XXX NOT THREAD SAFE
   }
 
-  @Override
   public boolean isAssociatedOutput(DefaultInput input, File outputFile) {
-    DefaultOutput output = outputs.get(outputFile);
-    if (output == null) {
-      return false;
+    Collection<File> outputs = inputOutputs.get(input.getResource());
+    return outputs != null && outputs.contains(outputFile);
+  }
+
+  public Iterable<DefaultInput> getAssociatedInputs(File outputFile) {
+    Collection<File> inputFiles = outputInputs.get(outputFile);
+    if (inputFiles == null || inputFiles.isEmpty()) {
+      return Collections.emptyList();
     }
-    Collection<DefaultOutput> outputs = inputOutputs.get(input.getResource());
-    return outputs != null && outputs.contains(output);
+    List<DefaultInput> inputs = new ArrayList<DefaultInput>();
+    for (File inputFile : inputFiles) {
+      inputs.add(processedInputs.get(inputFile));
+    }
+    return inputs;
   }
 
-  @Override
-  public Collection<DefaultInput> getAssociatedInputs(DefaultOutput output) {
-    return Collections.unmodifiableCollection(outputInputs.get(output.getResource()));
+  public Iterable<DefaultOutput> getAssociatedOutputs(File inputFile) {
+    Collection<File> outputFiles = inputOutputs.get(inputFile);
+    if (inputOutputs == null || inputOutputs.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<DefaultOutput> outputs = new ArrayList<DefaultOutput>();
+    for (File outputFile : outputFiles) {
+      outputs.add(this.processedOutputs.get(outputFile));
+    }
+    return outputs;
   }
 
-  @Override
   public void associateIncludedInput(DefaultInput input, File includedFile) {
     File inputFile = input.getResource();
     Collection<File> includedFiles = inputIncludedInputs.get(inputFile);
@@ -464,26 +578,20 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     putInputFileState(includedFile, new FileState(includedFile));
   }
 
-  @Override
-  public boolean isProcessingRequired(DefaultInput input) {
-    return true;
-  }
-
   // provided/required capability matching
 
-  @Override
   public void addRequirement(DefaultInput input, String qualifier, String localName) {
     addRequirement(input, new QualifiedName(qualifier, localName));
   }
 
   private void addRequirement(DefaultInput input, QualifiedName requirement) {
-    Collection<DefaultInput> inputs = requirementInputs.get(requirement);
-    if (inputs == null) {
-      inputs = putIfAbsent(requirementInputs, requirement, new LinkedHashSet<DefaultInput>());
-    }
-    inputs.add(input); // XXX NOT THREAD SAFE
-
     File inputFile = input.getResource();
+    Collection<File> inputs = requirementInputs.get(requirement);
+    if (inputs == null) {
+      inputs = putIfAbsent(requirementInputs, requirement, new LinkedHashSet<File>());
+    }
+    inputs.add(inputFile); // XXX NOT THREAD SAFE
+
     Collection<QualifiedName> requirements = inputRequirements.get(inputFile);
     if (requirements == null) {
       requirements = putIfAbsent(inputRequirements, inputFile, new LinkedHashSet<QualifiedName>());
@@ -491,7 +599,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     requirements.add(requirement); // XXX NOT THREAD SAFE
   }
 
-  @Override
   public void addCapability(DefaultOutput output, String qualifier, String localName) {
     File outputFile = output.getResource();
     Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
@@ -502,9 +609,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     capabilities.add(new QualifiedName(qualifier, localName)); // XXX NOT THREAD SAFE
   }
 
-  @Override
-  public Collection<String> getCapabilities(DefaultOutput output, String qualifier) {
-    Collection<QualifiedName> capabilities = outputCapabilities.get(output.getResource());
+  public Collection<String> getOutputCapabilities(File outputFile, String qualifier) {
+    Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
     if (capabilities == null) {
       return Collections.emptyList();
     }
@@ -521,20 +627,19 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * Returns {@code Input}s with specified requirement. Inputs from the old state are automatically
    * registered for processing.
    */
-  public Iterable<DefaultInput> getDependentInputs(String qualifier, String localName) {
-    Map<File, DefaultInput> result = new LinkedHashMap<File, DefaultInput>();
+  public Iterable<? extends InputMetadata<File>> getDependentInputs(String qualifier,
+      String localName) {
+    Map<File, InputMetadata<File>> result = new LinkedHashMap<File, InputMetadata<File>>();
 
-    Collection<DefaultInput> inputs =
-        requirementInputs.get(new QualifiedName(qualifier, localName));
+    Collection<File> inputs = requirementInputs.get(new QualifiedName(qualifier, localName));
     if (inputs != null) {
-      for (DefaultInput input : inputs) {
-        result.put(input.getResource(), input);
+      for (File inputFile : inputs) {
+        result.put(inputFile, processedInputs.get(inputFile));
       }
     }
 
     if (oldState != null) {
-      for (DefaultInput oldInput : oldState.getDependentInputs(qualifier, localName)) {
-        File inputFile = oldInput.getResource();
+      for (File inputFile : oldState.getDependentInputs(qualifier, localName)) {
         if (!result.containsKey(inputFile) && FileState.isPresent(inputFile)) {
           result.put(inputFile, registerInput(inputFile));
         }
@@ -546,7 +651,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // simple key/value pairs
 
-  @Override
   public <T extends Serializable> void setValue(DefaultInput input, String key, T value) {
     File inputFile = input.getResource();
     Map<String, Serializable> attributes = inputAttributes.get(inputFile);
@@ -557,7 +661,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     attributes.put(key, value); // XXX NOT THREAD SAFE
   }
 
-  @Override
   public <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz) {
     Map<String, Serializable> attributes = inputAttributes.get(input.getResource());
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
@@ -565,7 +668,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // messages
 
-  @Override
   public void addMessage(DefaultInput input, int line, int column, String message, int severity,
       Throwable cause) {
     File inputFile = input.getResource();
@@ -588,20 +690,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     // carry over relevant parts of the old state
 
     if (oldState != null) {
-      for (DefaultInput oldInput : oldState.getInputs().values()) {
-        File inputFile = oldInput.getResource();
-        if (uptodateInputs.contains(inputFile) && !inputs.containsKey(inputFile)) {
-          if (!FileState.equals(new FileState(inputFile), inputFiles.get(inputFile))) {
-            throw new IllegalStateException("Unexpected input file change " + inputFile);
-          }
-
-          DefaultInput input = putIfAbsent(inputs, inputFile, new DefaultInput(this, inputFile));
+      for (File inputFile : oldState.getInputFiles()) {
+        if (!processedInputs.containsKey(inputFile) && registeredInputs.containsKey(inputFile)) {
+          DefaultInput input =
+              putIfAbsent(processedInputs, inputFile, new DefaultInput(this, inputFile));
 
           // copy associated outputs
-          for (DefaultOutput oldOutput : oldState.getAssociatedOutputs(inputFile)) {
-            File outputFile = oldOutput.getResource();
-
-            associate(input, putIfAbsent(outputs, outputFile, new DefaultOutput(this, outputFile)));
+          for (File outputFile : oldState.getAssociatedOutputs(inputFile)) {
+            associate(input,
+                putIfAbsent(processedOutputs, outputFile, new DefaultOutput(this, outputFile)));
 
             Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
             if (capabilities != null) {
@@ -640,6 +737,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         }
       }
     }
+
+    for (Map.Entry<File, FileState> entry : registeredInputs.entrySet()) {
+      if (!FileState.equals(new FileState(entry.getKey()), entry.getValue())) {
+        throw new IllegalStateException("Unexpected input file change " + entry.getKey());
+      }
+    }
+
 
     storeState();
 

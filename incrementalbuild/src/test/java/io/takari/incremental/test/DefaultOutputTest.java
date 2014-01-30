@@ -29,7 +29,7 @@ public class DefaultOutputTest {
     File outputFile = new File(temp.getRoot(), "sub/dir/outputFile");
 
     BuildContext context = newBuildContext();
-    Input<File> input = context.registerInput(inputFile);
+    Input<File> input = context.registerInput(inputFile).process();
     Output<File> output = input.associateOutput(outputFile);
     output.newOutputStream().close();
 

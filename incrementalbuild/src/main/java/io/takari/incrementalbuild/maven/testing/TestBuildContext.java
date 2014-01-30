@@ -27,8 +27,8 @@ class TestBuildContext extends MavenBuildContext {
   }
 
   @Override
-  public DefaultOutput registerOutput(File outputFile) {
-    DefaultOutput output = super.registerOutput(outputFile);
+  public DefaultOutput processOutput(File outputFile) {
+    DefaultOutput output = super.processOutput(outputFile);
     logger.addRegisterOutput(output.getResource());
     return output;
   }

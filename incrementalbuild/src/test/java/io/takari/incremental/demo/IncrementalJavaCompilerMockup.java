@@ -1,8 +1,11 @@
 package io.takari.incremental.demo;
 
+import io.takari.incrementalbuild.BuildContext.InputMetadata;
+import io.takari.incrementalbuild.spi.CapabilitiesProvider;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 import io.takari.incrementalbuild.spi.DefaultInput;
 import io.takari.incrementalbuild.spi.DefaultOutput;
+import io.takari.incrementalbuild.spi.DefaultOutputMetadata;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,12 +20,12 @@ public class IncrementalJavaCompilerMockup {
   DefaultBuildContext<?> context;
 
   /** Inputs waiting to be compiled */
-  Set<DefaultInput> queue = new HashSet<DefaultInput>();
+  Set<File> queue = new HashSet<File>();
 
   /**
    * Compiled inputs, used to prevent multiple recompilation of the same input
    */
-  Set<DefaultInput> processed = new HashSet<DefaultInput>();
+  Set<File> processed = new HashSet<File>();
 
   public void compile(Collection<File> sources) throws IOException {
 
@@ -39,14 +42,14 @@ public class IncrementalJavaCompilerMockup {
     // enqueue all sources that require processing, i.e. new or changed
     // this also prepares internal build-avoidance state to track dependencies
     // and messages associated with processed inputs
-    for (DefaultInput input : context.processInputs(sources)) {
-      queue.add(input);
+    for (DefaultInput input : context.registerAndProcessInputs(sources)) {
+      queue.add(input.getResource());
     }
 
     // at this point all inputs were registered with the build context and build-avoidance can
     // determine and delete all "orphaned" outputs, i.e. outputs that were produced from inputs
     // that no longer exist or not part of compiler configuration
-    for (DefaultOutput deleted : context.deleteStaleOutputs(false)) {
+    for (DefaultOutputMetadata deleted : context.deleteStaleOutputs(false)) {
       // find and enqueue all affected inputs
       enqueueAffectedInputs(deleted);
     }
@@ -63,19 +66,19 @@ public class IncrementalJavaCompilerMockup {
     }
   }
 
-  private void enqueueAffectedInputs(DefaultOutput output) {
+  private void enqueueAffectedInputs(CapabilitiesProvider output) {
     // Ideally, API should expose both new and old capabilities provided by the output
     // this is not necessary for Java because type/simpleType are tightly coupled to
     // output identity and do not change from one build to the next
 
     for (String type : output.getCapabilities("jdt.type")) {
-      for (DefaultInput input : context.getDependentInputs("jdt.type", type)) {
+      for (InputMetadata<File> input : context.getDependentInputs("jdt.type", type)) {
         enqueue(input);
       }
     }
 
     for (String type : output.getCapabilities("jdt.simpleType")) {
-      for (DefaultInput input : context.getDependentInputs("jdt.simpleType", type)) {
+      for (InputMetadata<File> input : context.getDependentInputs("jdt.simpleType", type)) {
         enqueue(input);
       }
     }
@@ -118,9 +121,11 @@ public class IncrementalJavaCompilerMockup {
     }
   }
 
-  private void enqueue(DefaultInput input) {
-    if (processed.add(input)) {
-      queue.add(input);
+  private void enqueue(InputMetadata<File> input) {
+    // TODO maybe expose "processed" status to eliminate extra #processed set here
+    File inputFile = input.getResource();
+    if (processed.add(inputFile)) {
+      queue.add(inputFile);
     }
   }
 

@@ -1,17 +1,17 @@
 package io.takari.incrementalbuild.spi;
 
+import io.takari.incrementalbuild.BuildContext;
+
 import java.io.File;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-class DefaultBuildContextState implements Serializable, BuildContextStateManager {
+class DefaultBuildContextState implements Serializable {
 
   private static final long serialVersionUID = 6195150574931820441L;
 
@@ -19,17 +19,17 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
 
   private final Map<File, FileState> files;
 
-  private final Map<File, DefaultOutput> outputs;
+  private final Set<File> outputs;
 
-  private final Map<File, DefaultInput> inputs;
+  private final Set<File> inputs;
 
-  private final Map<File, Collection<DefaultOutput>> inputOutputs;
+  private final Map<File, Collection<File>> inputOutputs;
 
-  private final Map<File, Collection<DefaultInput>> outputInputs;
+  private final Map<File, Collection<File>> outputInputs;
 
   private final Map<File, Collection<File>> inputIncludedInputs;
 
-  private final Map<QualifiedName, Collection<DefaultInput>> requirementInputs;
+  private final Map<QualifiedName, Collection<File>> requirementInputs;
 
   private final Map<File, Collection<QualifiedName>> inputRequirements;
 
@@ -40,163 +40,155 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
   private final Map<File, Collection<Message>> inputMessages;
 
   public DefaultBuildContextState(Map<String, byte[]> configuration, Map<File, FileState> files,
-      Map<File, DefaultInput> inputs, Map<File, DefaultOutput> outputs,
-      Map<File, Collection<DefaultOutput>> inputOutputs,
-      Map<File, Collection<DefaultInput>> outputInputs,
-      Map<File, Collection<File>> inputIncludedInputs,
+      Set<File> inputs, Set<File> outputs, Map<File, Collection<File>> inputOutputs,
+      Map<File, Collection<File>> outputInputs, Map<File, Collection<File>> inputIncludedInputs,
       Map<File, Collection<QualifiedName>> inputRequirements,
-      Map<QualifiedName, Collection<DefaultInput>> requirementInputs,
+      Map<QualifiedName, Collection<File>> requirementInputs,
       Map<File, Collection<QualifiedName>> outputCapabilities,
       Map<File, Map<String, Serializable>> inputAttributes,
       Map<File, Collection<Message>> inputMessages) {
 
-    this.configuration = unmodifiableMap(configuration); // clone byte[] arrays?
-    this.files = unmodifiableMap(files);
-    this.inputs = unmodifiableMap(inputs);
-    this.outputs = unmodifiableMap(outputs);
-    this.inputOutputs = unmodifiableMultimap(inputOutputs);
-    this.outputInputs = unmodifiableMultimap(outputInputs);
-    this.inputIncludedInputs = unmodifiableMultimap(inputIncludedInputs);
+    this.configuration = cloneMap(configuration); // clone byte[] arrays?
+    this.files = cloneMap(files);
+    this.inputs = cloneSet(inputs);
+    this.outputs = cloneSet(outputs);
+    this.inputOutputs = cloneInputOutputs(inputOutputs);
+    this.outputInputs = cloneOutputInputs(outputInputs);
+    this.inputIncludedInputs = cloneInputIncludedInputs(inputIncludedInputs);
 
-    this.inputRequirements = unmodifiableMap(inputRequirements);
-    this.requirementInputs = unmodifiableMultimap(requirementInputs);
-    this.outputCapabilities = unmodifiableMap(outputCapabilities);
+    this.inputRequirements = cloneMap(inputRequirements);
+    this.requirementInputs = cloneRequirementInputs(requirementInputs);
+    this.outputCapabilities = cloneMap(outputCapabilities);
 
-    this.inputAttributes = unmodifiableMapMap(inputAttributes);
+    this.inputAttributes = cloneAttributes(inputAttributes);
 
-    this.inputMessages = unmodifiableMap(inputMessages);
+    this.inputMessages = cloneMap(inputMessages);
   }
 
-  private static Map<File, Map<String, Serializable>> unmodifiableMapMap(
+  // MOST HORRIBLE MESS START
+
+  private static Map<QualifiedName, Collection<File>> cloneRequirementInputs(
+      Map<QualifiedName, Collection<File>> requirementInputs) {
+    Map<QualifiedName, Collection<File>> result =
+        new LinkedHashMap<QualifiedName, Collection<File>>();
+    for (Map.Entry<QualifiedName, Collection<File>> entry : requirementInputs.entrySet()) {
+      result.put(entry.getKey(), cloneFiles(entry.getValue()));
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  private static Map<File, Collection<File>> cloneInputIncludedInputs(
+      Map<File, Collection<File>> inputIncludedInputs) {
+    Map<File, Collection<File>> result = new LinkedHashMap<File, Collection<File>>();
+    for (Map.Entry<File, Collection<File>> entry : inputIncludedInputs.entrySet()) {
+      result.put(entry.getKey(), Collections.unmodifiableCollection(entry.getValue()));
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  private static Map<File, Collection<File>> cloneOutputInputs(
+      Map<File, Collection<File>> outputInputs) {
+    Map<File, Collection<File>> result = new LinkedHashMap<File, Collection<File>>();
+    for (Map.Entry<File, Collection<File>> entry : outputInputs.entrySet()) {
+      result.put(entry.getKey(), cloneFiles(entry.getValue()));
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  private static Map<File, Collection<File>> cloneInputOutputs(
+      Map<File, Collection<File>> inputOutputs) {
+    Map<File, Collection<File>> result = new LinkedHashMap<File, Collection<File>>();
+    for (Map.Entry<File, Collection<File>> entry : inputOutputs.entrySet()) {
+      result.put(entry.getKey(), cloneFiles(entry.getValue()));
+    }
+    return Collections.unmodifiableMap(result);
+  }
+
+  private static Collection<File> cloneFiles(Collection<File> files) {
+    return Collections.unmodifiableSet(new LinkedHashSet<File>(files));
+  }
+
+  private static <T> Set<T> cloneSet(Set<T> set) {
+    return Collections.unmodifiableSet(new LinkedHashSet<T>(set));
+  }
+
+  private static Map<File, Map<String, Serializable>> cloneAttributes(
       Map<File, Map<String, Serializable>> inputAttributes) {
     Map<File, Map<String, Serializable>> result =
         new LinkedHashMap<File, Map<String, Serializable>>();
     for (Map.Entry<File, Map<String, Serializable>> entry : inputAttributes.entrySet()) {
-      result.put(entry.getKey(), unmodifiableMap(entry.getValue()));
+      result.put(entry.getKey(), cloneMap(entry.getValue()));
     }
     return Collections.unmodifiableMap(result);
   }
 
-  private static <K, V> Map<K, V> unmodifiableMap(Map<K, V> map) {
+  private static <K, V> Map<K, V> cloneMap(Map<K, V> map) {
     return Collections.unmodifiableMap(new LinkedHashMap<K, V>(map));
   }
 
-  private static <K, V> Map<K, Collection<V>> unmodifiableMultimap(Map<K, Collection<V>> map) {
-    HashMap<K, Collection<V>> result = new LinkedHashMap<K, Collection<V>>();
-    for (Map.Entry<K, Collection<V>> entry : map.entrySet()) {
-      Collection<V> values = new ArrayList<V>(entry.getValue());
-      result.put(entry.getKey(), Collections.unmodifiableCollection(values));
-    }
-    return Collections.unmodifiableMap(result);
-  }
+  // MOST HORRIBLE MESS END
+
 
   public Map<String, byte[]> getConfiguration() {
     return configuration;
   }
 
-  public Map<File, DefaultOutput> getOutputs() {
+  public Set<File> getOutputFiles() {
     return outputs;
   }
 
-  public Map<File, DefaultInput> getInputs() {
+  public Set<File> getInputFiles() {
     return inputs;
   }
 
-  @Override
-  public DefaultOutput associateOutput(DefaultInput input, File outputFile) {
-    throw new IllegalStateException();
-  }
-
-  @Override
-  public void associate(DefaultInput input, DefaultOutput output) {
-    throw new IllegalStateException();
-  }
-
-  @Override
   public boolean isAssociatedOutput(DefaultInput input, File outputFile) {
-    DefaultOutput output = outputs.get(outputFile);
-    Collection<DefaultOutput> outputs = inputOutputs.get(input.getResource());
-    // is it legal to have null output or outputs here?
-    return output != null && outputs != null && outputs.contains(output);
+    Collection<File> outputs = inputOutputs.get(input.getResource());
+    return outputs != null && outputs.contains(outputFile);
   }
 
-  @Override
-  public Collection<DefaultInput> getAssociatedInputs(DefaultOutput output) {
-    Collection<DefaultInput> inputs = outputInputs.get(output.getResource());
-    return inputs != null ? inputs : Collections.<DefaultInput>emptyList();
-  }
-
-  @Override
-  public void associateIncludedInput(DefaultInput input, File includedFile) {
-    throw new IllegalStateException();
-  }
-
-  @Override
-  public boolean isProcessingRequired(DefaultInput input) {
-    final File inputFile = input.getResource();
-
-    // processing required if input itself changed, any associated outputs was changed or
-    // removed, any included inputs changed or removed
-
-    // input itself
-    if (isProcessingRequired(inputFile)) {
-      return true;
+  public Collection<File> getAssociatedInputs(File outputFile) {
+    Collection<File> inputs = outputInputs.get(outputFile);
+    if (inputs == null || inputs.isEmpty()) {
+      return Collections.emptyList();
     }
+    return Collections.unmodifiableCollection(inputs);
+  }
 
-    // associated outputs
-    Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
-    if (outputs != null) {
-      for (DefaultOutput output : outputs) {
-        if (isProcessingRequired(output.getResource())) {
-          return true;
+  public BuildContext.ResourceStatus getOutputStatus(File outputFile) {
+    return getResourceStatus(outputFile);
+  }
+
+  private BuildContext.ResourceStatus getResourceStatus(File outputFile) {
+    FileState oldState = files.get(outputFile);
+    if (oldState == null) {
+      return BuildContext.ResourceStatus.NEW;
+    }
+    if (!FileState.isPresent(outputFile)) {
+      return BuildContext.ResourceStatus.REMOVED;
+    }
+    return oldState.isUptodate(outputFile)
+        ? BuildContext.ResourceStatus.UNMODIFIED
+        : BuildContext.ResourceStatus.MODIFIED;
+  }
+
+  public BuildContext.ResourceStatus getInputStatus(File inputFile) {
+    BuildContext.ResourceStatus status = getResourceStatus(inputFile);
+    if (status == BuildContext.ResourceStatus.UNMODIFIED) {
+      Collection<File> includedInputs = inputIncludedInputs.get(inputFile);
+      if (includedInputs != null) {
+        for (File includedInput : includedInputs) {
+          if (getResourceStatus(includedInput) != BuildContext.ResourceStatus.UNMODIFIED) {
+            status = BuildContext.ResourceStatus.MODIFIED;
+            break;
+          }
         }
       }
     }
-
-    // included inputs
-    Collection<File> IncludedInputs = inputIncludedInputs.get(inputFile);
-    if (IncludedInputs != null) {
-      for (File includedInput : IncludedInputs) {
-        if (isProcessingRequired(includedInput)) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return status;
   }
 
-  public boolean isProcessingRequired(File file) {
-    FileState fileState = files.get(file);
-
-    if (fileState == null) {
-      // the requested file was not part of the old state
-      throw new IllegalArgumentException();
-    }
-
-    return FileState.isPresent(file) && !fileState.isUptodate(file);
-  }
-
-  @Override
-  public void addRequirement(DefaultInput defaultInput, String qualifier, String localName) {
-    throw new IllegalStateException();
-  }
-
-  @Override
-  public Iterable<DefaultInput> getDependentInputs(String qualifier, String localName) {
-    Collection<DefaultInput> result =
-        requirementInputs.get(new QualifiedName(qualifier, localName));
-    return result != null ? result : Collections.<DefaultInput>emptyList();
-  }
-
-  @Override
-  public void addCapability(DefaultOutput output, String qualifier, String localName) {
-    throw new IllegalStateException();
-  }
-
-  @Override
-  public Collection<String> getCapabilities(DefaultOutput output, String qualifier) {
-    Collection<QualifiedName> capabilities = outputCapabilities.get(output.getResource());
+  public Collection<String> getCapabilities(File outputFile, String qualifier) {
+    Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
     if (capabilities == null) {
       return Collections.emptyList();
     }
@@ -209,30 +201,29 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
     return result;
   }
 
-  // input key/value attrbutes
-
-  @Override
-  public <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz) {
-    Map<String, Serializable> attributes = inputAttributes.get(input.getResource());
-    return attributes != null ? clazz.cast(attributes.get(key)) : null;
+  public Collection<File> getDependentInputs(String qualifier, String localName) {
+    Collection<File> dependents = requirementInputs.get(new QualifiedName(qualifier, localName));
+    if (dependents == null || dependents.isEmpty()) {
+      return Collections.emptyList();
+    }
+    return Collections.unmodifiableCollection(dependents);
   }
 
-  @Override
-  public <T extends Serializable> void setValue(DefaultInput input, String key, T value) {
-    throw new IllegalStateException();
+  // input key/value attrbutes
+
+  public <T extends Serializable> T getValue(File inputFile, String key, Class<T> clazz) {
+    Map<String, Serializable> attributes = inputAttributes.get(inputFile);
+    return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 
   // messages
 
-  @Override
-  public void addMessage(DefaultInput defaultInput, int line, int column, String message,
-      int severity, Throwable cause) {
-    throw new IllegalStateException();
-  }
-
-  public Collection<DefaultOutput> getAssociatedOutputs(File inputFile) {
-    Collection<DefaultOutput> outputs = inputOutputs.get(inputFile);
-    return outputs != null ? outputs : Collections.<DefaultOutput>emptyList();
+  public Collection<File> getAssociatedOutputs(File inputFile) {
+    Collection<File> outputFiles = inputOutputs.get(inputFile);
+    if (outputFiles == null || outputFiles.isEmpty()) {
+      return Collections.<File>emptyList();
+    }
+    return outputFiles;
   }
 
   public Collection<QualifiedName> getOutputCapabilities(File outputFile) {
@@ -254,4 +245,6 @@ class DefaultBuildContextState implements Serializable, BuildContextStateManager
   public FileState getFileState(File file) {
     return files.get(file);
   }
+
+
 }

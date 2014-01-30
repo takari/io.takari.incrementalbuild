@@ -1,0 +1,49 @@
+package io.takari.incrementalbuild.spi;
+
+import io.takari.incrementalbuild.BuildContext.InputMetadata;
+import io.takari.incrementalbuild.BuildContext.OutputMetadata;
+import io.takari.incrementalbuild.BuildContext.ResourceStatus;
+
+import java.io.File;
+import java.io.Serializable;
+
+public class DefaultInputMetadata implements InputMetadata<File> {
+
+  final DefaultBuildContext<?> context;
+
+  private final BuildContextState state;
+
+  private final File file;
+
+  DefaultInputMetadata(DefaultBuildContext<?> context, BuildContextState state, File file) {
+    this.context = context;
+    this.state = state;
+    this.file = file;
+  }
+
+  @Override
+  public File getResource() {
+    return file;
+  }
+
+  @Override
+  public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs() {
+    return state.getAssociatedOutputs(file);
+  }
+
+  @Override
+  public ResourceStatus getStatus() {
+    return context.getInputStatus(file);
+  }
+
+  @Override
+  public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+    return state.getPropertyValue(file, key, clazz);
+  }
+
+  @Override
+  public DefaultInput process() {
+    return context.processInput(this);
+  }
+
+}
