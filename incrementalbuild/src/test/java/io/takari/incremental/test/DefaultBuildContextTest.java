@@ -3,6 +3,8 @@ package io.takari.incremental.test;
 import static io.takari.incrementalbuild.BuildContext.ResourceStatus.MODIFIED;
 import static io.takari.incrementalbuild.BuildContext.ResourceStatus.NEW;
 import static io.takari.incrementalbuild.BuildContext.ResourceStatus.UNMODIFIED;
+import io.takari.incrementalbuild.BuildContext.InputMetadata;
+import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 import io.takari.incrementalbuild.spi.DefaultInput;
 
@@ -10,6 +12,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -302,5 +306,39 @@ public class DefaultBuildContextTest {
   @Test(expected = IllegalArgumentException.class)
   public void testRegisterInput_nullInput() throws Exception {
     newBuildContext().registerInput(null);
+  }
+
+  @Test
+  public void testGetRegisteredInputs() throws Exception {
+    File inputFile1 = temp.newFile("inputFile1");
+    File inputFile2 = temp.newFile("inputFile2");
+    File inputFile3 = temp.newFile("inputFile3");
+    File inputFile4 = temp.newFile("inputFile4");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    inputFile1 = context.registerInput(inputFile1).getResource();
+    inputFile2 = context.registerInput(inputFile2).getResource();
+    inputFile3 = context.registerInput(inputFile3).getResource();
+    context.commit();
+
+    Files.append("test", inputFile3, Charsets.UTF_8);
+
+    context = newBuildContext();
+
+    // context.registerInput(inputFile1); DELETED
+    context.registerInput(inputFile2); // UNMODIFIED
+    context.registerInput(inputFile3); // MODIFIED
+    inputFile4 = context.registerInput(inputFile4).getResource(); // NEW
+
+    Map<File, InputMetadata<File>> inputs = new TreeMap<File, InputMetadata<File>>();
+    for (InputMetadata<File> input : context.getRegisteredInputs(File.class)) {
+      inputs.put(input.getResource(), input);
+    }
+
+    Assert.assertEquals(4, inputs.size());
+    Assert.assertEquals(ResourceStatus.REMOVED, inputs.get(inputFile1).getStatus());
+    Assert.assertEquals(ResourceStatus.UNMODIFIED, inputs.get(inputFile2).getStatus());
+    Assert.assertEquals(ResourceStatus.MODIFIED, inputs.get(inputFile3).getStatus());
+    Assert.assertEquals(ResourceStatus.NEW, inputs.get(inputFile4).getStatus());
   }
 }

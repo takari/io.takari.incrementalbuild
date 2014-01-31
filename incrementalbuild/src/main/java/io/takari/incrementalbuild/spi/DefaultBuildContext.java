@@ -465,6 +465,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   public ResourceStatus getInputStatus(File inputFile) {
     if (!registeredInputs.containsKey(inputFile)) {
+      if (oldState != null && oldState.getInputFiles().contains(inputFile)) {
+        return ResourceStatus.REMOVED;
+      }
       throw new IllegalArgumentException("Unregistered input file " + inputFile);
     }
     if (oldState == null) {
@@ -500,6 +503,31 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       result.put(inputFile, registerInput(inputFile));
     }
     return result.values();
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> Iterable<? extends InputMetadata<T>> getRegisteredInputs(Class<T> clazz) {
+    if (!File.class.isAssignableFrom(clazz)) {
+      throw new IllegalArgumentException("Only java.io.File is currently supported " + clazz);
+    }
+    Set<InputMetadata<T>> result = new LinkedHashSet<InputMetadata<T>>();
+    for (File inputFile : registeredInputs.keySet()) {
+      InputMetadata<T> input = (InputMetadata<T>) processedInputs.get(inputFile);
+      if (input == null) {
+        input = (InputMetadata<T>) new DefaultInputMetadata(this, stateAdaptor, inputFile);
+      }
+      result.add(input);
+    }
+    if (oldState != null) {
+      for (File inputFile : oldState.getInputFiles()) {
+        if (!registeredInputs.containsKey(inputFile)) {
+          // removed
+          result.add((InputMetadata<T>) new DefaultInputMetadata(this, oldStateAdaptor, inputFile));
+        }
+      }
+    }
+    return result;
   }
 
   private File normalize(File file) {

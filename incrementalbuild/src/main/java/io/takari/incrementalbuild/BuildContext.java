@@ -138,20 +138,13 @@ public interface BuildContext {
 
   public Iterable<? extends InputMetadata<File>> registerInputs(Iterable<File> inputFiles);
 
-  /**
-   * Selects input for processing. Resets any metadata about the input carried over from the
-   * previous build. In particular, any outputs associated with the input during the previous build
-   * are considered stale and will be deleted unless re-associated.
-   * 
-   * @return processed Input
-   * @throws IllegalArgumentException if inputFile has not been registered
-   */
-  // public Input<File> processInput(InputMetadata<File> input);
-
-  // XXX don't like this forcing processing and registerAndProcessInputs not
-  // public Input<File> registerAndProcessInput(File inputFile);
-
-  public Iterable<? extends Input<File>> registerAndProcessInputs(Iterable<File> inputs);
+  public Iterable<? extends Input<File>> registerAndProcessInputs(Iterable<File> inputFiles);
 
   public Output<File> processOutput(File outputFile);
+
+  /**
+   * Returns all inputs registered with this {@link BuildContext} during current and previous
+   * builds.
+   */
+  public <T> Iterable<? extends InputMetadata<T>> getRegisteredInputs(Class<T> clazz);
 }

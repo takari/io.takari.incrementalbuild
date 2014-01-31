@@ -49,11 +49,7 @@ public class DefaultOutput implements BuildContext.Output<File>, Resource, Capab
 
   @Override
   public void associateInput(InputMetadata<File> input) {
-    if (!(input instanceof DefaultInputMetadata)) {
-      throw new IllegalArgumentException();
-    }
-
-    state.associate((DefaultInputMetadata) input, this);
+    state.associate(input, this);
   }
 
   @Override
