@@ -5,6 +5,7 @@ import io.takari.incrementalbuild.spi.DefaultInput;
 
 import java.io.IOException;
 
+import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -34,6 +35,7 @@ import org.apache.maven.project.MavenProject;
  *       build timestamp, for example?
  */
 @Named
+@Typed({DefaultBuildContext.class, MavenBuildContext.class})
 @MojoExecutionScoped
 public class MavenBuildContext extends DefaultBuildContext<MojoExecutionException>
     implements
