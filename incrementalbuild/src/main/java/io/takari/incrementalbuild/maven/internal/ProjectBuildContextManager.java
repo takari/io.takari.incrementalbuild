@@ -1,4 +1,4 @@
-package io.takari.incrementalbuild.internal.maven;
+package io.takari.incrementalbuild.maven.internal;
 
 import java.io.BufferedWriter;
 import java.io.File;

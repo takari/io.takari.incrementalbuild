@@ -1,8 +1,8 @@
 package io.takari.incrementalbuild.maven.testing;
 
-import io.takari.incrementalbuild.internal.maven.MavenBuildContext;
-import io.takari.incrementalbuild.internal.maven.MavenIncrementalConventions;
-import io.takari.incrementalbuild.internal.maven.MojoConfigurationDigester;
+import io.takari.incrementalbuild.maven.internal.MavenBuildContext;
+import io.takari.incrementalbuild.maven.internal.MavenIncrementalConventions;
+import io.takari.incrementalbuild.maven.internal.MojoConfigurationDigester;
 import io.takari.incrementalbuild.spi.DefaultInput;
 import io.takari.incrementalbuild.spi.DefaultOutput;
 
