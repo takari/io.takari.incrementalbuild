@@ -35,7 +35,7 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
-      <optional>true</optional>
+      <!-- XXX figure out how to make this optional and work inside Maven -->
     </dependency>
 
     <!-- maven test support -->
@@ -48,7 +48,7 @@
     <dependency>
       <groupId>org.apache.maven.plugin-testing</groupId>
       <artifactId>maven-plugin-testing-harness</artifactId>
-      <version>3.1.0-SNAPSHOT</version>
+      <version>${plugintesting.version}</version>
       <optional>true</optional>
     </dependency>
 
