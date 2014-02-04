@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.takari</groupId>
-  <artifactId>incrementalbuild-parent</artifactId>
+  <artifactId>io.takari.incrementalbuild</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
