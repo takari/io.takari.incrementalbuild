@@ -480,6 +480,21 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return status;
   }
 
+  public ResourceStatus getOutputStatus(File outputFile) {
+    if (!FileState.isPresent(outputFile)) {
+      if (oldState != null && oldState.getOutputFiles().contains(outputFile)) {
+        return ResourceStatus.REMOVED;
+      }
+      throw new IllegalArgumentException("Output does not exist " + outputFile);
+    }
+
+    if (oldState == null) {
+      return ResourceStatus.NEW;
+    }
+
+    return oldState.getOutputStatus(outputFile);
+  }
+
   @Override
   public DefaultInputMetadata registerInput(File inputFile) {
     if (!FileState.isPresent(inputFile)) {

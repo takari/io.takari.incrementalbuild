@@ -72,6 +72,7 @@ public interface BuildContext {
      * Shortcut to {@code getOldMetadata().getStatus()}.
      * <p>
      */
+    @Override
     public ResourceStatus getStatus();
 
     /**
@@ -102,7 +103,8 @@ public interface BuildContext {
     public T getResource();
 
     /**
-     * Returns up-to-date status of this output compared to the previous build.
+     * Returns up-to-date status of this output compared to the previous build. Does not consider
+     * associated inputs. Does not consider "processed" status
      */
     public ResourceStatus getStatus();
 

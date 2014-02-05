@@ -25,14 +25,14 @@ public class DefaultOutputMetadata
     this.file = file;
   }
 
+  @Override
   public File getResource() {
     return file;
   }
 
   @Override
   public ResourceStatus getStatus() {
-    // TODO Auto-generated method stub
-    return null;
+    return context.getOutputStatus(file);
   }
 
   @Override
@@ -40,6 +40,7 @@ public class DefaultOutputMetadata
     return state.getAssociatedInputs(file);
   }
 
+  @Override
   public Collection<String> getCapabilities(String qualifier) {
     return state.getOutputCapabilities(file, qualifier);
   }
