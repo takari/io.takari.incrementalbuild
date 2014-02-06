@@ -11,22 +11,24 @@
 
   <dependencies>
     <dependency>
+      <groupId>io.takari</groupId>
+      <artifactId>incrementalbuild</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.shared</groupId>
       <artifactId>maven-verifier</artifactId>
       <version>1.5</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-testing</groupId>
       <artifactId>maven-plugin-testing-harness</artifactId>
       <version>${plugintesting.version}</version>
-      <scope>optional</scope>
     </dependency>
   </dependencies>
 
