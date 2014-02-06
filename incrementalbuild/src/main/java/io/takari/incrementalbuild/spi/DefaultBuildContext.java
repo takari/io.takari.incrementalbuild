@@ -740,13 +740,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
           // copy associated outputs
           for (File outputFile : oldState.getAssociatedOutputs(inputFile)) {
-            associate(input,
-                putIfAbsent(processedOutputs, outputFile, new DefaultOutput(this, outputFile)));
-
-            Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
-            if (capabilities != null) {
-              outputCapabilities.put(outputFile, new LinkedHashSet<QualifiedName>(capabilities));
-            }
+            carryOverOutput(input, outputFile);
           }
 
           // copy associated included inputs
@@ -792,6 +786,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     if (errorCount.get() > 0) {
       throw newBuildFailureException(errorCount.get());
+    }
+  }
+
+  protected void carryOverOutput(DefaultInput input, File outputFile) {
+    associate(input, putIfAbsent(processedOutputs, outputFile, new DefaultOutput(this, outputFile)));
+
+    Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
+    if (capabilities != null) {
+      outputCapabilities.put(outputFile, new LinkedHashSet<QualifiedName>(capabilities));
     }
   }
 

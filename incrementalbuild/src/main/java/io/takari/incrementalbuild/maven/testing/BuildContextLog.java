@@ -15,6 +15,8 @@ public class BuildContextLog {
 
   private final List<File> deletedOutputs = new ArrayList<File>();
 
+  private final List<File> carriedOverOutputs = new ArrayList<File>();
+
   private final Map<File, List<String>> inputMessages = new HashMap<File, List<String>>();
 
   public void addRegisterOutput(File outputFile) {
@@ -31,6 +33,14 @@ public class BuildContextLog {
 
   public Collection<File> getDeletedOutputs() {
     return deletedOutputs;
+  }
+
+  public void addCarryoverOutput(File outputFile) {
+    carriedOverOutputs.add(outputFile);
+  }
+
+  public Collection<File> getCarriedOverOutputs() {
+    return carriedOverOutputs;
   }
 
   public void addMessage(File inputFile, String message) {

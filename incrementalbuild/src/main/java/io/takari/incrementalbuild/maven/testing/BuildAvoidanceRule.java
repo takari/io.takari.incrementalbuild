@@ -67,7 +67,7 @@ public class BuildAvoidanceRule extends MojoRule {
   public void assertBuildOutputs(File basedir, String... paths) throws Exception {
     Set<File> expected = toFileSet(basedir, paths);
     Set<File> actual = new TreeSet<File>(getBuildContextLog().getRegisteredOutputs());
-    Assert.assertEquals(toString(expected), toString(actual, true));
+    Assert.assertEquals("(re)created outputs", toString(expected), toString(actual, true));
   }
 
   /**
@@ -76,7 +76,13 @@ public class BuildAvoidanceRule extends MojoRule {
   public void assertDeletedOutputs(File basedir, String... paths) throws Exception {
     Set<File> expected = toFileSet(basedir, paths);
     Set<File> actual = new TreeSet<File>(getBuildContextLog().getDeletedOutputs());
-    Assert.assertEquals(toString(expected), toString(actual, false));
+    Assert.assertEquals("deleted outputs", toString(expected), toString(actual, false));
+  }
+
+  public void assertCarriedOverOutputs(File basedir, String... paths) throws Exception {
+    Set<File> expected = toFileSet(basedir, paths);
+    Set<File> actual = new TreeSet<File>(getBuildContextLog().getCarriedOverOutputs());
+    Assert.assertEquals("carried over outputs", toString(expected), toString(actual, true));
   }
 
   /**

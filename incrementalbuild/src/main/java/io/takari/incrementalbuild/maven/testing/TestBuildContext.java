@@ -40,6 +40,12 @@ class TestBuildContext extends MavenBuildContext {
   }
 
   @Override
+  protected void carryOverOutput(DefaultInput input, File outputFile) {
+    logger.addCarryoverOutput(outputFile);
+    super.carryOverOutput(input, outputFile);
+  }
+
+  @Override
   protected void logMessage(DefaultInput input, int line, int column, String message, int severity,
       Throwable cause) {
     String msg = String.format("%s %s [%d:%d] %s", getSeverityStr(severity), //
