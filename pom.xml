@@ -7,6 +7,27 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <description>Incremental build support library</description>
+  <url>https://github.com/takari/io.takari.incrementalbuild</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License 1.0</name>
+      <url>http://www.spdx.org/licenses/EPL-1.0</url>
+    </license>
+  </licenses>
+  <scm>
+    <connection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</connection>
+    <developerConnection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</developerConnection>
+  </scm>
+  <developers>
+    <developer>
+      <name>Jason van Zyl</name>
+    </developer>
+    <developer>
+      <name>Igor Fedorenko</name>
+    </developer>
+  </developers>
+
   <properties>
     <apache-maven.version>3.2.0-SNAPSHOT</apache-maven.version>
     <slf4j.version>1.7.5</slf4j.version>
