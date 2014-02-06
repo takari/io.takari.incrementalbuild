@@ -2,6 +2,7 @@ package io.takari.incrementalbuild.maven.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -21,11 +22,12 @@ import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 import org.slf4j.Logger;
 
-import com.google.common.base.Charsets;
-
 @Named
 @MojoExecutionScoped
 public class MojoConfigurationDigester {
+
+  // dies with class not found error if UTF-8 charset is not present
+  private static final Charset UTF_8 = Charset.forName("UTF-8");
 
   private final Logger logger;
   private final MavenSession session;
@@ -105,8 +107,8 @@ public class MojoConfigurationDigester {
     MessageDigest digester = SHA1Digester.newInstance();
 
     for (Map.Entry<String, String> property : executionProperties.entrySet()) {
-      digester.update(property.getKey().getBytes(Charsets.UTF_8));
-      digester.update(property.getValue().getBytes(Charsets.UTF_8));
+      digester.update(property.getKey().getBytes(UTF_8));
+      digester.update(property.getValue().getBytes(UTF_8));
     }
 
     return digester.digest();

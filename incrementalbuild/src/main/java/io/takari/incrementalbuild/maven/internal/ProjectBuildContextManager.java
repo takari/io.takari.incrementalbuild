@@ -1,8 +1,14 @@
 package io.takari.incrementalbuild.maven.internal;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -25,9 +31,7 @@ import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecution.Source;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
+import org.codehaus.plexus.util.IOUtil;
 
 /**
  * Detects and cleans up mojo executions removed since the last clean build.
@@ -38,6 +42,10 @@ import com.google.common.io.Files;
 @Named
 @Singleton
 public class ProjectBuildContextManager implements ProjectExecutionListener, MojoExecutionListener {
+
+  // dies with class not found error if UTF-8 charset is not present
+  private static final Charset UTF_8 = Charset.forName("UTF-8");
+
   /**
    * MavenProject context key that maps to per-build-phase list of mojo execution ids
    */
@@ -166,9 +174,19 @@ public class ProjectBuildContextManager implements ProjectExecutionListener, Moj
     final LinkedHashMap<String, List<String>> phases = new LinkedHashMap<String, List<String>>();
     final File state = getExecutionsListLocation(project);
     if (state.exists()) {
-      List<String> lines;
+      List<String> lines = new ArrayList<String>();
       try {
-        lines = Files.readLines(state, Charsets.UTF_8);
+        // TODO replace with Files.readAllLines when we move to java7
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(new FileInputStream(state), UTF_8));
+        try {
+          String str;
+          while ((str = reader.readLine()) != null) {
+            lines.add(str);
+          }
+        } finally {
+          IOUtil.close(reader);
+        }
       } catch (IOException e) {
         throw new LifecycleExecutionException("Could not maintainer incremental build state for "
             + project, e);
@@ -196,7 +214,8 @@ public class ProjectBuildContextManager implements ProjectExecutionListener, Moj
     if (!state.getParentFile().exists() && !state.getParentFile().mkdirs()) {
       throw new IOException("Could not create parent directories " + state);
     }
-    BufferedWriter writer = new BufferedWriter(Files.newWriter(state, Charsets.UTF_8));
+    BufferedWriter writer =
+        new BufferedWriter(new OutputStreamWriter(new FileOutputStream(state), UTF_8));
     try {
       for (Map.Entry<String, List<String>> phase : phases.entrySet()) {
         for (String execution : phase.getValue()) {
@@ -205,7 +224,7 @@ public class ProjectBuildContextManager implements ProjectExecutionListener, Moj
         }
       }
     } finally {
-      writer.close();
+      IOUtil.close(writer);
     }
   }
 
