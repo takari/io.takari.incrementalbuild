@@ -7,6 +7,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <name>incrementalbuild</name>
   <description>Incremental build support library</description>
   <url>https://github.com/takari/io.takari.incrementalbuild</url>
   <licenses>
