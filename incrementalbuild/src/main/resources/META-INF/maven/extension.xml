@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<extension>
+  <exportedPackages>
+    <exportedPackage>io.takari.incrementalbuild</exportedPackage>
+    <exportedPackage>io.takari.incrementalbuild.maven</exportedPackage>
+    <exportedPackage>io.takari.incrementalbuild.spi</exportedPackage>
+  </exportedPackages>
+
+  <exportedArtifacts>
+    <exportedArtifact>io.takari:incrementalbuild</exportedArtifact>
+  </exportedArtifacts>
+</extension>

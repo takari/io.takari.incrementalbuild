@@ -32,17 +32,35 @@ public class BasicTest {
     verifier.assertFilePresent("target/output.txt");
   }
 
+  @Test
+  public void testBuildExtension() throws Exception {
+    Verifier verifier = getVerifier(resources.getBasedir("buildextension/plugin"));
+    verifier.executeGoal("install");
+    verifier.verifyErrorFreeLog();
+
+    verifier = getVerifier(resources.getBasedir("buildextension/project"));
+    verifier.executeGoal("compile");
+    verifier.verifyErrorFreeLog();
+    verifier.assertFilePresent("target/output.txt");
+  }
+
   protected Verifier getVerifier(File basedir) throws VerificationException, IOException {
-    File mavenHome = new File("target/dependency/apache-maven-" + getMavenVersion());
+    String mavenVersion = getTestProperty("apache-maven.version");
+    File mavenHome = new File("target/dependency/apache-maven-" + mavenVersion);
     Assert.assertTrue("Can't locate maven home, make sure to run 'mvn generate-test-resources': "
         + mavenHome, mavenHome.isDirectory());
     // XXX somebody needs to fix this in maven-verifier already
     System.setProperty("maven.home", mavenHome.getAbsolutePath());
-    return new Verifier(basedir.getAbsolutePath());
+    Verifier verifier = new Verifier(basedir.getAbsolutePath());
+    verifier.getCliOptions().add("-Dapache-maven.version=" + mavenVersion);
+    verifier.getCliOptions().add(
+        "-Dincrementalbuild.version=" + getTestProperty("incrementalbuild.version"));
+    return verifier;
   }
 
 
-  private static String getMavenVersion() throws IOException {
+
+  private static String getTestProperty(String name) throws IOException {
     Properties properties = new Properties();
     InputStream is = BasicTest.class.getClassLoader().getResourceAsStream("test.properties");
     try {
@@ -50,10 +68,10 @@ public class BasicTest {
     } finally {
       IOUtil.close(is);
     }
-    String version = properties.getProperty("maven.version");
-    if (version == null) {
-      throw new IllegalStateException("Could not determine maven version");
+    String value = properties.getProperty(name);
+    if (value == null) {
+      throw new IllegalStateException("Undefined test property " + name);
     }
-    return version;
+    return value;
   }
 }
