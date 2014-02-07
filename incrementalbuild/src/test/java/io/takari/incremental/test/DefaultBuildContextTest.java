@@ -7,6 +7,7 @@ import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 import io.takari.incrementalbuild.spi.DefaultInput;
+import io.takari.incrementalbuild.spi.DefaultInputMetadata;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -280,10 +281,19 @@ public class DefaultBuildContextTest {
     context.registerInput(inputFile).process().associateIncludedInput(includedFile);
     context.commit();
 
-    Files.append("test", inputFile, Charsets.UTF_8);
+    context = newBuildContext();
+    Assert.assertEquals(ResourceStatus.UNMODIFIED, context.registerInput(inputFile).getStatus());
+    context.commit();
+
+    // check state carry over
+    context = newBuildContext();
+    Assert.assertEquals(ResourceStatus.UNMODIFIED, context.registerInput(inputFile).getStatus());
+    context.commit();
+
+    Files.append("test", includedFile, Charsets.UTF_8);
 
     context = newBuildContext();
-    Assert.assertNotNull(context.registerInput(inputFile));
+    Assert.assertEquals(ResourceStatus.MODIFIED, context.registerInput(inputFile).getStatus());
   }
 
   @Test
@@ -340,5 +350,19 @@ public class DefaultBuildContextTest {
     Assert.assertEquals(ResourceStatus.UNMODIFIED, inputs.get(inputFile2).getStatus());
     Assert.assertEquals(ResourceStatus.MODIFIED, inputs.get(inputFile3).getStatus());
     Assert.assertEquals(ResourceStatus.NEW, inputs.get(inputFile4).getStatus());
+  }
+
+  @Test
+  public void testInputAttributes() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile).process();
+    input.setValue("key", "value");
+    context.commit();
+
+    context = newBuildContext();
+    DefaultInputMetadata metadata = context.registerInput(inputFile);
+    Assert.assertEquals("value", metadata.getValue("key", String.class));
   }
 }

@@ -160,7 +160,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     this.stateFile = stateFile;
     this.oldState = loadState(stateFile);
 
-    BuildContextState oldStateAdaptor = null;
+    BuildContextState oldStateAdaptor = stateAdaptor; // XXX should be empty state
     if (oldState != null) {
       oldStateAdaptor = new BuildContextState() {
 
@@ -508,7 +508,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     // XXX this returns different instance each invocation. This should not be a problem because
     // each instance is a stateless flyweight.
 
-    return new DefaultInputMetadata(this, stateAdaptor, inputFile);
+    return new DefaultInputMetadata(this, oldStateAdaptor, inputFile);
   }
 
   @Override
@@ -747,6 +747,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           Collection<File> includedInputs = oldState.getInputIncludedInputs(inputFile);
           if (includedInputs != null) {
             inputIncludedInputs.put(inputFile, new LinkedHashSet<File>(includedInputs));
+
+            for (File includedInput : includedInputs) {
+              putInputFileState(includedInput, oldState.getFileState(inputFile));
+            }
           }
 
           // copy requirements
