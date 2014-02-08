@@ -276,6 +276,7 @@ public class DefaultBuildContextTest {
   public void testIncludedInputs() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File includedFile = temp.newFile("includedFile");
+    Files.append("test", includedFile, Charsets.UTF_8);
 
     DefaultBuildContext<?> context = newBuildContext();
     context.registerInput(inputFile).process().associateIncludedInput(includedFile);

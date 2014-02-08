@@ -749,7 +749,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
             inputIncludedInputs.put(inputFile, new LinkedHashSet<File>(includedInputs));
 
             for (File includedInput : includedInputs) {
-              putInputFileState(includedInput, oldState.getFileState(inputFile));
+              putInputFileState(includedInput, oldState.getFileState(includedInput));
             }
           }
 
