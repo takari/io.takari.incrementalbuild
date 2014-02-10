@@ -204,6 +204,76 @@ public class DefaultBuildContextTest {
     Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
   }
 
+  @Test
+  public void testGetInputStatus_associatedOutput() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    // initial build
+    DefaultBuildContext<?> context = newBuildContext();
+    // first time invocation returns Input for processing
+    DefaultInput input = context.registerInput(inputFile).process();
+    input.associateOutput(outputFile);
+    context.commit();
+
+    // no-change rebuild
+    context = newBuildContext();
+    Assert.assertEquals(UNMODIFIED, context.registerInput(inputFile).getStatus());
+    context.commit();
+
+    // rebuild after output changed
+    Files.append("test", outputFile, Charsets.UTF_8);
+    context = newBuildContext();
+    Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
+    context.registerInput(inputFile).process().associateOutput(outputFile);
+    context.commit();
+
+    // no-change rebuild
+    context = newBuildContext();
+    Assert.assertEquals(UNMODIFIED, context.registerInput(inputFile).getStatus());
+    context.commit();
+
+    // rebuild after output delete
+    Assert.assertTrue(outputFile.delete());
+    context = newBuildContext();
+    Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
+  }
+
+  @Test
+  public void testGetInputStatus_includedInputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File includedFile = temp.newFile("includedFile");
+
+    // initial build
+    DefaultBuildContext<?> context = newBuildContext();
+    // first time invocation returns Input for processing
+    DefaultInput input = context.registerInput(inputFile).process();
+    input.associateIncludedInput(includedFile);
+    context.commit();
+
+    // no-change rebuild
+    context = newBuildContext();
+    Assert.assertEquals(UNMODIFIED, context.registerInput(inputFile).getStatus());
+    context.commit();
+
+    // rebuild after output changed
+    Files.append("test", includedFile, Charsets.UTF_8);
+    context = newBuildContext();
+    Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
+    context.registerInput(inputFile).process().associateIncludedInput(includedFile);
+    context.commit();
+
+    // no-change rebuild
+    context = newBuildContext();
+    Assert.assertEquals(UNMODIFIED, context.registerInput(inputFile).getStatus());
+    context.commit();
+
+    // rebuild after output delete
+    Assert.assertTrue(includedFile.delete());
+    context = newBuildContext();
+    Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
+  }
+
   @Test(expected = IllegalStateException.class)
   public void testInputModifiedAfterRegistration() throws Exception {
     File inputFile = temp.newFile("inputFile");
@@ -366,4 +436,5 @@ public class DefaultBuildContextTest {
     DefaultInputMetadata metadata = context.registerInput(inputFile);
     Assert.assertEquals("value", metadata.getValue("key", String.class));
   }
+
 }

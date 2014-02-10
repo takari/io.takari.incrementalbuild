@@ -474,6 +474,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       return ResourceStatus.NEW;
     }
     ResourceStatus status = oldState.getInputStatus(inputFile);
+    if (status == ResourceStatus.UNMODIFIED) {
+      for (File outputFile : oldState.getAssociatedOutputs(inputFile)) {
+        if (oldState.getOutputStatus(outputFile) != ResourceStatus.UNMODIFIED) {
+          status = ResourceStatus.MODIFIED;
+          break;
+        }
+      }
+    }
     if (status == ResourceStatus.UNMODIFIED && escalated) {
       status = ResourceStatus.MODIFIED;
     }
