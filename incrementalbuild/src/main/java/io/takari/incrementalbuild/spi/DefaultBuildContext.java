@@ -166,7 +166,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
         @Override
         public <V extends Serializable> V getPropertyValue(File input, String key, Class<V> clazz) {
-          return oldState.getValue(input, key, clazz);
+          return oldState.getInputValue(input, key, clazz);
         }
 
         @Override
@@ -782,6 +782,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
                 errorCount.incrementAndGet();
               }
             }
+          }
+
+          // copy attributes
+          Map<String, Serializable> attributes = oldState.getInputValues(inputFile);
+          if (attributes != null) {
+            inputAttributes.put(inputFile, attributes);
           }
         }
       }

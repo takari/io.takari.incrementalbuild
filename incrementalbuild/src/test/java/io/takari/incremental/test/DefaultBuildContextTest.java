@@ -435,6 +435,12 @@ public class DefaultBuildContextTest {
     context = newBuildContext();
     DefaultInputMetadata metadata = context.registerInput(inputFile);
     Assert.assertEquals("value", metadata.getValue("key", String.class));
+    context.commit();
+
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    Assert.assertEquals("value", metadata.getValue("key", String.class));
+    context.commit();
   }
 
 }

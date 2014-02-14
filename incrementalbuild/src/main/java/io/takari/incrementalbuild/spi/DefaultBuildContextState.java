@@ -211,9 +211,13 @@ class DefaultBuildContextState implements Serializable {
 
   // input key/value attrbutes
 
-  public <T extends Serializable> T getValue(File inputFile, String key, Class<T> clazz) {
+  public <T extends Serializable> T getInputValue(File inputFile, String key, Class<T> clazz) {
     Map<String, Serializable> attributes = inputAttributes.get(inputFile);
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
+  }
+
+  public Map<String, Serializable> getInputValues(File inputFile) {
+    return inputAttributes.get(inputFile);
   }
 
   // messages
