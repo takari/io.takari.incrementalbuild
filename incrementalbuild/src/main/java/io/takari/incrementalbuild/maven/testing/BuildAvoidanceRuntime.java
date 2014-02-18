@@ -1,6 +1,8 @@
 package io.takari.incrementalbuild.maven.testing;
 
 import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.maven.internal.MavenBuildContext;
+import io.takari.incrementalbuild.spi.DefaultBuildContext;
 
 import java.util.List;
 
@@ -39,7 +41,10 @@ class BuildAvoidanceRuntime extends AbstractMojoTestCase {
         bind(MojoExecution.class).toProvider(MojoExecutionScope.<MojoExecution>seededKeyProvider())
             .in(scope);
 
+        bind(TestBuildContext.class).in(scope);
         bind(BuildContext.class).to(TestBuildContext.class).in(scope);
+        bind(DefaultBuildContext.class).to(TestBuildContext.class).in(scope);
+        bind(MavenBuildContext.class).to(TestBuildContext.class).in(scope);
         bind(BuildContextLog.class).in(Singleton.class);
       }
     });
