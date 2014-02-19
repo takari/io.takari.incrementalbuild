@@ -60,6 +60,7 @@ public class BuildContextLog {
   public void clear() {
     registeredOutputs.clear();
     deletedOutputs.clear();
+    carriedOverOutputs.clear();
     inputMessages.clear();
   }
 
