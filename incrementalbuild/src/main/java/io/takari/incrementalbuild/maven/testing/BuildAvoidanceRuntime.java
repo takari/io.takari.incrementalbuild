@@ -8,7 +8,6 @@ import java.util.List;
 
 import javax.inject.Singleton;
 
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.execution.scope.internal.MojoExecutionScope;
 import org.apache.maven.plugin.MojoExecution;
@@ -29,22 +28,20 @@ class BuildAvoidanceRuntime extends AbstractMojoTestCase {
     modules.add(new AbstractModule() {
       @Override
       protected void configure() {
-        MojoExecutionScope scope = new MojoExecutionScope();
-
-        bindScope(MojoExecutionScoped.class, scope);
-        bind(MojoExecutionScope.class).toInstance(scope);
-
-        bind(MavenSession.class).toProvider(MojoExecutionScope.<MavenSession>seededKeyProvider())
-            .in(scope);
+        // execution scope bindings (core binds these in plugin realm injector only)
+        MojoExecutionScope executionScope = new MojoExecutionScope();
+        bindScope(MojoExecutionScoped.class, executionScope);
+        bind(MojoExecutionScope.class).toInstance(executionScope);
         bind(MavenProject.class).toProvider(MojoExecutionScope.<MavenProject>seededKeyProvider())
-            .in(scope);
+            .in(executionScope);
         bind(MojoExecution.class).toProvider(MojoExecutionScope.<MojoExecution>seededKeyProvider())
-            .in(scope);
+            .in(executionScope);
 
-        bind(TestBuildContext.class).in(scope);
-        bind(BuildContext.class).to(TestBuildContext.class).in(scope);
-        bind(DefaultBuildContext.class).to(TestBuildContext.class).in(scope);
-        bind(MavenBuildContext.class).to(TestBuildContext.class).in(scope);
+        // instance bindings
+        bind(TestBuildContext.class).in(executionScope);
+        bind(BuildContext.class).to(TestBuildContext.class).in(executionScope);
+        bind(DefaultBuildContext.class).to(TestBuildContext.class).in(executionScope);
+        bind(MavenBuildContext.class).to(TestBuildContext.class).in(executionScope);
         bind(BuildContextLog.class).in(Singleton.class);
       }
     });

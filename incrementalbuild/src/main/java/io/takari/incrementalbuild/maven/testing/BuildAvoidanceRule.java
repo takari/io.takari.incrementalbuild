@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.maven.SessionScope;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.execution.MojoExecutionEvent;
 import org.apache.maven.execution.MojoExecutionListener;
@@ -28,23 +29,32 @@ public class BuildAvoidanceRule extends MojoRule {
       throws Exception {
     getBuildContextLog().clear();
 
-    MojoExecutionScope scope = lookup(MojoExecutionScope.class);
+    SessionScope sessionScope = lookup(SessionScope.class);
     try {
-      scope.enter();
+      sessionScope.enter();
+      sessionScope.seed(MavenSession.class, session);
 
-      scope.seed(MavenSession.class, session);
-      scope.seed(MavenProject.class, project);
-      scope.seed(MojoExecution.class, execution);
+      MojoExecutionScope executionScope = lookup(MojoExecutionScope.class);
+      try {
+        executionScope.enter();
 
-      Mojo mojo = lookupConfiguredMojo(session, execution);
-      mojo.execute();
+        executionScope.seed(MavenProject.class, project);
+        executionScope.seed(MojoExecution.class, execution);
 
-      for (MojoExecutionListener listener : getContainer().lookupList(MojoExecutionListener.class)) {
-        listener
-            .afterMojoExecutionSuccess(new MojoExecutionEvent(session, project, execution, mojo));
+        Mojo mojo = lookupConfiguredMojo(session, execution);
+        mojo.execute();
+
+        MojoExecutionEvent event = new MojoExecutionEvent(session, project, execution, mojo);
+        for (MojoExecutionListener listener : getContainer()
+            .lookupList(MojoExecutionListener.class)) {
+          listener.afterMojoExecutionSuccess(event);
+        }
+      } finally {
+        executionScope.exit();
       }
+
     } finally {
-      scope.exit();
+      sessionScope.exit();
     }
   }
 
