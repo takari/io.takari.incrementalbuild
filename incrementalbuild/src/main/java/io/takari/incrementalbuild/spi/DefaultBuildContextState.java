@@ -35,7 +35,7 @@ class DefaultBuildContextState implements Serializable {
 
   private final Map<File, Collection<QualifiedName>> outputCapabilities;
 
-  private final Map<File, Map<String, Serializable>> inputAttributes;
+  private final Map<File, Map<String, Serializable>> resourceAttributes;
 
   private final Map<File, Collection<Message>> inputMessages;
 
@@ -60,7 +60,7 @@ class DefaultBuildContextState implements Serializable {
     this.requirementInputs = cloneRequirementInputs(requirementInputs);
     this.outputCapabilities = cloneMap(outputCapabilities);
 
-    this.inputAttributes = cloneAttributes(inputAttributes);
+    this.resourceAttributes = cloneAttributes(inputAttributes);
 
     this.inputMessages = cloneMap(inputMessages);
   }
@@ -211,13 +211,13 @@ class DefaultBuildContextState implements Serializable {
 
   // input key/value attrbutes
 
-  public <T extends Serializable> T getInputValue(File inputFile, String key, Class<T> clazz) {
-    Map<String, Serializable> attributes = inputAttributes.get(inputFile);
+  public <T extends Serializable> T getResourceAttribute(File resource, String key, Class<T> clazz) {
+    Map<String, Serializable> attributes = resourceAttributes.get(resource);
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 
-  public Map<String, Serializable> getInputValues(File inputFile) {
-    return inputAttributes.get(inputFile);
+  public Map<String, Serializable> getResourceAttributes(File resource) {
+    return resourceAttributes.get(resource);
   }
 
   // messages

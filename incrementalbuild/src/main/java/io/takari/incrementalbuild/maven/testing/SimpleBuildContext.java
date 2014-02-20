@@ -60,7 +60,7 @@ public class SimpleBuildContext implements BuildContext {
 
     private final File file;
 
-    private final Map<String, Object> properties = new HashMap<String, Object>();
+    private final Map<String, Serializable> properties = new HashMap<String, Serializable>();
 
     public SimpleInput(File file) {
       this.file = file;
@@ -105,8 +105,8 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public <V extends Serializable> void setValue(String key, V value) {
-      properties.put(key, value);
+    public <V extends Serializable> Serializable setValue(String key, V value) {
+      return properties.put(key, value);
     }
 
     @Override
@@ -116,6 +116,8 @@ public class SimpleBuildContext implements BuildContext {
   private class SimpleOutput implements Output<File> {
 
     private final File file;
+
+    private final Map<String, Serializable> properties = new HashMap<String, Serializable>();
 
     public SimpleOutput(File file) {
       this.file = file;
@@ -149,11 +151,22 @@ public class SimpleBuildContext implements BuildContext {
     @Override
     public void associateInput(InputMetadata<File> input) {}
 
+    @Override
+    public <V extends Serializable> Serializable setValue(String key, V value) {
+      return properties.put(key, value);
+    }
+
+    @Override
+    public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+      return clazz.cast(properties.get(key));
+    }
   }
 
   private final Set<File> registeredInputs = new LinkedHashSet<File>();
 
   private final Map<File, SimpleInput> processedInputs = new LinkedHashMap<File, SimpleInput>();
+
+  private final Map<File, SimpleOutput> processedOutputs = new LinkedHashMap<File, SimpleOutput>();
 
   @Override
   public InputMetadata<File> registerInput(File inputFile) {
@@ -187,7 +200,12 @@ public class SimpleBuildContext implements BuildContext {
 
   @Override
   public Output<File> processOutput(File outputFile) {
-    return new SimpleOutput(outputFile);
+    SimpleOutput output = processedOutputs.get(outputFile);
+    if (output == null) {
+      output = new SimpleOutput(outputFile);
+      processedOutputs.put(outputFile, output);
+    }
+    return output;
   }
 
   @Override
@@ -204,4 +222,13 @@ public class SimpleBuildContext implements BuildContext {
     return result;
   }
 
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> Iterable<? extends OutputMetadata<T>> getProcessedOutputs(Class<T> clazz) {
+    Set<OutputMetadata<T>> result = new LinkedHashSet<OutputMetadata<T>>();
+    for (Output<File> output : processedOutputs.values()) {
+      result.add((OutputMetadata<T>) output);
+    }
+    return result;
+  }
 }

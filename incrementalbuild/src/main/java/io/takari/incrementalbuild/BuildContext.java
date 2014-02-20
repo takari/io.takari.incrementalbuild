@@ -89,7 +89,10 @@ public interface BuildContext {
 
     public Output<T> associateOutput(T resource);
 
-    public <V extends Serializable> void setValue(String key, V value);
+    /**
+     * Returns value associated with the key during previous build.
+     */
+    public <V extends Serializable> Serializable setValue(String key, V value);
 
     public void addMessage(int line, int column, String message, int severity, Throwable cause);
 
@@ -109,6 +112,8 @@ public interface BuildContext {
     public ResourceStatus getStatus();
 
     public Iterable<? extends InputMetadata<T>> getAssociatedInputs();
+
+    public <V extends Serializable> V getValue(String key, Class<V> clazz);
   }
 
   public static interface Output<T> extends OutputMetadata<T> {
@@ -121,6 +126,8 @@ public interface BuildContext {
     public Iterable<? extends Input<T>> getAssociatedInputs();
 
     public void associateInput(InputMetadata<T> input);
+
+    public <V extends Serializable> Serializable setValue(String key, V value);
   }
 
   /**
@@ -149,4 +156,10 @@ public interface BuildContext {
    * builds.
    */
   public <T> Iterable<? extends InputMetadata<T>> getRegisteredInputs(Class<T> clazz);
+
+  /**
+   * Returns all outputs processed by this {@link BuildContext} during current build or carried over
+   * from previous build.
+   */
+  public <T> Iterable<? extends OutputMetadata<T>> getProcessedOutputs(Class<T> clazz);
 }

@@ -51,8 +51,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private final BuildContextState stateAdaptor = new BuildContextState() {
 
     @Override
-    public <V extends Serializable> V getPropertyValue(File input, String key, Class<V> clazz) {
-      Map<String, Serializable> attributes = inputAttributes.get(input);
+    public <V extends Serializable> V getResourceAttribute(File input, String key, Class<V> clazz) {
+      Map<String, Serializable> attributes = resourceAttributes.get(input);
       return attributes != null ? clazz.cast(attributes.get(key)) : null;
     }
 
@@ -132,7 +132,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // simple key/value pairs
 
-  private final ConcurrentMap<File, Map<String, Serializable>> inputAttributes =
+  private final ConcurrentMap<File, Map<String, Serializable>> resourceAttributes =
       new ConcurrentHashMap<File, Map<String, Serializable>>();
 
   // messages
@@ -165,8 +165,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       oldStateAdaptor = new BuildContextState() {
 
         @Override
-        public <V extends Serializable> V getPropertyValue(File input, String key, Class<V> clazz) {
-          return oldState.getInputValue(input, key, clazz);
+        public <V extends Serializable> V getResourceAttribute(File resource, String key,
+            Class<V> clazz) {
+          return oldState.getResourceAttribute(resource, key, clazz);
         }
 
         @Override
@@ -273,7 +274,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     final DefaultBuildContextState state =
         new DefaultBuildContextState(configuration, files, registeredInputs.keySet(),
             processedOutputs.keySet(), inputOutputs, outputInputs, inputIncludedInputs,
-            inputRequirements, requirementInputs, outputCapabilities, inputAttributes,
+            inputRequirements, requirementInputs, outputCapabilities, resourceAttributes,
             inputMessages);
 
     File parent = stateFile.getParentFile();
@@ -553,6 +554,32 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return result;
   }
 
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> Iterable<? extends OutputMetadata<T>> getProcessedOutputs(Class<T> clazz) {
+    if (!File.class.isAssignableFrom(clazz)) {
+      throw new IllegalArgumentException("Only java.io.File is currently supported " + clazz);
+    }
+    Set<OutputMetadata<T>> result = new LinkedHashSet<OutputMetadata<T>>();
+    for (DefaultOutput output : processedOutputs.values()) {
+      result.add((OutputMetadata<T>) output);
+    }
+    if (oldState != null) {
+      for (File outputFile : oldState.getOutputFiles()) {
+        if (!processedOutputs.containsKey(outputFile)) {
+          for (File inputFile : oldState.getAssociatedInputs(outputFile)) {
+            if (registeredInputs.containsKey(inputFile)) {
+              result.add((OutputMetadata<T>) new DefaultOutputMetadata(this, oldStateAdaptor,
+                  outputFile));
+              break;
+            }
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   private File normalize(File file) {
     try {
       return file.getCanonicalFile();
@@ -702,18 +729,22 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // simple key/value pairs
 
-  public <T extends Serializable> void setValue(DefaultInput input, String key, T value) {
-    File inputFile = input.getResource();
-    Map<String, Serializable> attributes = inputAttributes.get(inputFile);
+  public <T extends Serializable> Serializable setResourceAttribute(File resource, String key,
+      T value) {
+    Map<String, Serializable> attributes = resourceAttributes.get(resource);
     if (attributes == null) {
       attributes =
-          putIfAbsent(inputAttributes, inputFile, new LinkedHashMap<String, Serializable>());
+          putIfAbsent(resourceAttributes, resource, new LinkedHashMap<String, Serializable>());
     }
     attributes.put(key, value); // XXX NOT THREAD SAFE
+    if (oldState != null) {
+      return oldState.getResourceAttribute(resource, key, Serializable.class);
+    }
+    return null;
   }
 
-  public <T extends Serializable> T getValue(DefaultInput input, String key, Class<T> clazz) {
-    Map<String, Serializable> attributes = inputAttributes.get(input.getResource());
+  public <T extends Serializable> T getResourceAttribute(File resource, String key, Class<T> clazz) {
+    Map<String, Serializable> attributes = resourceAttributes.get(resource);
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 
@@ -785,9 +816,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           }
 
           // copy attributes
-          Map<String, Serializable> attributes = oldState.getInputValues(inputFile);
+          Map<String, Serializable> attributes = oldState.getResourceAttributes(inputFile);
           if (attributes != null) {
-            inputAttributes.put(inputFile, attributes);
+            resourceAttributes.put(inputFile, attributes);
           }
         }
       }
@@ -813,6 +844,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
     if (capabilities != null) {
       outputCapabilities.put(outputFile, new LinkedHashSet<QualifiedName>(capabilities));
+    }
+
+    Map<String, Serializable> attributes = oldState.getResourceAttributes(outputFile);
+    if (attributes != null) {
+      resourceAttributes.put(outputFile, attributes);
     }
   }
 

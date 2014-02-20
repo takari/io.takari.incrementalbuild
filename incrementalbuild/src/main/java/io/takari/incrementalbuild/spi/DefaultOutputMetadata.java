@@ -5,8 +5,12 @@ import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Collection;
 
+/**
+ * @noinstantiate clients are not expected to instantiate this class
+ */
 public class DefaultOutputMetadata
     implements
       BuildContext.OutputMetadata<File>,
@@ -45,4 +49,8 @@ public class DefaultOutputMetadata
     return state.getOutputCapabilities(file, qualifier);
   }
 
+  @Override
+  public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+    return state.getResourceAttribute(file, key, clazz);
+  }
 }

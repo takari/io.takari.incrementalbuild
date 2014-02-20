@@ -9,18 +9,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.Collection;
 
 /**
- * @noinstantiate clients are not supposed to instantiate this class
+ * @noinstantiate clients are not expected to instantiate this class
  */
 public class DefaultOutput implements BuildContext.Output<File>, Resource, CapabilitiesProvider {
 
-  private final DefaultBuildContext<?> state;
+  private final DefaultBuildContext<?> context;
   private final File file;
 
   DefaultOutput(DefaultBuildContext<?> context, File file) {
-    this.state = context;
+    this.context = context;
     this.file = file;
   }
 
@@ -34,22 +35,22 @@ public class DefaultOutput implements BuildContext.Output<File>, Resource, Capab
   }
 
   public void addCapability(String qualifier, String localName) {
-    state.addCapability(this, qualifier, localName);
+    context.addCapability(this, qualifier, localName);
   }
 
   @Override
   public Collection<String> getCapabilities(String namespace) {
-    return state.getOutputCapabilities(file, namespace);
+    return context.getOutputCapabilities(file, namespace);
   }
 
   @Override
   public Iterable<DefaultInput> getAssociatedInputs() {
-    return state.getAssociatedInputs(getResource());
+    return context.getAssociatedInputs(getResource());
   }
 
   @Override
   public void associateInput(InputMetadata<File> input) {
-    state.associate(input, this);
+    context.associate(input, this);
   }
 
   @Override
@@ -59,7 +60,7 @@ public class DefaultOutput implements BuildContext.Output<File>, Resource, Capab
 
   @Override
   public OutputMetadata<File> getOldMetadata() {
-    return state.getOldOutput(file);
+    return context.getOldOutput(file);
   }
 
   @Override
@@ -86,7 +87,16 @@ public class DefaultOutput implements BuildContext.Output<File>, Resource, Capab
     DefaultOutput other = (DefaultOutput) obj;
 
     // must be from the same context to be equal
-    return state == other.state && file.equals(other.file);
+    return context == other.context && file.equals(other.file);
   }
 
+  @Override
+  public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+    return context.getResourceAttribute(file, key, clazz);
+  }
+
+  @Override
+  public <V extends Serializable> Serializable setValue(String key, V value) {
+    return context.setResourceAttribute(file, key, value);
+  }
 }

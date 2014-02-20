@@ -15,6 +15,6 @@ interface BuildContextState {
 
   Collection<String> getOutputCapabilities(File outputFile, String qualifier);
 
-  <V extends Serializable> V getPropertyValue(File input, String key, Class<V> clazz);
+  <V extends Serializable> V getResourceAttribute(File resource, String key, Class<V> clazz);
 
 }

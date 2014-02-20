@@ -7,6 +7,9 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import java.io.File;
 import java.io.Serializable;
 
+/**
+ * @noinstantiate clients are not expected to instantiate this class
+ */
 public class DefaultInputMetadata implements InputMetadata<File> {
 
   final DefaultBuildContext<?> context;
@@ -38,7 +41,7 @@ public class DefaultInputMetadata implements InputMetadata<File> {
 
   @Override
   public <V extends Serializable> V getValue(String key, Class<V> clazz) {
-    return state.getPropertyValue(file, key, clazz);
+    return state.getResourceAttribute(file, key, clazz);
   }
 
   @Override

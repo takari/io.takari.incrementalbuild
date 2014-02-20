@@ -8,6 +8,9 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import java.io.File;
 import java.io.Serializable;
 
+/**
+ * @noinstantiate clients are not expected to instantiate this class
+ */
 public class DefaultInput implements BuildContext.Input<File>, Resource {
 
   final DefaultBuildContext<?> context;
@@ -43,13 +46,13 @@ public class DefaultInput implements BuildContext.Input<File>, Resource {
   }
 
   @Override
-  public <T extends Serializable> void setValue(String key, T value) {
-    context.setValue(this, key, value);
+  public <T extends Serializable> Serializable setValue(String key, T value) {
+    return context.setResourceAttribute(file, key, value);
   }
 
   @Override
   public <T extends Serializable> T getValue(String key, Class<T> clazz) {
-    return context.getValue(this, key, clazz);
+    return context.getResourceAttribute(file, key, clazz);
   }
 
   @Override

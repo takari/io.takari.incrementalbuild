@@ -4,10 +4,12 @@ import static io.takari.incrementalbuild.BuildContext.ResourceStatus.MODIFIED;
 import static io.takari.incrementalbuild.BuildContext.ResourceStatus.NEW;
 import static io.takari.incrementalbuild.BuildContext.ResourceStatus.UNMODIFIED;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
+import io.takari.incrementalbuild.BuildContext.OutputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 import io.takari.incrementalbuild.spi.DefaultInput;
 import io.takari.incrementalbuild.spi.DefaultInputMetadata;
+import io.takari.incrementalbuild.spi.DefaultOutput;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -151,10 +153,17 @@ public class DefaultBuildContextTest {
     context.commit();
 
     context = newBuildContext();
-    context.registerInput(inputFile);
+    DefaultInputMetadata metadata = context.registerInput(inputFile);
     context.deleteStaleOutputs(true);
-
     Assert.assertTrue(outputFile.canRead());
+    Assert.assertEquals(1, toList(metadata.getAssociatedOutputs()).size());
+    context.commit();
+
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    Assert.assertTrue(outputFile.canRead());
+    Assert.assertEquals(1, toList(metadata.getAssociatedOutputs()).size());
+    context.commit();
   }
 
   @Test
@@ -329,8 +338,12 @@ public class DefaultBuildContextTest {
     context.processInput(input);
     input.associateOutput(outputFile1);
     context.commit();
-
     Assert.assertFalse(outputFile2.canRead());
+
+    context = newBuildContext();
+    DefaultInputMetadata metadata = context.registerInput(inputFile);
+    Assert.assertEquals(1, toList(metadata.getAssociatedOutputs()).size());
+    context.commit();
   }
 
   @Test
@@ -424,12 +437,78 @@ public class DefaultBuildContextTest {
   }
 
   @Test
+  public void testGetProcessedOutputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile1 = temp.newFile("outputFile1");
+    File outputFile2 = temp.newFile("outputFile2");
+    File outputFile3 = temp.newFile("outputFile3");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput input = context.registerInput(inputFile).process();
+    outputFile1 = input.associateOutput(outputFile1).getResource();
+    outputFile2 = input.associateOutput(outputFile2).getResource();
+    Map<File, OutputMetadata<File>> outputs = toMap(context.getProcessedOutputs(File.class));
+    Assert.assertEquals(2, outputs.size());
+    Assert.assertNotNull(outputs.get(outputFile1));
+    Assert.assertNotNull(outputs.get(outputFile2));
+    context.commit();
+
+    // no-change carry-over
+    context = newBuildContext();
+    context.registerInput(inputFile);
+    outputs = toMap(context.getProcessedOutputs(File.class));
+    Assert.assertEquals(2, outputs.size());
+    Assert.assertNotNull(outputs.get(outputFile1));
+    Assert.assertNotNull(outputs.get(outputFile2));
+    context.commit();
+
+    // one more time, just to make sure carry-over does not decay
+    context = newBuildContext();
+    context.registerInput(inputFile);
+    outputs = toMap(context.getProcessedOutputs(File.class));
+    Assert.assertEquals(2, outputs.size());
+    Assert.assertNotNull(outputs.get(outputFile1));
+    Assert.assertNotNull(outputs.get(outputFile2));
+    context.commit();
+
+    // drop one output, introduce another
+    context = newBuildContext();
+    input = context.registerInput(inputFile).process();
+    outputFile1 = input.associateOutput(outputFile1).getResource();
+    outputFile3 = input.associateOutput(outputFile3).getResource();
+    outputs = toMap(context.getProcessedOutputs(File.class));
+    Assert.assertEquals(3, outputs.size());
+    Assert.assertNotNull(outputs.get(outputFile1));
+    Assert.assertNotNull(outputs.get(outputFile2));
+    Assert.assertNotNull(outputs.get(outputFile3));
+    context.commit();
+
+    // dropped output is not carried over
+    context = newBuildContext();
+    DefaultInputMetadata metadata = context.registerInput(inputFile);
+    Assert.assertEquals(2, toMap(metadata.getAssociatedOutputs()).size());
+    outputs = toMap(context.getProcessedOutputs(File.class));
+    Assert.assertEquals(2, outputs.size());
+    Assert.assertNotNull(outputs.get(outputFile1));
+    Assert.assertNotNull(outputs.get(outputFile3));
+    context.commit();
+  }
+
+  private <T> Map<T, OutputMetadata<T>> toMap(Iterable<? extends OutputMetadata<T>> elements) {
+    Map<T, OutputMetadata<T>> result = new TreeMap<T, OutputMetadata<T>>();
+    for (OutputMetadata<T> element : elements) {
+      result.put(element.getResource(), element);
+    }
+    return result;
+  }
+
+  @Test
   public void testInputAttributes() throws Exception {
     File inputFile = temp.newFile("inputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
     DefaultInput input = context.registerInput(inputFile).process();
-    input.setValue("key", "value");
+    Assert.assertNull(input.setValue("key", "value"));
     context.commit();
 
     context = newBuildContext();
@@ -440,7 +519,39 @@ public class DefaultBuildContextTest {
     context = newBuildContext();
     metadata = context.registerInput(inputFile);
     Assert.assertEquals("value", metadata.getValue("key", String.class));
+    input = metadata.process();
+    Assert.assertEquals("value", input.setValue("key", "newValue"));
+    Assert.assertEquals("value", input.setValue("key", "newValue"));
+    context.commit();
+
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    Assert.assertEquals("newValue", metadata.getValue("key", String.class));
     context.commit();
   }
 
+  @Test
+  public void testOutputAttributes() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultOutput output = context.registerInput(inputFile).process().associateOutput(outputFile);
+    Assert.assertNull(output.setValue("key", "value"));
+    context.commit();
+
+    // no change output, attributes should be carried over as-is
+    context = newBuildContext();
+    context.registerInput(inputFile);
+    OutputMetadata<File> metadata = context.getProcessedOutputs(File.class).iterator().next();
+    Assert.assertEquals("value", metadata.getValue("key", String.class));
+    context.commit();
+
+    context = newBuildContext();
+    output = context.registerInput(inputFile).process().associateOutput(outputFile);
+    Assert.assertNull(output.getValue("key", String.class)); // no value during current build
+    Assert.assertEquals("value", output.setValue("key", "newValue"));
+    Assert.assertEquals("value", output.setValue("key", "newValue"));
+    context.commit();
+  }
 }
