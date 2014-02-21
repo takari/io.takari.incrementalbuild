@@ -2,7 +2,6 @@ package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
 import io.takari.incrementalbuild.BuildContext.Input;
-import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 
 import java.io.File;
@@ -62,11 +61,6 @@ public class DefaultInput implements BuildContext.Input<File>, Resource {
 
   public boolean isAssociatedOutput(File file) {
     return context.isAssociatedOutput(this, file);
-  }
-
-  @Override
-  public InputMetadata<File> getOldMetadata() {
-    return context.getOldInput(getResource());
   }
 
   @Override

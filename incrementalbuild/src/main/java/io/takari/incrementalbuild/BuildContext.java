@@ -50,8 +50,9 @@ public interface BuildContext {
     public T getResource();
 
     /**
-     * Returns up-to-date status of this input compared to the previous build. Covers status of both
-     * the input itself and included inputs, if any. Honours context build escalation.
+     * Returns up-to-date status of this input compared to the previous build. Covers status of the
+     * input itself, included inputs, if any, and associated outputs, if any. Honours context build
+     * escalation.
      */
     public ResourceStatus getStatus();
 
@@ -67,23 +68,6 @@ public interface BuildContext {
    * Read-write state associated with input.
    */
   public static interface Input<T> extends InputMetadata<T> {
-
-    /**
-     * Shortcut to {@code getOldMetadata().getStatus()}.
-     * <p>
-     */
-    @Override
-    public ResourceStatus getStatus();
-
-    /**
-     * Returns previous build's metadata about this input or {@code null} if the input was not part
-     * of the previous build.
-     */
-    public InputMetadata<T> getOldMetadata();
-
-    //
-    //
-    //
 
     public void associateIncludedInput(T resource);
 
@@ -118,8 +102,6 @@ public interface BuildContext {
 
   public static interface Output<T> extends OutputMetadata<T> {
 
-    public OutputMetadata<T> getOldMetadata();
-
     public OutputStream newOutputStream() throws IOException;
 
     @Override
@@ -132,12 +114,8 @@ public interface BuildContext {
 
   /**
    * Registers specified input {@code File} with this build context.
-   * <p>
-   * Only previous build metadata and status are available at this point. All other methods throw
-   * {@link IllegalStateException}. Which suggests we need an extra object. Maybe this should return
-   * {@link InputMetadata}, but this means #getInputStatus should be moved there.
    * 
-   * @return {@link Input} representing the input file, never {@code null}.
+   * @return {@link InputMetadata} representing the input file, never {@code null}.
    * @throws IllegalArgumentException if inputFile does not exist or cannot be read
    * 
    * @see #processInput(File)

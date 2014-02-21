@@ -449,21 +449,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return output;
   }
 
-  public DefaultOutputMetadata getOldOutput(File outputFile) {
-    outputFile = normalize(outputFile);
-    if (oldState == null || !oldState.getOutputFiles().contains(outputFile)) {
-      return null;
-    }
-    return new DefaultOutputMetadata(this, oldStateAdaptor, outputFile);
-  }
-
-  public DefaultInputMetadata getOldInput(File inputFile) {
-    if (oldState == null || !oldState.getInputFiles().contains(inputFile)) {
-      return null;
-    }
-    return new DefaultInputMetadata(this, oldStateAdaptor, inputFile);
-  }
-
   public ResourceStatus getInputStatus(File inputFile) {
     if (!registeredInputs.containsKey(inputFile)) {
       if (oldState != null && oldState.getInputFiles().contains(inputFile)) {

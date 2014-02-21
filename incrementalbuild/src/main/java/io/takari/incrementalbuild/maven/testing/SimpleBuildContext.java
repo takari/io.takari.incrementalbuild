@@ -92,11 +92,6 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public InputMetadata<File> getOldMetadata() {
-      return null;
-    }
-
-    @Override
     public void associateIncludedInput(File resource) {}
 
     @Override
@@ -131,11 +126,6 @@ public class SimpleBuildContext implements BuildContext {
     @Override
     public ResourceStatus getStatus() {
       return ResourceStatus.NEW;
-    }
-
-    @Override
-    public OutputMetadata<File> getOldMetadata() {
-      return null;
     }
 
     @Override

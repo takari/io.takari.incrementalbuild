@@ -2,7 +2,6 @@ package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
-import io.takari.incrementalbuild.BuildContext.OutputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 
 import java.io.File;
@@ -56,11 +55,6 @@ public class DefaultOutput implements BuildContext.Output<File>, Resource, Capab
   @Override
   public File getResource() {
     return file;
-  }
-
-  @Override
-  public OutputMetadata<File> getOldMetadata() {
-    return context.getOldOutput(file);
   }
 
   @Override
