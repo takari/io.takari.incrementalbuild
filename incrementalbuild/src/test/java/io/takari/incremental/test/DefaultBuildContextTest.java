@@ -477,9 +477,8 @@ public class DefaultBuildContextTest {
     outputFile1 = input.associateOutput(outputFile1).getResource();
     outputFile3 = input.associateOutput(outputFile3).getResource();
     outputs = toMap(context.getProcessedOutputs(File.class));
-    Assert.assertEquals(3, outputs.size());
+    Assert.assertEquals(2, outputs.size());
     Assert.assertNotNull(outputs.get(outputFile1));
-    Assert.assertNotNull(outputs.get(outputFile2));
     Assert.assertNotNull(outputs.get(outputFile3));
     context.commit();
 

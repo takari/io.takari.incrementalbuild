@@ -568,7 +568,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       for (File outputFile : oldState.getOutputFiles()) {
         if (!processedOutputs.containsKey(outputFile)) {
           for (File inputFile : oldState.getAssociatedInputs(outputFile)) {
-            if (registeredInputs.containsKey(inputFile)) {
+            if (registeredInputs.containsKey(inputFile) && !processedInputs.containsKey(inputFile)) {
               result.add((OutputMetadata<T>) new DefaultOutputMetadata(this, oldStateAdaptor,
                   outputFile));
               break;
