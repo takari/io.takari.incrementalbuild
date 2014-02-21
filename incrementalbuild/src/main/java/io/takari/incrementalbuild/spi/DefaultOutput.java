@@ -14,7 +14,7 @@ import java.util.Collection;
 /**
  * @noinstantiate clients are not expected to instantiate this class
  */
-public class DefaultOutput implements BuildContext.Output<File>, Resource, CapabilitiesProvider {
+public class DefaultOutput implements BuildContext.Output<File>, CapabilitiesProvider {
 
   private final DefaultBuildContext<?> context;
   private final File file;

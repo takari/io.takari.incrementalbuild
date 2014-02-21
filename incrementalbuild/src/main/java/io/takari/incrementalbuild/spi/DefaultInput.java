@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * @noinstantiate clients are not expected to instantiate this class
  */
-public class DefaultInput implements BuildContext.Input<File>, Resource {
+public class DefaultInput implements BuildContext.Input<File> {
 
   final DefaultBuildContext<?> context;
 
