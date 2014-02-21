@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -85,63 +83,58 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   /**
    * All inputs registered during this build.
    */
-  private final ConcurrentMap<File, FileState> registeredInputs =
-      new ConcurrentHashMap<File, FileState>();
+  private final Map<File, FileState> registeredInputs = new HashMap<File, FileState>();
 
   /**
    * All inputs selected for processing during this build.
    */
-  private final ConcurrentMap<File, DefaultInput> processedInputs =
-      new ConcurrentHashMap<File, DefaultInput>();
+  private final Map<File, DefaultInput> processedInputs = new HashMap<File, DefaultInput>();
 
   /**
    * Outputs registered with this build context during this build.
    */
-  private final ConcurrentMap<File, DefaultOutput> processedOutputs =
-      new ConcurrentHashMap<File, DefaultOutput>();
+  private final Map<File, DefaultOutput> processedOutputs = new HashMap<File, DefaultOutput>();
 
   private final Set<File> deletedOutputs = new HashSet<File>();
 
   // direct associations
 
-  private final ConcurrentMap<File, Collection<File>> inputOutputs =
-      new ConcurrentHashMap<File, Collection<File>>();
+  private final Map<File, Collection<File>> inputOutputs = new HashMap<File, Collection<File>>();
 
-  private final ConcurrentMap<File, Collection<File>> outputInputs =
-      new ConcurrentHashMap<File, Collection<File>>();
+  private final Map<File, Collection<File>> outputInputs = new HashMap<File, Collection<File>>();
 
-  private final ConcurrentMap<File, Collection<File>> inputIncludedInputs =
-      new ConcurrentHashMap<File, Collection<File>>();
+  private final Map<File, Collection<File>> inputIncludedInputs =
+      new HashMap<File, Collection<File>>();
 
   // provided/required capabilities
 
-  private final ConcurrentMap<File, Collection<QualifiedName>> inputRequirements =
-      new ConcurrentHashMap<File, Collection<QualifiedName>>();
+  private final Map<File, Collection<QualifiedName>> inputRequirements =
+      new HashMap<File, Collection<QualifiedName>>();
 
   /**
    * Maps requirement qname to all input that require it.
    */
-  private final ConcurrentMap<QualifiedName, Collection<File>> requirementInputs =
-      new ConcurrentHashMap<QualifiedName, Collection<File>>();
+  private final Map<QualifiedName, Collection<File>> requirementInputs =
+      new HashMap<QualifiedName, Collection<File>>();
 
   /**
    * Maps output file to capabilities provided by it.
    */
-  private final ConcurrentMap<File, Collection<QualifiedName>> outputCapabilities =
-      new ConcurrentHashMap<File, Collection<QualifiedName>>();
+  private final Map<File, Collection<QualifiedName>> outputCapabilities =
+      new HashMap<File, Collection<QualifiedName>>();
 
   // simple key/value pairs
 
-  private final ConcurrentMap<File, Map<String, Serializable>> resourceAttributes =
-      new ConcurrentHashMap<File, Map<String, Serializable>>();
+  private final Map<File, Map<String, Serializable>> resourceAttributes =
+      new HashMap<File, Map<String, Serializable>>();
 
   // messages
 
   /**
    * Maps input or included input file to messages generated for the file
    */
-  private final ConcurrentMap<File, Collection<Message>> inputMessages =
-      new ConcurrentHashMap<File, Collection<Message>>();
+  private final Map<File, Collection<Message>> inputMessages =
+      new HashMap<File, Collection<Message>>();
 
   /**
    * Number of error messages
@@ -284,20 +277,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     ObjectOutputStream os =
         new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(
-            stateFile)))) {
-          {
-            enableReplaceObject(true);
-          }
-
-          @Override
-          protected Object replaceObject(Object obj) throws IOException {
-            // TODO maybe don't serialize DefaultInput/DefaultOutput instances?
-            if (obj == DefaultBuildContext.this) {
-              return state;
-            }
-            return super.replaceObject(obj);
-          }
-        };
+            stateFile))));
     try {
       os.writeObject(state);
     } finally {
@@ -327,7 +307,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     DefaultInput input = processedInputs.get(inputFile);
     if (input == null) {
-      input = putIfAbsent(processedInputs, inputFile, new DefaultInput(this, inputFile));
+      input = put(processedInputs, inputFile, new DefaultInput(this, inputFile));
     }
 
     return input;
@@ -431,10 +411,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
   }
 
-  private static <K, V> V putIfAbsent(ConcurrentMap<K, V> map, K key, V value) {
-    // XXX do I do this right? need to check with the concurrency book
-    map.putIfAbsent(key, value);
-    return map.get(key);
+  // XXX inline!
+  private static <K, V> V put(Map<K, V> map, K key, V value) {
+    map.put(key, value);
+    return value;
   }
 
   @Override
@@ -443,7 +423,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     DefaultOutput output = processedOutputs.get(outputFile);
     if (output == null) {
-      output = putIfAbsent(processedOutputs, outputFile, new DefaultOutput(this, outputFile));
+      output = put(processedOutputs, outputFile, new DefaultOutput(this, outputFile));
     }
 
     return output;
@@ -591,15 +571,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     File outputFile = output.getResource();
     Collection<File> outputs = inputOutputs.get(inputFile);
     if (outputs == null) {
-      outputs = putIfAbsent(inputOutputs, inputFile, new LinkedHashSet<File>());
+      outputs = put(inputOutputs, inputFile, new LinkedHashSet<File>());
     }
-    outputs.add(outputFile); // XXX NOT THREAD SAFE
+    outputs.add(outputFile);
 
     Collection<File> inputs = outputInputs.get(outputFile);
     if (inputs == null) {
-      inputs = putIfAbsent(outputInputs, outputFile, new LinkedHashSet<File>());
+      inputs = put(outputInputs, outputFile, new LinkedHashSet<File>());
     }
-    inputs.add(inputFile); // XXX NOT THREAD SAFE
+    inputs.add(inputFile);
   }
 
   public boolean isAssociatedOutput(DefaultInput input, File outputFile) {
@@ -635,9 +615,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     File inputFile = input.getResource();
     Collection<File> includedFiles = inputIncludedInputs.get(inputFile);
     if (includedFiles == null) {
-      includedFiles = putIfAbsent(inputIncludedInputs, inputFile, new LinkedHashSet<File>());
+      includedFiles = put(inputIncludedInputs, inputFile, new LinkedHashSet<File>());
     }
-    includedFiles.add(includedFile); // XXX NOT THREAD SAFE
+    includedFiles.add(includedFile);
     putInputFileState(includedFile, new FileState(includedFile));
   }
 
@@ -651,25 +631,24 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     File inputFile = input.getResource();
     Collection<File> inputs = requirementInputs.get(requirement);
     if (inputs == null) {
-      inputs = putIfAbsent(requirementInputs, requirement, new LinkedHashSet<File>());
+      inputs = put(requirementInputs, requirement, new LinkedHashSet<File>());
     }
-    inputs.add(inputFile); // XXX NOT THREAD SAFE
+    inputs.add(inputFile);
 
     Collection<QualifiedName> requirements = inputRequirements.get(inputFile);
     if (requirements == null) {
-      requirements = putIfAbsent(inputRequirements, inputFile, new LinkedHashSet<QualifiedName>());
+      requirements = put(inputRequirements, inputFile, new LinkedHashSet<QualifiedName>());
     }
-    requirements.add(requirement); // XXX NOT THREAD SAFE
+    requirements.add(requirement);
   }
 
   public void addCapability(DefaultOutput output, String qualifier, String localName) {
     File outputFile = output.getResource();
     Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
     if (capabilities == null) {
-      capabilities =
-          putIfAbsent(outputCapabilities, outputFile, new LinkedHashSet<QualifiedName>());
+      capabilities = put(outputCapabilities, outputFile, new LinkedHashSet<QualifiedName>());
     }
-    capabilities.add(new QualifiedName(qualifier, localName)); // XXX NOT THREAD SAFE
+    capabilities.add(new QualifiedName(qualifier, localName));
   }
 
   public Collection<String> getOutputCapabilities(File outputFile, String qualifier) {
@@ -718,10 +697,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       T value) {
     Map<String, Serializable> attributes = resourceAttributes.get(resource);
     if (attributes == null) {
-      attributes =
-          putIfAbsent(resourceAttributes, resource, new LinkedHashMap<String, Serializable>());
+      attributes = put(resourceAttributes, resource, new LinkedHashMap<String, Serializable>());
     }
-    attributes.put(key, value); // XXX NOT THREAD SAFE
+    attributes.put(key, value);
     if (oldState != null) {
       return oldState.getResourceAttribute(resource, key, Serializable.class);
     }
@@ -740,9 +718,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     File inputFile = input.getResource();
     Collection<Message> messages = this.inputMessages.get(inputFile);
     if (messages == null) {
-      messages = putIfAbsent(inputMessages, inputFile, new ArrayList<Message>());
+      messages = put(inputMessages, inputFile, new ArrayList<Message>());
     }
-    messages.add(new Message(line, column, message, severity, cause)); // XXX NOT THREAD SAFE
+    messages.add(new Message(line, column, message, severity, cause));
     if (severity == SEVERITY_ERROR) {
       errorCount.incrementAndGet();
     }
@@ -759,8 +737,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (oldState != null) {
       for (File inputFile : oldState.getInputFiles()) {
         if (!processedInputs.containsKey(inputFile) && registeredInputs.containsKey(inputFile)) {
-          DefaultInput input =
-              putIfAbsent(processedInputs, inputFile, new DefaultInput(this, inputFile));
+          DefaultInput input = put(processedInputs, inputFile, new DefaultInput(this, inputFile));
 
           // copy associated outputs
           for (File outputFile : oldState.getAssociatedOutputs(inputFile)) {
@@ -824,7 +801,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   protected void carryOverOutput(DefaultInput input, File outputFile) {
-    associate(input, putIfAbsent(processedOutputs, outputFile, new DefaultOutput(this, outputFile)));
+    associate(input, put(processedOutputs, outputFile, new DefaultOutput(this, outputFile)));
 
     Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
     if (capabilities != null) {
