@@ -361,6 +361,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return new DefaultInputMetadata(this, oldState, inputFile);
   }
 
+  public <R extends Serializable, H extends Serializable, T extends Resource<R, H>> InputMetadata<T> registerInput(
+      T resource) {
+    return null;
+  }
+
   @Override
   public Iterable<DefaultInputMetadata> registerInputs(Iterable<File> inputFiles) {
     Map<File, DefaultInputMetadata> result = new LinkedHashMap<File, DefaultInputMetadata>();

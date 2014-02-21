@@ -1,13 +1,18 @@
 package io.takari.incremental.demo;
 
-import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.BuildContext.Input;
+import io.takari.incrementalbuild.BuildContext.InputMetadata;
+import io.takari.incrementalbuild.BuildContext.ResourceStatus;
+import io.takari.incrementalbuild.spi.DefaultBuildContext;
+import io.takari.incrementalbuild.spi.Resource;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.io.Serializable;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import org.apache.maven.artifact.Artifact;
 
@@ -18,9 +23,68 @@ public class DependencyResourceMockup {
 
   private static final String RESOURCE_PATH = "some/file";
 
-  BuildContext context;
+  DefaultBuildContext<?> context;
 
   Artifact dependency;
+
+  private static class ArtifactResourceKey implements Serializable {
+    private final String groupId;
+    private final String artifactId;
+    private final String path;
+
+    public ArtifactResourceKey(String groupId, String artifactId, String path) {
+      this.groupId = groupId;
+      this.artifactId = artifactId;
+      this.path = path;
+    }
+
+    @Override
+    public int hashCode() {
+      // TODO Auto-generated method stub
+      return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      // TODO Auto-generated method stub
+      return false;
+    }
+  }
+
+  private static class ArtifactResource implements Resource<ArtifactResourceKey, byte[]> {
+
+    private ArtifactResource(ArtifactResourceKey key, byte[] digest) {
+      // TODO Auto-generated method stub
+    }
+
+    @Override
+    public ArtifactResourceKey getResourceId() {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public byte[] getDigest() {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    public static ArtifactResource fromFile(Artifact artifact, String path, File resource) {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    public static ArtifactResource fromJarEntry(Artifact artifact, String path, JarFile jar,
+        JarEntry entry) {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    public static ArtifactResource fromNothing(Artifact artifact, String path) {
+      // TODO Auto-generated method stub
+      return null;
+    }
+  }
 
   public void execute() throws IOException {
     File file = dependency.getFile();
@@ -31,28 +95,46 @@ public class DependencyResourceMockup {
     }
 
     if (file.isFile()) {
-      ZipFile zip = new ZipFile(file);
-      try {
-        ZipEntry resource = zip.getEntry(RESOURCE_PATH);
-        InputStream is = zip.getInputStream(resource);
+      InputMetadata<File> jarMetadata = context.registerInput(file);
+      if (jarMetadata.getStatus() == ResourceStatus.UNMODIFIED) {
+        // jar has not changed since last build
+        // need to register the resource to indicate it is still relevant
+        // otherwise resource's outputs will be considered orphaned are removed
+        context.registerInput(ArtifactResource.fromNothing(dependency, RESOURCE_PATH));
+      } else {
+        // jar changed, need to look inside and check if jar entry changed or not
+        JarFile jar = new JarFile(file);
         try {
-          doSomethingUsefulWithResource(is);
+          JarEntry resource = jar.getJarEntry(RESOURCE_PATH);
+          InputMetadata<ArtifactResource> metadata =
+              context.registerInput(ArtifactResource.fromJarEntry(dependency, RESOURCE_PATH, jar,
+                  resource));
+          if (metadata.getStatus() != ResourceStatus.UNMODIFIED) {
+            InputStream is = jar.getInputStream(resource);
+            try {
+              doSomethingUsefulWithResource(metadata.process(), is);
+            } finally {
+              is.close();
+            }
+          }
         } finally {
-          is.close();
+          jar.close();
         }
-      } finally {
-        zip.close();
       }
     } else if (file.isDirectory()) {
       File resource = new File(file, RESOURCE_PATH);
-      InputStream is = new FileInputStream(resource);
-      try {
-        doSomethingUsefulWithResource(is);
-      } finally {
-        is.close();
+      InputMetadata<ArtifactResource> metadata =
+          context.registerInput(ArtifactResource.fromFile(dependency, RESOURCE_PATH, resource));
+      if (metadata.getStatus() != ResourceStatus.UNMODIFIED) {
+        InputStream is = new FileInputStream(resource);
+        try {
+          doSomethingUsefulWithResource(metadata.process(), is);
+        } finally {
+          is.close();
+        }
       }
     }
   }
 
-  private void doSomethingUsefulWithResource(InputStream is) {}
+  private void doSomethingUsefulWithResource(Input<ArtifactResource> input, InputStream is) {}
 }
