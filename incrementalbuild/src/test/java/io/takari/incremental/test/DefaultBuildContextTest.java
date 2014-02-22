@@ -90,7 +90,7 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -123,7 +123,7 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -148,12 +148,12 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
     context = newBuildContext();
-    DefaultInputMetadata metadata = context.registerInput(inputFile);
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
     context.deleteStaleOutputs(true);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(1, toList(metadata.getAssociatedOutputs()).size());
@@ -172,7 +172,7 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -221,7 +221,7 @@ public class DefaultBuildContextTest {
     // initial build
     DefaultBuildContext<?> context = newBuildContext();
     // first time invocation returns Input for processing
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -256,8 +256,8 @@ public class DefaultBuildContextTest {
     // initial build
     DefaultBuildContext<?> context = newBuildContext();
     // first time invocation returns Input for processing
-    DefaultInput input = context.registerInput(inputFile).process();
-    input.associateIncludedInput(includedFile);
+    DefaultInput<File> input = context.registerInput(inputFile).process();
+    input.associateIncludedInput(context.registerInput(includedFile));
     context.commit();
 
     // no-change rebuild
@@ -269,7 +269,8 @@ public class DefaultBuildContextTest {
     Files.append("test", includedFile, Charsets.UTF_8);
     context = newBuildContext();
     Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
-    context.registerInput(inputFile).process().associateIncludedInput(includedFile);
+    context.registerInput(inputFile).process()
+        .associateIncludedInput(context.registerInput(includedFile));
     context.commit();
 
     // no-change rebuild
@@ -289,7 +290,7 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -310,7 +311,7 @@ public class DefaultBuildContextTest {
     File outputFile = temp.newFile("outputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile);
     context.commit();
 
@@ -328,7 +329,7 @@ public class DefaultBuildContextTest {
     File outputFile2 = temp.newFile("outputFile2");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.associateOutput(outputFile1);
     input.associateOutput(outputFile2);
     context.commit();
@@ -341,7 +342,7 @@ public class DefaultBuildContextTest {
     Assert.assertFalse(outputFile2.canRead());
 
     context = newBuildContext();
-    DefaultInputMetadata metadata = context.registerInput(inputFile);
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
     Assert.assertEquals(1, toList(metadata.getAssociatedOutputs()).size());
     context.commit();
   }
@@ -362,7 +363,8 @@ public class DefaultBuildContextTest {
     Files.append("test", includedFile, Charsets.UTF_8);
 
     DefaultBuildContext<?> context = newBuildContext();
-    context.registerInput(inputFile).process().associateIncludedInput(includedFile);
+    context.registerInput(inputFile).process()
+        .associateIncludedInput(context.registerInput(includedFile));
     context.commit();
 
     context = newBuildContext();
@@ -385,7 +387,7 @@ public class DefaultBuildContextTest {
     File inputFile = temp.newFile("inputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     input.addRequirement("a", "b");
     context.commit();
 
@@ -425,7 +427,7 @@ public class DefaultBuildContextTest {
     inputFile4 = context.registerInput(inputFile4).getResource(); // NEW
 
     Map<File, InputMetadata<File>> inputs = new TreeMap<File, InputMetadata<File>>();
-    for (InputMetadata<File> input : context.getRegisteredInputs(File.class)) {
+    for (InputMetadata<File> input : context.getRegisteredInputs()) {
       inputs.put(input.getResource(), input);
     }
 
@@ -444,10 +446,10 @@ public class DefaultBuildContextTest {
     File outputFile3 = temp.newFile("outputFile3");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     outputFile1 = input.associateOutput(outputFile1).getResource();
     outputFile2 = input.associateOutput(outputFile2).getResource();
-    Map<File, OutputMetadata<File>> outputs = toMap(context.getProcessedOutputs(File.class));
+    Map<File, OutputMetadata<File>> outputs = toMap(context.getProcessedOutputs());
     Assert.assertEquals(2, outputs.size());
     Assert.assertNotNull(outputs.get(outputFile1));
     Assert.assertNotNull(outputs.get(outputFile2));
@@ -456,7 +458,7 @@ public class DefaultBuildContextTest {
     // no-change carry-over
     context = newBuildContext();
     context.registerInput(inputFile);
-    outputs = toMap(context.getProcessedOutputs(File.class));
+    outputs = toMap(context.getProcessedOutputs());
     Assert.assertEquals(2, outputs.size());
     Assert.assertNotNull(outputs.get(outputFile1));
     Assert.assertNotNull(outputs.get(outputFile2));
@@ -465,7 +467,7 @@ public class DefaultBuildContextTest {
     // one more time, just to make sure carry-over does not decay
     context = newBuildContext();
     context.registerInput(inputFile);
-    outputs = toMap(context.getProcessedOutputs(File.class));
+    outputs = toMap(context.getProcessedOutputs());
     Assert.assertEquals(2, outputs.size());
     Assert.assertNotNull(outputs.get(outputFile1));
     Assert.assertNotNull(outputs.get(outputFile2));
@@ -476,7 +478,7 @@ public class DefaultBuildContextTest {
     input = context.registerInput(inputFile).process();
     outputFile1 = input.associateOutput(outputFile1).getResource();
     outputFile3 = input.associateOutput(outputFile3).getResource();
-    outputs = toMap(context.getProcessedOutputs(File.class));
+    outputs = toMap(context.getProcessedOutputs());
     Assert.assertEquals(2, outputs.size());
     Assert.assertNotNull(outputs.get(outputFile1));
     Assert.assertNotNull(outputs.get(outputFile3));
@@ -484,9 +486,9 @@ public class DefaultBuildContextTest {
 
     // dropped output is not carried over
     context = newBuildContext();
-    DefaultInputMetadata metadata = context.registerInput(inputFile);
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
     Assert.assertEquals(2, toMap(metadata.getAssociatedOutputs()).size());
-    outputs = toMap(context.getProcessedOutputs(File.class));
+    outputs = toMap(context.getProcessedOutputs());
     Assert.assertEquals(2, outputs.size());
     Assert.assertNotNull(outputs.get(outputFile1));
     Assert.assertNotNull(outputs.get(outputFile3));
@@ -506,12 +508,12 @@ public class DefaultBuildContextTest {
     File inputFile = temp.newFile("inputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput input = context.registerInput(inputFile).process();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
     Assert.assertNull(input.setValue("key", "value"));
     context.commit();
 
     context = newBuildContext();
-    DefaultInputMetadata metadata = context.registerInput(inputFile);
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
     Assert.assertEquals("value", metadata.getValue("key", String.class));
     context.commit();
 
@@ -542,7 +544,7 @@ public class DefaultBuildContextTest {
     // no change output, attributes should be carried over as-is
     context = newBuildContext();
     context.registerInput(inputFile);
-    OutputMetadata<File> metadata = context.getProcessedOutputs(File.class).iterator().next();
+    OutputMetadata<File> metadata = context.getProcessedOutputs().iterator().next();
     Assert.assertEquals("value", metadata.getValue("key", String.class));
     context.commit();
 

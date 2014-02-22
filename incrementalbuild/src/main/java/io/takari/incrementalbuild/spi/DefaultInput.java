@@ -1,8 +1,7 @@
 package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
-import io.takari.incrementalbuild.BuildContext.Input;
-import io.takari.incrementalbuild.BuildContext.ResourceStatus;
+import io.takari.incrementalbuild.BuildContext.InputMetadata;
 
 import java.io.File;
 import java.io.Serializable;
@@ -10,34 +9,25 @@ import java.io.Serializable;
 /**
  * @noinstantiate clients are not expected to instantiate this class
  */
-public class DefaultInput implements BuildContext.Input<File> {
+public class DefaultInput<T> extends DefaultInputMetadata<T> implements BuildContext.Input<T> {
 
-  final DefaultBuildContext<?> context;
-
-  private final File file;
-
-  public DefaultInput(DefaultBuildContext<?> context, File file) {
-    this.context = context;
-    this.file = file;
+  DefaultInput(DefaultBuildContext<?> context, DefaultBuildContextState state, T resource) {
+    super(context, state, resource);
   }
 
   @Override
-  public void associateIncludedInput(File file) {
-    context.associateIncludedInput(this, file);
+  public <I> void associateIncludedInput(InputMetadata<I> included) {
+    if (!(included instanceof DefaultInputMetadata)) {
+      throw new IllegalArgumentException();
+    }
+    context.associateIncludedInput(this, (DefaultInputMetadata<?>) included);
   }
 
   @Override
-  public DefaultOutput associateOutput(File file) {
-    return context.associateOutput(this, file);
-  }
-
-  public void associateOutput(DefaultOutput output) {
+  public DefaultOutput associateOutput(File outputFile) {
+    DefaultOutput output = context.processOutput(outputFile);
     context.associate(this, output);
-  }
-
-  @Override
-  public Iterable<DefaultOutput> getAssociatedOutputs() {
-    return context.getAssociatedOutputs(file);
+    return output;
   }
 
   public void addRequirement(String qualifier, String localName) {
@@ -45,34 +35,14 @@ public class DefaultInput implements BuildContext.Input<File> {
   }
 
   @Override
-  public <T extends Serializable> Serializable setValue(String key, T value) {
-    return context.setResourceAttribute(file, key, value);
-  }
-
-  @Override
-  public <T extends Serializable> T getValue(String key, Class<T> clazz) {
-    return context.getResourceAttribute(file, key, clazz);
+  public <V extends Serializable> Serializable setValue(String key, V value) {
+    return context.setResourceAttribute(resource, key, value);
   }
 
   @Override
   public void addMessage(int line, int column, String message, int severity, Throwable cause) {
     context.addMessage(this, line, column, message, severity, cause);
   }
-
-  public boolean isAssociatedOutput(File file) {
-    return context.isAssociatedOutput(this, file);
-  }
-
-  @Override
-  public ResourceStatus getStatus() {
-    return context.getInputStatus(getResource());
-  }
-
-  @Override
-  public File getResource() {
-    return file;
-  }
-
 
   @Override
   public int hashCode() {
@@ -89,15 +59,9 @@ public class DefaultInput implements BuildContext.Input<File> {
       return false;
     }
 
-    DefaultInput other = (DefaultInput) obj;
+    DefaultInput<?> other = (DefaultInput<?>) obj;
 
     // must be from the same context to be equal
-    return context == other.context && file.equals(other.file);
+    return context == other.context && resource.equals(other.resource);
   }
-
-  @Override
-  public Input<File> process() {
-    return this;
-  }
-
 }

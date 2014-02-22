@@ -40,17 +40,22 @@ class TestBuildContext extends MavenBuildContext {
   }
 
   @Override
-  protected void carryOverOutput(DefaultInput input, File outputFile) {
+  protected void carryOverOutput(DefaultInput<?> input, File outputFile) {
     logger.addCarryoverOutput(outputFile);
     super.carryOverOutput(input, outputFile);
   }
 
   @Override
-  protected void logMessage(DefaultInput input, int line, int column, String message, int severity,
-      Throwable cause) {
+  protected void logMessage(DefaultInput<?> input, int line, int column, String message,
+      int severity, Throwable cause) {
+    if (!(input.getResource() instanceof File)) {
+      // XXX I am too lazy right now, need to fix this later
+      throw new IllegalArgumentException();
+    }
+    File file = (File) input.getResource();
     String msg = String.format("%s %s [%d:%d] %s", getSeverityStr(severity), //
-        input.getResource().getName(), line, column, message);
-    logger.addMessage(input.getResource(), msg);
+        file.getName(), line, column, message);
+    logger.addMessage(file, msg);
     super.logMessage(input, line, column, message, severity, cause);
   }
 

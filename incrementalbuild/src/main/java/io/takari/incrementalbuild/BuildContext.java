@@ -56,7 +56,7 @@ public interface BuildContext {
      */
     public ResourceStatus getStatus();
 
-    public Iterable<? extends OutputMetadata<T>> getAssociatedOutputs();
+    public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs();
 
     public <V extends Serializable> V getValue(String key, Class<V> clazz);
 
@@ -69,9 +69,9 @@ public interface BuildContext {
    */
   public static interface Input<T> extends InputMetadata<T> {
 
-    public void associateIncludedInput(T resource);
+    public <I> void associateIncludedInput(InputMetadata<I> included);
 
-    public Output<T> associateOutput(T resource);
+    public Output<File> associateOutput(File outputFile);
 
     /**
      * Returns value associated with the key during previous build.
@@ -95,7 +95,7 @@ public interface BuildContext {
      */
     public ResourceStatus getStatus();
 
-    public Iterable<? extends InputMetadata<T>> getAssociatedInputs();
+    public <I> Iterable<? extends InputMetadata<I>> getAssociatedInputs(Class<I> clazz);
 
     public <V extends Serializable> V getValue(String key, Class<V> clazz);
   }
@@ -104,10 +104,7 @@ public interface BuildContext {
 
     public OutputStream newOutputStream() throws IOException;
 
-    @Override
-    public Iterable<? extends Input<T>> getAssociatedInputs();
-
-    public void associateInput(InputMetadata<T> input);
+    public <I> void associateInput(InputMetadata<I> input);
 
     public <V extends Serializable> Serializable setValue(String key, V value);
   }
@@ -133,11 +130,11 @@ public interface BuildContext {
    * Returns all inputs registered with this {@link BuildContext} during current and previous
    * builds.
    */
-  public <T> Iterable<? extends InputMetadata<T>> getRegisteredInputs(Class<T> clazz);
+  public Iterable<? extends InputMetadata<File>> getRegisteredInputs();
 
   /**
    * Returns all outputs processed by this {@link BuildContext} during current build or carried over
    * from previous build.
    */
-  public <T> Iterable<? extends OutputMetadata<T>> getProcessedOutputs(Class<T> clazz);
+  public Iterable<? extends OutputMetadata<File>> getProcessedOutputs();
 }

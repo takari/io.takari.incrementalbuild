@@ -92,7 +92,7 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public void associateIncludedInput(File resource) {}
+    public <I> void associateIncludedInput(InputMetadata<I> resource) {}
 
     @Override
     public Output<File> associateOutput(File outputFile) {
@@ -134,12 +134,12 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public Iterable<? extends Input<File>> getAssociatedInputs() {
+    public <I> Iterable<? extends InputMetadata<I>> getAssociatedInputs(Class<I> clazz) {
       return Collections.emptyList();
     }
 
     @Override
-    public void associateInput(InputMetadata<File> input) {}
+    public <I> void associateInput(InputMetadata<I> input) {}
 
     @Override
     public <V extends Serializable> Serializable setValue(String key, V value) {
@@ -199,13 +199,12 @@ public class SimpleBuildContext implements BuildContext {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public <T> Iterable<? extends InputMetadata<T>> getRegisteredInputs(Class<T> clazz) {
-    Set<InputMetadata<T>> result = new LinkedHashSet<InputMetadata<T>>();
+  public Iterable<? extends InputMetadata<File>> getRegisteredInputs() {
+    Set<InputMetadata<File>> result = new LinkedHashSet<InputMetadata<File>>();
     for (File inputFile : registeredInputs) {
-      InputMetadata<T> input = (InputMetadata<T>) processedInputs.get(inputFile);
+      InputMetadata<File> input = processedInputs.get(inputFile);
       if (input == null) {
-        input = (InputMetadata<T>) new SimpleInput(inputFile);
+        input = new SimpleInput(inputFile);
       }
       result.add(input);
     }
@@ -213,11 +212,10 @@ public class SimpleBuildContext implements BuildContext {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public <T> Iterable<? extends OutputMetadata<T>> getProcessedOutputs(Class<T> clazz) {
-    Set<OutputMetadata<T>> result = new LinkedHashSet<OutputMetadata<T>>();
+  public Iterable<? extends OutputMetadata<File>> getProcessedOutputs() {
+    Set<OutputMetadata<File>> result = new LinkedHashSet<OutputMetadata<File>>();
     for (Output<File> output : processedOutputs.values()) {
-      result.add((OutputMetadata<T>) output);
+      result.add(output);
     }
     return result;
   }

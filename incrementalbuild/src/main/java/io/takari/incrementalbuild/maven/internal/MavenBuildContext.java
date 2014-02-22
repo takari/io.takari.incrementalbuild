@@ -64,8 +64,8 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
   public void afterExecutionFailure(MojoExecutionEvent event) {}
 
   @Override
-  protected void logMessage(DefaultInput input, int line, int column, String message, int severity,
-      Throwable cause) {
+  protected void logMessage(DefaultInput<?> input, int line, int column, String message,
+      int severity, Throwable cause) {
     // TODO Auto-generated method stub
 
   }

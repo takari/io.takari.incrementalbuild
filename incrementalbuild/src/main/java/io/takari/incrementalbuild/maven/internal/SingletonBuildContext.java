@@ -58,12 +58,12 @@ public class SingletonBuildContext implements BuildContext {
   }
 
   @Override
-  public <T> Iterable<? extends InputMetadata<T>> getRegisteredInputs(Class<T> clazz) {
-    return delegate.get().getRegisteredInputs(clazz);
+  public Iterable<? extends InputMetadata<File>> getRegisteredInputs() {
+    return delegate.get().getRegisteredInputs();
   }
 
   @Override
-  public <T> Iterable<? extends OutputMetadata<T>> getProcessedOutputs(Class<T> clazz) {
-    return delegate.get().getProcessedOutputs(clazz);
+  public Iterable<? extends OutputMetadata<File>> getProcessedOutputs() {
+    return delegate.get().getProcessedOutputs();
   }
 }

@@ -7,6 +7,10 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @noinstantiate clients are not expected to instantiate this class
@@ -16,12 +20,11 @@ public class DefaultOutputMetadata
       BuildContext.OutputMetadata<File>,
       CapabilitiesProvider {
 
-  private final DefaultBuildContext<?> context;
+  final DefaultBuildContext<?> context;
 
-  private final DefaultBuildContextState state;
+  final DefaultBuildContextState state;
 
-  private final File file;
-
+  final File file;
 
   DefaultOutputMetadata(DefaultBuildContext<?> context, DefaultBuildContextState state, File file) {
     this.context = context;
@@ -40,17 +43,28 @@ public class DefaultOutputMetadata
   }
 
   @Override
-  public Iterable<? extends InputMetadata<File>> getAssociatedInputs() {
-    return context.getAssociatedInputs(state, file);
+  public <I> Iterable<? extends InputMetadata<I>> getAssociatedInputs(Class<I> clazz) {
+    return context.getAssociatedInputs(state, file, clazz);
   }
 
   @Override
   public Collection<String> getCapabilities(String qualifier) {
-    return state.getCapabilities(file, qualifier);
+    Collection<QualifiedName> capabilities = state.outputCapabilities.get(file);
+    if (capabilities == null) {
+      return Collections.emptyList();
+    }
+    Set<String> result = new LinkedHashSet<String>();
+    for (QualifiedName capability : capabilities) {
+      if (qualifier.equals(capability.getQualifier())) {
+        result.add(capability.getLocalName());
+      }
+    }
+    return result;
   }
 
   @Override
   public <V extends Serializable> V getValue(String key, Class<V> clazz) {
-    return state.getResourceAttribute(file, key, clazz);
+    Map<String, Serializable> attributes = state.resourceAttributes.get(file);
+    return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 }

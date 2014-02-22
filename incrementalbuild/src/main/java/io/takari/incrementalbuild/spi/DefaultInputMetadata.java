@@ -6,46 +6,48 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * @noinstantiate clients are not expected to instantiate this class
  */
-public class DefaultInputMetadata implements InputMetadata<File> {
+public class DefaultInputMetadata<T> implements InputMetadata<T> {
 
   final DefaultBuildContext<?> context;
 
-  private final DefaultBuildContextState state;
+  final DefaultBuildContextState state;
 
-  private final File file;
+  final T resource;
 
-  DefaultInputMetadata(DefaultBuildContext<?> context, DefaultBuildContextState state, File file) {
+  DefaultInputMetadata(DefaultBuildContext<?> context, DefaultBuildContextState state, T resource) {
     this.context = context;
     this.state = state;
-    this.file = file;
+    this.resource = resource;
   }
 
   @Override
-  public File getResource() {
-    return file;
+  public T getResource() {
+    return resource;
   }
 
   @Override
   public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs() {
-    return context.getAssociatedOutputs(state, file);
+    return context.getAssociatedOutputs(state, resource);
   }
 
   @Override
   public ResourceStatus getStatus() {
-    return context.getInputStatus(file);
+    return context.getInputStatus(resource, true /* associated */);
   }
 
   @Override
   public <V extends Serializable> V getValue(String key, Class<V> clazz) {
-    return state.getResourceAttribute(file, key, clazz);
+    Map<String, Serializable> attributes = state.resourceAttributes.get(resource);
+    return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 
   @Override
-  public DefaultInput process() {
+  public DefaultInput<T> process() {
     return context.processInput(this);
   }
 

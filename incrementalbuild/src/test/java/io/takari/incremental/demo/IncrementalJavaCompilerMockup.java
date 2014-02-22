@@ -42,7 +42,7 @@ public class IncrementalJavaCompilerMockup {
     // enqueue all sources that require processing, i.e. new or changed
     // this also prepares internal build-avoidance state to track dependencies
     // and messages associated with processed inputs
-    for (DefaultInput input : context.registerAndProcessInputs(sources)) {
+    for (DefaultInput<File> input : context.registerAndProcessInputs(sources)) {
       queue.add(input.getResource());
     }
 
@@ -85,7 +85,7 @@ public class IncrementalJavaCompilerMockup {
   }
 
   // simplified for sake of brevity, real incremental compiler allows multiple classes per input
-  public void acceptResult(DefaultInput input, byte[] bytes, String type, String simpleType,
+  public void acceptResult(DefaultInput<File> input, byte[] bytes, String type, String simpleType,
       String[] referencedTypes, String[] referencedSimpleTypes) throws IOException {
 
     File outputFile = getOutputFile(type);

@@ -48,7 +48,7 @@ public class InputAggregationMockup {
     // this is the application data extracted from the inputs
     List<Serializable> aggreagateData = new ArrayList<Serializable>();
 
-    for (BuildContext.InputMetadata<File> input : context.getRegisteredInputs(File.class)) {
+    for (BuildContext.InputMetadata<File> input : context.getRegisteredInputs()) {
       Serializable data = input.getValue(KEY_INCREMENTAL_DATA, Serializable.class);
       if (data != null) {
         switch (input.getStatus()) {

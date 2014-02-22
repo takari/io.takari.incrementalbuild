@@ -1,7 +1,6 @@
 package io.takari.incremental.test;
 
 import io.takari.incrementalbuild.BuildContext;
-import io.takari.incrementalbuild.BuildContext.Input;
 import io.takari.incrementalbuild.BuildContext.Output;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 
@@ -25,12 +24,10 @@ public class DefaultOutputTest {
 
   @Test
   public void testOutputStream_createParentDirectories() throws Exception {
-    File inputFile = temp.newFile("inputFile");
     File outputFile = new File(temp.getRoot(), "sub/dir/outputFile");
 
     BuildContext context = newBuildContext();
-    Input<File> input = context.registerInput(inputFile).process();
-    Output<File> output = input.associateOutput(outputFile);
+    Output<File> output = context.processOutput(outputFile);
     output.newOutputStream().close();
 
     Assert.assertTrue(outputFile.canRead());

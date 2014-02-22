@@ -2,26 +2,23 @@ package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
-import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * @noinstantiate clients are not expected to instantiate this class
  */
-public class DefaultOutput implements BuildContext.Output<File>, CapabilitiesProvider {
+public class DefaultOutput extends DefaultOutputMetadata
+    implements
+      BuildContext.Output<File>,
+      CapabilitiesProvider {
 
-  private final DefaultBuildContext<?> context;
-  private final File file;
-
-  DefaultOutput(DefaultBuildContext<?> context, File file) {
-    this.context = context;
-    this.file = file;
+  DefaultOutput(DefaultBuildContext<?> context, DefaultBuildContextState state, File file) {
+    super(context, state, file);
   }
 
   @Override
@@ -38,29 +35,11 @@ public class DefaultOutput implements BuildContext.Output<File>, CapabilitiesPro
   }
 
   @Override
-  public Collection<String> getCapabilities(String namespace) {
-    return context.getOutputCapabilities(file, namespace);
-  }
-
-  @Override
-  public Iterable<DefaultInput> getAssociatedInputs() {
-    return context.getAssociatedInputs(getResource());
-  }
-
-  @Override
-  public void associateInput(InputMetadata<File> input) {
-    context.associate(input, this);
-  }
-
-  @Override
-  public File getResource() {
-    return file;
-  }
-
-  @Override
-  public ResourceStatus getStatus() {
-    // TODO Auto-generated method stub
-    return null;
+  public <I> void associateInput(InputMetadata<I> input) {
+    if (!(input instanceof DefaultInput<?>)) {
+      throw new IllegalArgumentException();
+    }
+    context.associate((DefaultInput<?>) input, this);
   }
 
   @Override
