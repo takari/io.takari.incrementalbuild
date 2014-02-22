@@ -14,11 +14,11 @@ public class DefaultInputMetadata implements InputMetadata<File> {
 
   final DefaultBuildContext<?> context;
 
-  private final BuildContextState state;
+  private final DefaultBuildContextState state;
 
   private final File file;
 
-  DefaultInputMetadata(DefaultBuildContext<?> context, BuildContextState state, File file) {
+  DefaultInputMetadata(DefaultBuildContext<?> context, DefaultBuildContextState state, File file) {
     this.context = context;
     this.state = state;
     this.file = file;
@@ -31,7 +31,7 @@ public class DefaultInputMetadata implements InputMetadata<File> {
 
   @Override
   public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs() {
-    return state.getAssociatedOutputs(file);
+    return context.getAssociatedOutputs(state, file);
   }
 
   @Override

@@ -42,48 +42,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private final File stateFile;
 
+  private final DefaultBuildContextState state;
+
   private final DefaultBuildContextState oldState;
-
-  private final BuildContextState oldStateAdaptor;
-
-  private final BuildContextState stateAdaptor = new BuildContextState() {
-
-    @Override
-    public <V extends Serializable> V getResourceAttribute(File input, String key, Class<V> clazz) {
-      Map<String, Serializable> attributes = resourceAttributes.get(input);
-      return attributes != null ? clazz.cast(attributes.get(key)) : null;
-    }
-
-    @Override
-    public Collection<String> getOutputCapabilities(File outputFile, String qualifier) {
-      return DefaultBuildContext.this.getOutputCapabilities(outputFile, qualifier);
-    }
-
-    @Override
-    public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs(File file) {
-      return DefaultBuildContext.this.getAssociatedOutputs(file);
-    }
-
-    @Override
-    public Iterable<? extends InputMetadata<File>> getAssociatedInputs(File file) {
-      return DefaultBuildContext.this.getAssociatedInputs(file);
-    }
-  };
-
-  private final Map<String, byte[]> configuration;
 
   /**
    * Previous build state does not exist, cannot be read or configuration has changed. When
    * escalated, all input files are considered require processing.
    */
   private final boolean escalated;
-
-  // inputs and outputs
-
-  /**
-   * All inputs registered during this build.
-   */
-  private final Map<File, FileState> registeredInputs = new HashMap<File, FileState>();
 
   /**
    * All inputs selected for processing during this build.
@@ -96,45 +63,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private final Map<File, DefaultOutput> processedOutputs = new HashMap<File, DefaultOutput>();
 
   private final Set<File> deletedOutputs = new HashSet<File>();
-
-  // direct associations
-
-  private final Map<File, Collection<File>> inputOutputs = new HashMap<File, Collection<File>>();
-
-  private final Map<File, Collection<File>> outputInputs = new HashMap<File, Collection<File>>();
-
-  private final Map<File, Collection<File>> inputIncludedInputs =
-      new HashMap<File, Collection<File>>();
-
-  // provided/required capabilities
-
-  private final Map<File, Collection<QualifiedName>> inputRequirements =
-      new HashMap<File, Collection<QualifiedName>>();
-
-  /**
-   * Maps requirement qname to all input that require it.
-   */
-  private final Map<QualifiedName, Collection<File>> requirementInputs =
-      new HashMap<QualifiedName, Collection<File>>();
-
-  /**
-   * Maps output file to capabilities provided by it.
-   */
-  private final Map<File, Collection<QualifiedName>> outputCapabilities =
-      new HashMap<File, Collection<QualifiedName>>();
-
-  // simple key/value pairs
-
-  private final Map<File, Map<String, Serializable>> resourceAttributes =
-      new HashMap<File, Map<String, Serializable>>();
-
-  // messages
-
-  /**
-   * Maps input or included input file to messages generated for the file
-   */
-  private final Map<File, Collection<Message>> inputMessages =
-      new HashMap<File, Collection<Message>>();
 
   /**
    * Number of error messages
@@ -151,59 +79,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     this.stateFile = stateFile;
+    this.state = new DefaultBuildContextState(configuration);
     this.oldState = loadState(stateFile);
 
-    BuildContextState oldStateAdaptor = stateAdaptor; // XXX should be empty state
-    if (oldState != null) {
-      oldStateAdaptor = new BuildContextState() {
-
-        @Override
-        public <V extends Serializable> V getResourceAttribute(File resource, String key,
-            Class<V> clazz) {
-          return oldState.getResourceAttribute(resource, key, clazz);
-        }
-
-        @Override
-        public Collection<String> getOutputCapabilities(File outputFile, String qualifier) {
-          return oldState.getCapabilities(outputFile, qualifier);
-        }
-
-        @Override
-        public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs(File inputFIle) {
-          Collection<File> outputFiles = oldState.getAssociatedOutputs(inputFIle);
-          if (outputFiles == null || outputFiles.isEmpty()) {
-            return Collections.emptyList();
-          }
-          List<OutputMetadata<File>> result = new ArrayList<BuildContext.OutputMetadata<File>>();
-          for (File outputFile : outputFiles) {
-            result.add(new DefaultOutputMetadata(DefaultBuildContext.this, this, outputFile));
-          }
-          return result;
-        }
-
-        @Override
-        public Iterable<? extends InputMetadata<File>> getAssociatedInputs(File outputFile) {
-          Collection<File> inputFiles = oldState.getAssociatedInputs(outputFile);
-          if (inputFiles == null || inputFiles.isEmpty()) {
-            return Collections.emptyList();
-          }
-          List<InputMetadata<File>> result = new ArrayList<BuildContext.InputMetadata<File>>();
-          for (File inputFile : inputFiles) {
-            result.add(new DefaultInputMetadata(DefaultBuildContext.this, this, inputFile));
-          }
-          return result;
-        }
-      };
-    }
-    this.oldStateAdaptor = oldStateAdaptor;
-
-    // TODO clone byte arrays too?
-    this.configuration = new HashMap<String, byte[]>(configuration);
-
-    this.escalated = getEscalated();
+    this.escalated = getEscalated(configuration);
   }
 
-  private boolean getEscalated() {
+  private boolean getEscalated(Map<String, byte[]> configuration) {
     if (oldState == null) {
       log.debug("No previous build state {}", stateFile);
       return true;
@@ -236,6 +118,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private DefaultBuildContextState loadState(File stateFile) {
     // TODO verify stateFile location has not changed since last build
+    // TODO wrap collections in corresponding immutable collections
     try {
       ObjectInputStream is =
           new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(
@@ -259,16 +142,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private void storeState() throws IOException {
     // timestamp output files
-    final Map<File, FileState> files = new HashMap<File, FileState>(registeredInputs);
-    for (File output : processedOutputs.keySet()) {
-      files.put(output, new FileState(output));
+    for (File outputFile : processedOutputs.keySet()) {
+      state.outputs.put(outputFile, new FileState(outputFile));
     }
-
-    final DefaultBuildContextState state =
-        new DefaultBuildContextState(configuration, files, registeredInputs.keySet(),
-            processedOutputs.keySet(), inputOutputs, outputInputs, inputIncludedInputs,
-            inputRequirements, requirementInputs, outputCapabilities, resourceAttributes,
-            inputMessages);
 
     File parent = stateFile.getParentFile();
     if (!parent.isDirectory() && !parent.mkdirs()) {
@@ -300,7 +176,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     File inputFile = inputMetadata.getResource();
-    if (!registeredInputs.containsKey(inputFile)) {
+    if (!state.inputs.containsKey(inputFile)) {
       throw new IllegalArgumentException("Unregistered input file " + inputFile);
     }
 
@@ -314,7 +190,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private void putInputFileState(File inputFile, FileState fileState) {
-    FileState oldFileState = registeredInputs.put(inputFile, fileState);
+    FileState oldFileState = state.inputs.put(inputFile, fileState);
     if (oldFileState != null && !FileState.equals(oldFileState, fileState)) {
       throw new IllegalStateException("Unexpected input file change " + inputFile);
     }
@@ -381,7 +257,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       for (File inputFile : oldState.getAssociatedInputs(outputFile)) {
 
         // input is registered and not processed, not orphaned
-        if (registeredInputs.containsKey(inputFile) && !processedInputs.containsKey(inputFile)) {
+        if (state.inputs.containsKey(inputFile) && !processedInputs.containsKey(inputFile)) {
           continue oldOutputs;
         }
 
@@ -400,7 +276,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
       deleteStaleOutput(outputFile);
 
-      deleted.add(new DefaultOutputMetadata(this, oldStateAdaptor, outputFile));
+      deleted.add(new DefaultOutputMetadata(this, oldState, outputFile));
     }
     return deleted;
   }
@@ -430,7 +306,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public ResourceStatus getInputStatus(File inputFile) {
-    if (!registeredInputs.containsKey(inputFile)) {
+    if (!state.inputs.containsKey(inputFile)) {
       if (oldState != null && oldState.getInputFiles().contains(inputFile)) {
         return ResourceStatus.REMOVED;
       }
@@ -482,7 +358,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     // XXX this returns different instance each invocation. This should not be a problem because
     // each instance is a stateless flyweight.
 
-    return new DefaultInputMetadata(this, oldStateAdaptor, inputFile);
+    return new DefaultInputMetadata(this, oldState, inputFile);
   }
 
   @Override
@@ -501,18 +377,18 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       throw new IllegalArgumentException("Only java.io.File is currently supported " + clazz);
     }
     Set<InputMetadata<T>> result = new LinkedHashSet<InputMetadata<T>>();
-    for (File inputFile : registeredInputs.keySet()) {
+    for (File inputFile : state.inputs.keySet()) {
       InputMetadata<T> input = (InputMetadata<T>) processedInputs.get(inputFile);
       if (input == null) {
-        input = (InputMetadata<T>) new DefaultInputMetadata(this, stateAdaptor, inputFile);
+        input = (InputMetadata<T>) new DefaultInputMetadata(this, state, inputFile);
       }
       result.add(input);
     }
     if (oldState != null) {
       for (File inputFile : oldState.getInputFiles()) {
-        if (!registeredInputs.containsKey(inputFile)) {
+        if (!state.inputs.containsKey(inputFile)) {
           // removed
-          result.add((InputMetadata<T>) new DefaultInputMetadata(this, oldStateAdaptor, inputFile));
+          result.add((InputMetadata<T>) new DefaultInputMetadata(this, oldState, inputFile));
         }
       }
     }
@@ -533,9 +409,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       for (File outputFile : oldState.getOutputFiles()) {
         if (!processedOutputs.containsKey(outputFile)) {
           for (File inputFile : oldState.getAssociatedInputs(outputFile)) {
-            if (registeredInputs.containsKey(inputFile) && !processedInputs.containsKey(inputFile)) {
-              result.add((OutputMetadata<T>) new DefaultOutputMetadata(this, oldStateAdaptor,
-                  outputFile));
+            if (state.inputs.containsKey(inputFile) && !processedInputs.containsKey(inputFile)) {
+              result.add((OutputMetadata<T>) new DefaultOutputMetadata(this, oldState, outputFile));
               break;
             }
           }
@@ -569,26 +444,26 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     File outputFile = output.getResource();
-    Collection<File> outputs = inputOutputs.get(inputFile);
+    Collection<File> outputs = state.inputOutputs.get(inputFile);
     if (outputs == null) {
-      outputs = put(inputOutputs, inputFile, new LinkedHashSet<File>());
+      outputs = put(state.inputOutputs, inputFile, new LinkedHashSet<File>());
     }
     outputs.add(outputFile);
 
-    Collection<File> inputs = outputInputs.get(outputFile);
+    Collection<File> inputs = state.outputInputs.get(outputFile);
     if (inputs == null) {
-      inputs = put(outputInputs, outputFile, new LinkedHashSet<File>());
+      inputs = put(state.outputInputs, outputFile, new LinkedHashSet<File>());
     }
     inputs.add(inputFile);
   }
 
   public boolean isAssociatedOutput(DefaultInput input, File outputFile) {
-    Collection<File> outputs = inputOutputs.get(input.getResource());
+    Collection<File> outputs = state.inputOutputs.get(input.getResource());
     return outputs != null && outputs.contains(outputFile);
   }
 
   public Iterable<DefaultInput> getAssociatedInputs(File outputFile) {
-    Collection<File> inputFiles = outputInputs.get(outputFile);
+    Collection<File> inputFiles = state.outputInputs.get(outputFile);
     if (inputFiles == null || inputFiles.isEmpty()) {
       return Collections.emptyList();
     }
@@ -599,9 +474,21 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return inputs;
   }
 
+  Iterable<DefaultInputMetadata> getAssociatedInputs(DefaultBuildContextState state, File outputFile) {
+    Collection<File> inputFiles = state.outputInputs.get(outputFile);
+    if (inputFiles == null || inputFiles.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<DefaultInputMetadata> inputs = new ArrayList<DefaultInputMetadata>();
+    for (File inputFile : inputFiles) {
+      inputs.add(new DefaultInputMetadata(this, state, inputFile));
+    }
+    return inputs;
+  }
+
   public Iterable<DefaultOutput> getAssociatedOutputs(File inputFile) {
-    Collection<File> outputFiles = inputOutputs.get(inputFile);
-    if (inputOutputs == null || inputOutputs.isEmpty()) {
+    Collection<File> outputFiles = state.inputOutputs.get(inputFile);
+    if (outputFiles == null || outputFiles.isEmpty()) {
       return Collections.emptyList();
     }
     List<DefaultOutput> outputs = new ArrayList<DefaultOutput>();
@@ -611,11 +498,24 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return outputs;
   }
 
+  Iterable<DefaultOutputMetadata> getAssociatedOutputs(DefaultBuildContextState state,
+      File inputFile) {
+    Collection<File> outputFiles = state.inputOutputs.get(inputFile);
+    if (outputFiles == null || outputFiles.isEmpty()) {
+      return Collections.emptyList();
+    }
+    List<DefaultOutputMetadata> outputs = new ArrayList<DefaultOutputMetadata>();
+    for (File outputFile : outputFiles) {
+      outputs.add(new DefaultOutputMetadata(this, state, outputFile));
+    }
+    return outputs;
+  }
+
   public void associateIncludedInput(DefaultInput input, File includedFile) {
     File inputFile = input.getResource();
-    Collection<File> includedFiles = inputIncludedInputs.get(inputFile);
+    Collection<File> includedFiles = state.inputIncludedInputs.get(inputFile);
     if (includedFiles == null) {
-      includedFiles = put(inputIncludedInputs, inputFile, new LinkedHashSet<File>());
+      includedFiles = put(state.inputIncludedInputs, inputFile, new LinkedHashSet<File>());
     }
     includedFiles.add(includedFile);
     putInputFileState(includedFile, new FileState(includedFile));
@@ -629,30 +529,30 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private void addRequirement(DefaultInput input, QualifiedName requirement) {
     File inputFile = input.getResource();
-    Collection<File> inputs = requirementInputs.get(requirement);
+    Collection<File> inputs = state.requirementInputs.get(requirement);
     if (inputs == null) {
-      inputs = put(requirementInputs, requirement, new LinkedHashSet<File>());
+      inputs = put(state.requirementInputs, requirement, new LinkedHashSet<File>());
     }
     inputs.add(inputFile);
 
-    Collection<QualifiedName> requirements = inputRequirements.get(inputFile);
+    Collection<QualifiedName> requirements = state.inputRequirements.get(inputFile);
     if (requirements == null) {
-      requirements = put(inputRequirements, inputFile, new LinkedHashSet<QualifiedName>());
+      requirements = put(state.inputRequirements, inputFile, new LinkedHashSet<QualifiedName>());
     }
     requirements.add(requirement);
   }
 
   public void addCapability(DefaultOutput output, String qualifier, String localName) {
     File outputFile = output.getResource();
-    Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
+    Collection<QualifiedName> capabilities = state.outputCapabilities.get(outputFile);
     if (capabilities == null) {
-      capabilities = put(outputCapabilities, outputFile, new LinkedHashSet<QualifiedName>());
+      capabilities = put(state.outputCapabilities, outputFile, new LinkedHashSet<QualifiedName>());
     }
     capabilities.add(new QualifiedName(qualifier, localName));
   }
 
   public Collection<String> getOutputCapabilities(File outputFile, String qualifier) {
-    Collection<QualifiedName> capabilities = outputCapabilities.get(outputFile);
+    Collection<QualifiedName> capabilities = state.outputCapabilities.get(outputFile);
     if (capabilities == null) {
       return Collections.emptyList();
     }
@@ -673,7 +573,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       String localName) {
     Map<File, InputMetadata<File>> result = new LinkedHashMap<File, InputMetadata<File>>();
 
-    Collection<File> inputs = requirementInputs.get(new QualifiedName(qualifier, localName));
+    Collection<File> inputs = state.requirementInputs.get(new QualifiedName(qualifier, localName));
     if (inputs != null) {
       for (File inputFile : inputs) {
         result.put(inputFile, processedInputs.get(inputFile));
@@ -695,9 +595,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   public <T extends Serializable> Serializable setResourceAttribute(File resource, String key,
       T value) {
-    Map<String, Serializable> attributes = resourceAttributes.get(resource);
+    Map<String, Serializable> attributes = state.resourceAttributes.get(resource);
     if (attributes == null) {
-      attributes = put(resourceAttributes, resource, new LinkedHashMap<String, Serializable>());
+      attributes =
+          put(state.resourceAttributes, resource, new LinkedHashMap<String, Serializable>());
     }
     attributes.put(key, value);
     if (oldState != null) {
@@ -707,7 +608,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public <T extends Serializable> T getResourceAttribute(File resource, String key, Class<T> clazz) {
-    Map<String, Serializable> attributes = resourceAttributes.get(resource);
+    Map<String, Serializable> attributes = state.resourceAttributes.get(resource);
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 
@@ -716,9 +617,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   public void addMessage(DefaultInput input, int line, int column, String message, int severity,
       Throwable cause) {
     File inputFile = input.getResource();
-    Collection<Message> messages = this.inputMessages.get(inputFile);
+    Collection<Message> messages = state.inputMessages.get(inputFile);
     if (messages == null) {
-      messages = put(inputMessages, inputFile, new ArrayList<Message>());
+      messages = put(state.inputMessages, inputFile, new ArrayList<Message>());
     }
     messages.add(new Message(line, column, message, severity, cause));
     if (severity == SEVERITY_ERROR) {
@@ -736,7 +637,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     if (oldState != null) {
       for (File inputFile : oldState.getInputFiles()) {
-        if (!processedInputs.containsKey(inputFile) && registeredInputs.containsKey(inputFile)) {
+        if (!processedInputs.containsKey(inputFile) && state.inputs.containsKey(inputFile)) {
           DefaultInput input = put(processedInputs, inputFile, new DefaultInput(this, inputFile));
 
           // copy associated outputs
@@ -747,10 +648,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           // copy associated included inputs
           Collection<File> includedInputs = oldState.getInputIncludedInputs(inputFile);
           if (includedInputs != null) {
-            inputIncludedInputs.put(inputFile, new LinkedHashSet<File>(includedInputs));
+            state.inputIncludedInputs.put(inputFile, new LinkedHashSet<File>(includedInputs));
 
             for (File includedInput : includedInputs) {
-              putInputFileState(includedInput, oldState.getFileState(includedInput));
+              putInputFileState(includedInput, oldState.getInputState(includedInput));
             }
           }
 
@@ -765,7 +666,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           // copy messages
           Collection<Message> messages = oldState.getInputMessages(inputFile);
           if (messages != null) {
-            inputMessages.put(inputFile, new ArrayList<Message>(messages));
+            state.inputMessages.put(inputFile, new ArrayList<Message>(messages));
 
             // replay old messages
             for (Message message : messages) {
@@ -780,13 +681,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           // copy attributes
           Map<String, Serializable> attributes = oldState.getResourceAttributes(inputFile);
           if (attributes != null) {
-            resourceAttributes.put(inputFile, attributes);
+            state.resourceAttributes.put(inputFile, attributes);
           }
         }
       }
     }
 
-    for (Map.Entry<File, FileState> entry : registeredInputs.entrySet()) {
+    for (Map.Entry<File, FileState> entry : state.inputs.entrySet()) {
       if (!FileState.equals(new FileState(entry.getKey()), entry.getValue())) {
         throw new IllegalStateException("Unexpected input file change " + entry.getKey());
       }
@@ -805,12 +706,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     Collection<QualifiedName> capabilities = oldState.getOutputCapabilities(outputFile);
     if (capabilities != null) {
-      outputCapabilities.put(outputFile, new LinkedHashSet<QualifiedName>(capabilities));
+      state.outputCapabilities.put(outputFile, new LinkedHashSet<QualifiedName>(capabilities));
     }
 
     Map<String, Serializable> attributes = oldState.getResourceAttributes(outputFile);
     if (attributes != null) {
-      resourceAttributes.put(outputFile, attributes);
+      state.resourceAttributes.put(outputFile, attributes);
     }
   }
 

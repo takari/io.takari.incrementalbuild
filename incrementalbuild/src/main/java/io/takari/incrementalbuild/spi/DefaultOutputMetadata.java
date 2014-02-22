@@ -18,12 +18,12 @@ public class DefaultOutputMetadata
 
   private final DefaultBuildContext<?> context;
 
-  private final BuildContextState state;
+  private final DefaultBuildContextState state;
 
   private final File file;
 
 
-  DefaultOutputMetadata(DefaultBuildContext<?> context, BuildContextState state, File file) {
+  DefaultOutputMetadata(DefaultBuildContext<?> context, DefaultBuildContextState state, File file) {
     this.context = context;
     this.state = state;
     this.file = file;
@@ -41,12 +41,12 @@ public class DefaultOutputMetadata
 
   @Override
   public Iterable<? extends InputMetadata<File>> getAssociatedInputs() {
-    return state.getAssociatedInputs(file);
+    return context.getAssociatedInputs(state, file);
   }
 
   @Override
   public Collection<String> getCapabilities(String qualifier) {
-    return state.getOutputCapabilities(file, qualifier);
+    return state.getCapabilities(file, qualifier);
   }
 
   @Override

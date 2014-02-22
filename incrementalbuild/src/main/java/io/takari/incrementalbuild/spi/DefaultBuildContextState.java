@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -17,128 +17,44 @@ class DefaultBuildContextState implements Serializable {
 
   private final Map<String, byte[]> configuration;
 
-  private final Map<File, FileState> files;
+  final Map<File, FileState> outputs = new HashMap<File, FileState>();
 
-  private final Set<File> outputs;
+  final Map<File, FileState> inputs = new HashMap<File, FileState>();
 
-  private final Set<File> inputs;
+  final Map<File, Collection<File>> inputOutputs = new HashMap<File, Collection<File>>();
 
-  private final Map<File, Collection<File>> inputOutputs;
+  final Map<File, Collection<File>> outputInputs = new HashMap<File, Collection<File>>();
 
-  private final Map<File, Collection<File>> outputInputs;
+  final Map<File, Collection<File>> inputIncludedInputs = new HashMap<File, Collection<File>>();
 
-  private final Map<File, Collection<File>> inputIncludedInputs;
+  final Map<QualifiedName, Collection<File>> requirementInputs =
+      new HashMap<QualifiedName, Collection<File>>();
 
-  private final Map<QualifiedName, Collection<File>> requirementInputs;
+  final Map<File, Collection<QualifiedName>> inputRequirements =
+      new HashMap<File, Collection<QualifiedName>>();
 
-  private final Map<File, Collection<QualifiedName>> inputRequirements;
+  final Map<File, Collection<QualifiedName>> outputCapabilities =
+      new HashMap<File, Collection<QualifiedName>>();
 
-  private final Map<File, Collection<QualifiedName>> outputCapabilities;
+  final Map<File, Map<String, Serializable>> resourceAttributes =
+      new HashMap<File, Map<String, Serializable>>();
 
-  private final Map<File, Map<String, Serializable>> resourceAttributes;
+  final Map<File, Collection<Message>> inputMessages = new HashMap<File, Collection<Message>>();
 
-  private final Map<File, Collection<Message>> inputMessages;
-
-  public DefaultBuildContextState(Map<String, byte[]> configuration, Map<File, FileState> files,
-      Set<File> inputs, Set<File> outputs, Map<File, Collection<File>> inputOutputs,
-      Map<File, Collection<File>> outputInputs, Map<File, Collection<File>> inputIncludedInputs,
-      Map<File, Collection<QualifiedName>> inputRequirements,
-      Map<QualifiedName, Collection<File>> requirementInputs,
-      Map<File, Collection<QualifiedName>> outputCapabilities,
-      Map<File, Map<String, Serializable>> inputAttributes,
-      Map<File, Collection<Message>> inputMessages) {
-
-    this.configuration = cloneMap(configuration); // clone byte[] arrays?
-    this.files = cloneMap(files);
-    this.inputs = cloneSet(inputs);
-    this.outputs = cloneSet(outputs);
-    this.inputOutputs = cloneInputOutputs(inputOutputs);
-    this.outputInputs = cloneOutputInputs(outputInputs);
-    this.inputIncludedInputs = cloneInputIncludedInputs(inputIncludedInputs);
-
-    this.inputRequirements = cloneMap(inputRequirements);
-    this.requirementInputs = cloneRequirementInputs(requirementInputs);
-    this.outputCapabilities = cloneMap(outputCapabilities);
-
-    this.resourceAttributes = cloneAttributes(inputAttributes);
-
-    this.inputMessages = cloneMap(inputMessages);
+  public DefaultBuildContextState(Map<String, byte[]> configuration) {
+    this.configuration = new HashMap<String, byte[]>(configuration);
   }
-
-  // MOST HORRIBLE MESS START
-
-  private static Map<QualifiedName, Collection<File>> cloneRequirementInputs(
-      Map<QualifiedName, Collection<File>> requirementInputs) {
-    Map<QualifiedName, Collection<File>> result =
-        new LinkedHashMap<QualifiedName, Collection<File>>();
-    for (Map.Entry<QualifiedName, Collection<File>> entry : requirementInputs.entrySet()) {
-      result.put(entry.getKey(), cloneFiles(entry.getValue()));
-    }
-    return Collections.unmodifiableMap(result);
-  }
-
-  private static Map<File, Collection<File>> cloneInputIncludedInputs(
-      Map<File, Collection<File>> inputIncludedInputs) {
-    Map<File, Collection<File>> result = new LinkedHashMap<File, Collection<File>>();
-    for (Map.Entry<File, Collection<File>> entry : inputIncludedInputs.entrySet()) {
-      result.put(entry.getKey(), Collections.unmodifiableCollection(entry.getValue()));
-    }
-    return Collections.unmodifiableMap(result);
-  }
-
-  private static Map<File, Collection<File>> cloneOutputInputs(
-      Map<File, Collection<File>> outputInputs) {
-    Map<File, Collection<File>> result = new LinkedHashMap<File, Collection<File>>();
-    for (Map.Entry<File, Collection<File>> entry : outputInputs.entrySet()) {
-      result.put(entry.getKey(), cloneFiles(entry.getValue()));
-    }
-    return Collections.unmodifiableMap(result);
-  }
-
-  private static Map<File, Collection<File>> cloneInputOutputs(
-      Map<File, Collection<File>> inputOutputs) {
-    Map<File, Collection<File>> result = new LinkedHashMap<File, Collection<File>>();
-    for (Map.Entry<File, Collection<File>> entry : inputOutputs.entrySet()) {
-      result.put(entry.getKey(), cloneFiles(entry.getValue()));
-    }
-    return Collections.unmodifiableMap(result);
-  }
-
-  private static Collection<File> cloneFiles(Collection<File> files) {
-    return Collections.unmodifiableSet(new LinkedHashSet<File>(files));
-  }
-
-  private static <T> Set<T> cloneSet(Set<T> set) {
-    return Collections.unmodifiableSet(new LinkedHashSet<T>(set));
-  }
-
-  private static Map<File, Map<String, Serializable>> cloneAttributes(
-      Map<File, Map<String, Serializable>> inputAttributes) {
-    Map<File, Map<String, Serializable>> result =
-        new LinkedHashMap<File, Map<String, Serializable>>();
-    for (Map.Entry<File, Map<String, Serializable>> entry : inputAttributes.entrySet()) {
-      result.put(entry.getKey(), cloneMap(entry.getValue()));
-    }
-    return Collections.unmodifiableMap(result);
-  }
-
-  private static <K, V> Map<K, V> cloneMap(Map<K, V> map) {
-    return Collections.unmodifiableMap(new LinkedHashMap<K, V>(map));
-  }
-
-  // MOST HORRIBLE MESS END
-
 
   public Map<String, byte[]> getConfiguration() {
     return configuration;
   }
 
   public Set<File> getOutputFiles() {
-    return outputs;
+    return outputs.keySet();
   }
 
   public Set<File> getInputFiles() {
-    return inputs;
+    return inputs.keySet();
   }
 
   public boolean isAssociatedOutput(DefaultInput input, File outputFile) {
@@ -155,29 +71,29 @@ class DefaultBuildContextState implements Serializable {
   }
 
   public BuildContext.ResourceStatus getOutputStatus(File outputFile) {
-    return getResourceStatus(outputFile);
+    return getResourceStatus(outputs, outputFile);
   }
 
-  private BuildContext.ResourceStatus getResourceStatus(File outputFile) {
-    FileState oldState = files.get(outputFile);
+  private BuildContext.ResourceStatus getResourceStatus(Map<File, FileState> files, File file) {
+    FileState oldState = files.get(file);
     if (oldState == null) {
       return BuildContext.ResourceStatus.NEW;
     }
-    if (!FileState.isPresent(outputFile)) {
+    if (!FileState.isPresent(file)) {
       return BuildContext.ResourceStatus.REMOVED;
     }
-    return oldState.isUptodate(outputFile)
+    return oldState.isUptodate(file)
         ? BuildContext.ResourceStatus.UNMODIFIED
         : BuildContext.ResourceStatus.MODIFIED;
   }
 
   public BuildContext.ResourceStatus getInputStatus(File inputFile) {
-    BuildContext.ResourceStatus status = getResourceStatus(inputFile);
+    BuildContext.ResourceStatus status = getResourceStatus(inputs, inputFile);
     if (status == BuildContext.ResourceStatus.UNMODIFIED) {
       Collection<File> includedInputs = inputIncludedInputs.get(inputFile);
       if (includedInputs != null) {
         for (File includedInput : includedInputs) {
-          if (getResourceStatus(includedInput) != BuildContext.ResourceStatus.UNMODIFIED) {
+          if (getResourceStatus(inputs, includedInput) != BuildContext.ResourceStatus.UNMODIFIED) {
             status = BuildContext.ResourceStatus.MODIFIED;
             break;
           }
@@ -246,8 +162,8 @@ class DefaultBuildContextState implements Serializable {
     return inputRequirements.get(inputFile);
   }
 
-  public FileState getFileState(File file) {
-    return files.get(file);
+  public FileState getInputState(File file) {
+    return inputs.get(file);
   }
 
 
