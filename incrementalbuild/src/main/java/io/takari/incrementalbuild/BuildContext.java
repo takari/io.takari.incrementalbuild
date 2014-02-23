@@ -69,7 +69,7 @@ public interface BuildContext {
    */
   public static interface Input<T> extends InputMetadata<T> {
 
-    public <I> void associateIncludedInput(InputMetadata<I> included);
+    public InputMetadata<File> associateIncludedInput(File included);
 
     public Output<File> associateOutput(File outputFile);
 

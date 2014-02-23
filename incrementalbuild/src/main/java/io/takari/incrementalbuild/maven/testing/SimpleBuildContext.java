@@ -92,7 +92,9 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public <I> void associateIncludedInput(InputMetadata<I> resource) {}
+    public InputMetadata<File> associateIncludedInput(File included) {
+      return new SimpleInputMetadata(included);
+    }
 
     @Override
     public Output<File> associateOutput(File outputFile) {

@@ -258,7 +258,7 @@ public class DefaultBuildContextTest {
     DefaultBuildContext<?> context = newBuildContext();
     // first time invocation returns Input for processing
     DefaultInput<File> input = context.registerInput(inputFile).process();
-    input.associateIncludedInput(context.registerInput(includedFile));
+    input.associateIncludedInput(includedFile);
     context.commit();
 
     // no-change rebuild
@@ -270,8 +270,7 @@ public class DefaultBuildContextTest {
     Files.append("test", includedFile, Charsets.UTF_8);
     context = newBuildContext();
     Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
-    context.registerInput(inputFile).process()
-        .associateIncludedInput(context.registerInput(includedFile));
+    context.registerInput(inputFile).process().associateIncludedInput(includedFile);
     context.commit();
 
     // no-change rebuild
@@ -364,8 +363,7 @@ public class DefaultBuildContextTest {
     Files.append("test", includedFile, Charsets.UTF_8);
 
     DefaultBuildContext<?> context = newBuildContext();
-    context.registerInput(inputFile).process()
-        .associateIncludedInput(context.registerInput(includedFile));
+    context.registerInput(inputFile).process().associateIncludedInput(includedFile);
     context.commit();
 
     context = newBuildContext();
