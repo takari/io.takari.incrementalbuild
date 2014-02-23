@@ -69,7 +69,9 @@ public interface BuildContext {
    */
   public static interface Input<T> extends InputMetadata<T> {
 
-    public InputMetadata<File> associateIncludedInput(File included);
+    // TODO return IncludedInput<File>, which can be used to track messages associated with the
+    // included input
+    public void associateIncludedInput(File included);
 
     public Output<File> associateOutput(File outputFile);
 
@@ -79,11 +81,6 @@ public interface BuildContext {
     public <V extends Serializable> Serializable setValue(String key, V value);
 
     public void addMessage(int line, int column, String message, int severity, Throwable cause);
-
-    // the following is required to support include inputs
-    // public void addMessage(Input includedInput, int line, int column, String message, int
-    // severity,
-    // Throwable cause);
   }
 
   public static interface OutputMetadata<T> {
