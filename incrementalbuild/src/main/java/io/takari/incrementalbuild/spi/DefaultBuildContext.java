@@ -622,7 +622,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     // echo message
-    logMessage(input, line, column, message, severity, cause);
+    logMessage(input.getResource(), line, column, message, severity, cause);
   }
 
   public void commit() throws BuildFailureException, IOException {
