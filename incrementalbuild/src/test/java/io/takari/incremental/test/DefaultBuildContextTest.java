@@ -400,7 +400,7 @@ public class DefaultBuildContextTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testRegisterInput_nullInput() throws Exception {
-    newBuildContext().registerInput(null);
+    newBuildContext().registerInput((File) null);
   }
 
   @Test
