@@ -13,6 +13,7 @@ import io.takari.incrementalbuild.spi.DefaultOutput;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -402,6 +403,62 @@ public class DefaultBuildContextTest {
   @Test(expected = IllegalArgumentException.class)
   public void testRegisterInput_nullInput() throws Exception {
     newBuildContext().registerInput(null);
+  }
+
+  @Test
+  public void testRegisterAndProcessInputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    List<DefaultInput<File>> inputs =
+        toList(context.registerAndProcessInputs(Arrays.asList(inputFile)));
+    Assert.assertEquals(1, inputs.size());
+    Assert.assertEquals(ResourceStatus.NEW, inputs.get(0).getStatus());
+    inputs.get(0).associateOutput(outputFile);
+    context.commit();
+
+    // no change rebuild
+    context = newBuildContext();
+    inputs = toList(context.registerAndProcessInputs(Arrays.asList(inputFile)));
+    Assert.assertEquals(0, inputs.size());
+    context.commit();
+  }
+
+  @Test
+  public void testGetAssociatedOutputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    context.registerInput(inputFile).process().associateOutput(outputFile);
+    context.commit();
+
+    //
+    context = newBuildContext();
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    List<? extends OutputMetadata<File>> outputs = toList(metadata.getAssociatedOutputs());
+    Assert.assertEquals(1, outputs.size());
+    Assert.assertEquals(ResourceStatus.UNMODIFIED, outputs.get(0).getStatus());
+    context.commit();
+
+    //
+    Files.append("test", outputFile, Charsets.UTF_8);
+    newBuildContext();
+    metadata = context.registerInput(inputFile);
+    outputs = toList(metadata.getAssociatedOutputs());
+    Assert.assertEquals(1, outputs.size());
+    Assert.assertEquals(ResourceStatus.MODIFIED, outputs.get(0).getStatus());
+    context.commit();
+
+    //
+    Assert.assertTrue(outputFile.delete());
+    newBuildContext();
+    metadata = context.registerInput(inputFile);
+    outputs = toList(metadata.getAssociatedOutputs());
+    Assert.assertEquals(1, outputs.size());
+    Assert.assertEquals(ResourceStatus.REMOVED, outputs.get(0).getStatus());
+    context.commit();
   }
 
   @Test

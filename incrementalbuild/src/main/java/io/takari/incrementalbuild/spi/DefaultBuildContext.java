@@ -206,8 +206,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     for (DefaultInputMetadata<File> metadata : registerInputs(inputFiles)) {
       DefaultInput<File> input = getProcessedInput(metadata.getResource());
       if (input == null) {
-        if (metadata.getStatus() != ResourceStatus.UNMODIFIED
-            || !isUptodate(metadata.getAssociatedOutputs())) {
+        if (getInputStatus(metadata.getResource(), true) != ResourceStatus.UNMODIFIED) {
           input = processInput(metadata);
         }
       }
@@ -221,15 +220,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   @SuppressWarnings("unchecked")
   private <I> DefaultInput<I> getProcessedInput(I resource) {
     return (DefaultInput<I>) processedInputs.get(resource);
-  }
-
-  private boolean isUptodate(Iterable<? extends OutputMetadata<File>> outputs) {
-    for (OutputMetadata<File> output : outputs) {
-      if (output.getStatus() != ResourceStatus.UNMODIFIED) {
-        return false;
-      }
-    }
-    return true;
   }
 
   // low-level methods
@@ -369,20 +359,17 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public ResourceStatus getOutputStatus(File outputFile) {
-    if (!state.outputs.containsKey(outputFile)) {
-      if (oldState != null && oldState.outputs.containsKey(outputFile)) {
-        return ResourceStatus.REMOVED;
+    FileState oldOutputState = oldState != null ? oldState.outputs.get(outputFile) : null;
+
+    if (oldOutputState == null) {
+      if (state.outputs.containsKey(outputFile)) {
+        return ResourceStatus.NEW;
       }
       throw new IllegalArgumentException("Output is not processed " + outputFile);
     }
 
-    if (oldState == null) {
-      return ResourceStatus.NEW;
-    }
-
-    FileState oldOutputState = oldState.outputs.get(outputFile);
-    if (oldOutputState == null) {
-      return ResourceStatus.NEW;
+    if (!FileState.isPresent(outputFile)) {
+      return ResourceStatus.REMOVED;
     }
 
     if (!oldOutputState.isUptodate(outputFile)) {

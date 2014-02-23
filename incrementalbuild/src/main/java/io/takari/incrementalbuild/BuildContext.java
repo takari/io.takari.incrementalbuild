@@ -91,7 +91,7 @@ public interface BuildContext {
 
     /**
      * Returns up-to-date status of this output compared to the previous build. Does not consider
-     * associated inputs. Does not consider "processed" status
+     * associated inputs.
      */
     public ResourceStatus getStatus();
 
