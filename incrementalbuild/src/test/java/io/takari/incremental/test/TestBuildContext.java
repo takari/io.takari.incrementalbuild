@@ -1,7 +1,6 @@
 package io.takari.incremental.test;
 
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
-import io.takari.incrementalbuild.spi.DefaultInput;
 
 import java.io.File;
 import java.util.Map;
@@ -13,8 +12,8 @@ class TestBuildContext extends DefaultBuildContext<Exception> {
   }
 
   @Override
-  protected void logMessage(DefaultInput input, int line, int column, String message, int severity,
-      Throwable cause) {}
+  protected void logMessage(Object inputResource, int line, int column, String message,
+      int severity, Throwable cause) {}
 
   @Override
   protected Exception newBuildFailureException(int errorCount) {

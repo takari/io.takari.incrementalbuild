@@ -3,7 +3,6 @@ package io.takari.incrementalbuild.maven.testing;
 import io.takari.incrementalbuild.maven.internal.MavenBuildContext;
 import io.takari.incrementalbuild.maven.internal.MavenIncrementalConventions;
 import io.takari.incrementalbuild.maven.internal.MojoConfigurationDigester;
-import io.takari.incrementalbuild.spi.DefaultInput;
 import io.takari.incrementalbuild.spi.DefaultOutput;
 
 import java.io.File;
@@ -40,23 +39,23 @@ class TestBuildContext extends MavenBuildContext {
   }
 
   @Override
-  protected void carryOverOutput(DefaultInput<?> input, File outputFile) {
+  protected void carryOverOutput(Object inputResource, File outputFile) {
     logger.addCarryoverOutput(outputFile);
-    super.carryOverOutput(input, outputFile);
+    super.carryOverOutput(inputResource, outputFile);
   }
 
   @Override
-  protected void logMessage(DefaultInput<?> input, int line, int column, String message,
+  protected void logMessage(Object inputResource, int line, int column, String message,
       int severity, Throwable cause) {
-    if (!(input.getResource() instanceof File)) {
+    if (!(inputResource instanceof File)) {
       // XXX I am too lazy right now, need to fix this later
       throw new IllegalArgumentException();
     }
-    File file = (File) input.getResource();
+    File file = (File) inputResource;
     String msg = String.format("%s %s [%d:%d] %s", getSeverityStr(severity), //
         file.getName(), line, column, message);
     logger.addMessage(file, msg);
-    super.logMessage(input, line, column, message, severity, cause);
+    super.logMessage(inputResource, line, column, message, severity, cause);
   }
 
   private String getSeverityStr(int severity) {

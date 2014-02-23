@@ -470,15 +470,17 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   // association management
 
   public void associate(DefaultInput<?> input, DefaultOutput output) {
-    Object inputFile = input.getResource();
-    if (!processedInputs.containsKey(inputFile)) {
-      throw new IllegalStateException("Input is not processed " + inputFile);
+    Object inputResource = input.getResource();
+    if (!processedInputs.containsKey(inputResource)) {
+      throw new IllegalStateException("Input is not processed " + inputResource);
     }
+    associate(inputResource, output.getResource());
+  }
 
-    File outputFile = output.getResource();
-    Collection<File> outputs = state.inputOutputs.get(inputFile);
+  private void associate(Object inputResource, File outputFile) {
+    Collection<File> outputs = state.inputOutputs.get(inputResource);
     if (outputs == null) {
-      outputs = put(state.inputOutputs, inputFile, new LinkedHashSet<File>());
+      outputs = put(state.inputOutputs, inputResource, new LinkedHashSet<File>());
     }
     outputs.add(outputFile);
 
@@ -486,7 +488,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (inputs == null) {
       inputs = put(state.outputInputs, outputFile, new LinkedHashSet<Object>());
     }
-    inputs.add(inputFile);
+    inputs.add(inputResource);
   }
 
   private boolean isAssociatedOutput(DefaultInput<?> input, File outputFile) {
@@ -550,7 +552,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private void addRequirement(DefaultInput<?> input, QualifiedName requirement) {
-    Object inputResource = input.getResource();
+    addInputRequirement(input.getResource(), requirement);
+  }
+
+  private void addInputRequirement(Object inputResource, QualifiedName requirement) {
     Collection<Object> inputs = state.requirementInputs.get(requirement);
     if (inputs == null) {
       inputs = put(state.requirementInputs, requirement, new LinkedHashSet<Object>());
@@ -671,14 +676,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (oldState != null) {
       for (Object inputResource : oldState.inputs.keySet()) {
         if (!processedInputs.containsKey(inputResource) && state.inputs.containsKey(inputResource)) {
-          DefaultInput<?> input =
-              put(processedInputs, inputResource, new DefaultInput(this, state, inputResource));
-
           // copy associated outputs
           Collection<File> associatedOutputs = oldState.inputOutputs.get(inputResource);
           if (associatedOutputs != null) {
             for (File outputFile : associatedOutputs) {
-              carryOverOutput(input, outputFile);
+              carryOverOutput(inputResource, outputFile);
             }
           }
 
@@ -696,7 +698,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           Collection<QualifiedName> requirements = oldState.inputRequirements.get(inputResource);
           if (requirements != null) {
             for (QualifiedName requirement : requirements) {
-              addRequirement(input, requirement);
+              addInputRequirement(inputResource, requirement);
             }
           }
 
@@ -707,8 +709,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
             // replay old messages
             for (Message message : messages) {
-              logMessage(input, message.line, message.column, message.message, message.severity,
-                  message.cause);
+              logMessage(inputResource, message.line, message.column, message.message,
+                  message.severity, message.cause);
               if (message.severity == SEVERITY_ERROR) {
                 errorCount.incrementAndGet();
               }
@@ -731,7 +733,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
 
-
     storeState();
 
     if (errorCount.get() > 0) {
@@ -739,8 +740,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
   }
 
-  protected void carryOverOutput(DefaultInput<?> input, File outputFile) {
-    associate(input, put(processedOutputs, outputFile, new DefaultOutput(this, state, outputFile)));
+  protected void carryOverOutput(Object inputResource, File outputFile) {
+    processedOutputs.put(outputFile, new DefaultOutput(this, state, outputFile));
+
+    associate(inputResource, outputFile);
 
     Collection<QualifiedName> capabilities = oldState.outputCapabilities.get(outputFile);
     if (capabilities != null) {
@@ -753,7 +756,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
   }
 
-  protected abstract void logMessage(DefaultInput<?> input, int line, int column, String message,
+  protected abstract void logMessage(Object inputResource, int line, int column, String message,
       int severity, Throwable cause);
 
   // XXX not too happy with errorCount parameter

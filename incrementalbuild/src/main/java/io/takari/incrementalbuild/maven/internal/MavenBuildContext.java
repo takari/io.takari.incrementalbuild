@@ -1,7 +1,6 @@
 package io.takari.incrementalbuild.maven.internal;
 
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
-import io.takari.incrementalbuild.spi.DefaultInput;
 
 import java.io.IOException;
 
@@ -64,7 +63,7 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
   public void afterExecutionFailure(MojoExecutionEvent event) {}
 
   @Override
-  protected void logMessage(DefaultInput<?> input, int line, int column, String message,
+  protected void logMessage(Object inputResource, int line, int column, String message,
       int severity, Throwable cause) {
     // TODO Auto-generated method stub
 
