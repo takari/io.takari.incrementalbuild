@@ -210,7 +210,7 @@ public class DefaultBuildContextTest {
     // new build
     Files.append("test", inputFile, Charsets.UTF_8);
     context = newBuildContext();
-    // Input if input file was modified since last build
+    // input file was modified since last build
     Assert.assertEquals(MODIFIED, context.registerInput(inputFile).getStatus());
   }
 

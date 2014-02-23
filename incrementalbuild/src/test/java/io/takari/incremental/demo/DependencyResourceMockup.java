@@ -4,7 +4,7 @@ import io.takari.incrementalbuild.BuildContext.Input;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
-import io.takari.incrementalbuild.spi.Resource;
+import io.takari.incrementalbuild.spi.ResourceHolder;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -51,20 +51,20 @@ public class DependencyResourceMockup {
     }
   }
 
-  private static class ArtifactResource implements Resource<ArtifactResourceKey, byte[]> {
+  private static class ArtifactResource implements ResourceHolder<ArtifactResourceKey> {
 
     private ArtifactResource(ArtifactResourceKey key, byte[] digest) {
       // TODO Auto-generated method stub
     }
 
     @Override
-    public ArtifactResourceKey getResourceId() {
+    public ArtifactResourceKey getResource() {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public byte[] getDigest() {
+    public ResourceStatus getStatus() {
       // TODO Auto-generated method stub
       return null;
     }
@@ -106,7 +106,7 @@ public class DependencyResourceMockup {
         JarFile jar = new JarFile(file);
         try {
           JarEntry resource = jar.getJarEntry(RESOURCE_PATH);
-          InputMetadata<ArtifactResource> metadata =
+          InputMetadata<ArtifactResourceKey> metadata =
               context.registerInput(ArtifactResource.fromJarEntry(dependency, RESOURCE_PATH, jar,
                   resource));
           if (metadata.getStatus() != ResourceStatus.UNMODIFIED) {
@@ -123,7 +123,7 @@ public class DependencyResourceMockup {
       }
     } else if (file.isDirectory()) {
       File resource = new File(file, RESOURCE_PATH);
-      InputMetadata<ArtifactResource> metadata =
+      InputMetadata<ArtifactResourceKey> metadata =
           context.registerInput(ArtifactResource.fromFile(dependency, RESOURCE_PATH, resource));
       if (metadata.getStatus() != ResourceStatus.UNMODIFIED) {
         InputStream is = new FileInputStream(resource);
@@ -136,5 +136,5 @@ public class DependencyResourceMockup {
     }
   }
 
-  private void doSomethingUsefulWithResource(Input<ArtifactResource> input, InputStream is) {}
+  private void doSomethingUsefulWithResource(Input<ArtifactResourceKey> input, InputStream is) {}
 }

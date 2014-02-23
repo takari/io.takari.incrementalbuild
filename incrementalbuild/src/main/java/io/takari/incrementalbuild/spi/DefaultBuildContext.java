@@ -142,9 +142,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private void storeState() throws IOException {
-    // timestamp output files
+    // timestamp processed output files
     for (File outputFile : processedOutputs.keySet()) {
-      state.outputs.put(outputFile, new FileState(outputFile));
+      if (state.outputs.get(outputFile) == null) {
+        state.outputs.put(outputFile, new FileState(outputFile));
+      }
     }
 
     File parent = stateFile.getParentFile();
@@ -178,22 +180,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     T inputResource = inputMetadata.getResource();
 
     @SuppressWarnings("unchecked")
-    DefaultInput<T> input1 = (DefaultInput<T>) processedInputs.get(inputResource);
-    if (input1 == null) {
-      input1 = new DefaultInput<T>(this, state, inputResource);
-      processedInputs.put(inputResource, input1);
+    DefaultInput<T> input = (DefaultInput<T>) processedInputs.get(inputResource);
+    if (input == null) {
+      input = new DefaultInput<T>(this, state, inputResource);
+      processedInputs.put(inputResource, input);
     }
-
-    DefaultInput<T> input = input1;
 
     return input;
-  }
-
-  private void putInputFileState(Object inputResource, FileState fileState) {
-    FileState oldFileState = state.inputs.put(inputResource, fileState);
-    if (oldFileState != null && !FileState.equals(oldFileState, fileState)) {
-      throw new IllegalStateException("Unexpected input file change " + inputResource);
-    }
   }
 
   @Override
@@ -320,7 +313,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       return ResourceStatus.NEW;
     }
 
-    FileState oldInputState = oldState.inputs.get(inputResource);
+    ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
     if (oldInputState == null) {
       return ResourceStatus.NEW;
     }
@@ -329,16 +322,18 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       return ResourceStatus.MODIFIED;
     }
 
-    if (!oldInputState.isUptodate((File) inputResource)) { // XXX surprise!
-      return ResourceStatus.MODIFIED;
+    ResourceStatus status = oldInputState.getStatus();
+
+    if (status != ResourceStatus.UNMODIFIED) {
+      return status;
     }
 
     if (associated) {
       Collection<Object> includedInputs = oldState.inputIncludedInputs.get(inputResource);
       if (includedInputs != null) {
         for (Object includedInput : includedInputs) {
-          FileState includedInputState = oldState.inputs.get(includedInput);
-          if (!includedInputState.isUptodate((File) includedInput)) { // XXX surprise!
+          ResourceHolder<?> includedInputState = oldState.inputs.get(includedInput);
+          if (includedInputState.getStatus() != ResourceStatus.UNMODIFIED) {
             return ResourceStatus.MODIFIED;
           }
         }
@@ -347,8 +342,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       Collection<File> outputFiles = oldState.inputOutputs.get(inputResource);
       if (outputFiles != null) {
         for (File outputFile : outputFiles) {
-          FileState outputState = oldState.outputs.get(outputFile);
-          if (!outputState.isUptodate(outputFile)) {
+          ResourceHolder<File> outputState = oldState.outputs.get(outputFile);
+          if (outputState.getStatus() != ResourceStatus.UNMODIFIED) {
             return ResourceStatus.MODIFIED;
           }
         }
@@ -359,7 +354,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public ResourceStatus getOutputStatus(File outputFile) {
-    FileState oldOutputState = oldState != null ? oldState.outputs.get(outputFile) : null;
+    ResourceHolder<File> oldOutputState =
+        oldState != null ? oldState.outputs.get(outputFile) : null;
 
     if (oldOutputState == null) {
       if (state.outputs.containsKey(outputFile)) {
@@ -368,36 +364,27 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       throw new IllegalArgumentException("Output is not processed " + outputFile);
     }
 
-    if (!FileState.isPresent(outputFile)) {
-      return ResourceStatus.REMOVED;
-    }
-
-    if (!oldOutputState.isUptodate(outputFile)) {
-      return ResourceStatus.MODIFIED;
-    }
-
-    return ResourceStatus.UNMODIFIED;
+    return oldOutputState.getStatus();
   }
 
   @Override
   public DefaultInputMetadata<File> registerInput(File inputFile) {
-    if (!FileState.isPresent(inputFile)) {
-      throw new IllegalArgumentException("Input file does not exist or cannot be read " + inputFile);
-    }
-
-    inputFile = normalize(inputFile);
-
-    putInputFileState(inputFile, new FileState(inputFile));
-
-    // XXX this returns different instance each invocation. This should not be a problem because
-    // each instance is a stateless flyweight.
-
-    return new DefaultInputMetadata<File>(this, oldState, inputFile);
+    return registerInput(new FileState(normalize(inputFile)));
   }
 
-  public <R extends Serializable, H extends Serializable, T extends Resource<R, H>> InputMetadata<T> registerInput(
-      T resource) {
-    return null;
+  public <T> DefaultInputMetadata<T> registerInput(ResourceHolder<T> holder) {
+    T resource = holder.getResource();
+
+    if (holder.getStatus() == ResourceStatus.REMOVED) {
+      throw new IllegalArgumentException("Input does not exist " + resource);
+    }
+
+    state.inputs.put(resource, holder);
+
+    // this returns different instance each invocation. This should not be a problem because
+    // each instance is a stateless flyweight.
+
+    return new DefaultInputMetadata<T>(this, oldState, resource);
   }
 
   @Override
@@ -459,6 +446,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private File normalize(File file) {
+    if (file == null) {
+      return null;
+    }
     try {
       return file.getCanonicalFile();
     } catch (IOException e) {
@@ -584,8 +574,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       Collection<Object> oldInputResources = oldState.requirementInputs.get(requirement);
       if (oldInputResources != null) {
         for (Object inputResource : oldInputResources) {
+          ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
           if (inputResource instanceof File) {
-            if (!result.containsKey(inputResource) && FileState.isPresent((File) inputResource)) {
+            if (!result.containsKey(inputResource)
+                && oldInputState.getStatus() != ResourceStatus.REMOVED) {
               result.put(inputResource, registerInput((File) inputResource));
             }
           }
@@ -655,7 +647,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
             state.inputIncludedInputs.put(inputResource, new LinkedHashSet<Object>(includedInputs));
 
             for (Object includedInput : includedInputs) {
-              putInputFileState(includedInput, oldState.inputs.get(includedInput));
+              ResourceHolder<?> oldHolder = oldState.inputs.get(includedInput);
+              state.inputs.put(oldHolder.getResource(), oldHolder);
             }
           }
 
@@ -691,10 +684,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
 
-    for (Map.Entry<Object, FileState> entry : state.inputs.entrySet()) {
-      // XXX surprise!
-      if (!FileState.equals(new FileState((File) entry.getKey()), entry.getValue())) {
-        throw new IllegalStateException("Unexpected input file change " + entry.getKey());
+    for (ResourceHolder<?> resource : state.inputs.values()) {
+      if (resource.getStatus() != ResourceStatus.UNMODIFIED) {
+        throw new IllegalStateException("Unexpected input change " + resource.getResource());
       }
     }
 
@@ -707,6 +699,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   protected void carryOverOutput(Object inputResource, File outputFile) {
     processedOutputs.put(outputFile, new DefaultOutput(this, state, outputFile));
+
+    state.outputs.put(outputFile, oldState.outputs.get(outputFile));
 
     put(state.inputOutputs, inputResource, outputFile);
     put(state.outputInputs, outputFile, inputResource);

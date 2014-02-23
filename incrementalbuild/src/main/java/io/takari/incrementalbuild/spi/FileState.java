@@ -1,31 +1,59 @@
 package io.takari.incrementalbuild.spi;
 
+import io.takari.incrementalbuild.BuildContext.ResourceStatus;
+
 import java.io.File;
-import java.io.Serializable;
 
-class FileState implements Serializable {
+class FileState implements ResourceHolder<File> {
 
-  private static final long serialVersionUID = -3901167354884462923L;
+  private static final long serialVersionUID = 1;
+
+  final File file;
 
   final long lastModified;
 
   final long length;
 
   public FileState(File file) {
+    if (file == null || !isPresent(file)) {
+      throw new IllegalArgumentException("File does not exist or cannot be read " + file);
+    }
+
+    this.file = file;
     this.lastModified = file.lastModified();
     this.length = file.length();
   }
 
-  public static boolean equals(FileState a, FileState b) {
-    return a.length == b.length && a.lastModified == b.lastModified;
-  }
-
-  public boolean isUptodate(File file) {
+  private boolean isUptodate(File file) {
     return isPresent(file) && length == file.length() && lastModified == file.lastModified();
   }
 
-  // TODO find a better place
-  public static boolean isPresent(File file) {
+  private static boolean isPresent(File file) {
     return file != null && file.isFile() && file.canRead();
+  }
+
+  @Override
+  public File getResource() {
+    return file;
+  }
+
+  @Override
+  public ResourceStatus getStatus() {
+    if (!isPresent(file)) {
+      return ResourceStatus.REMOVED;
+    }
+    return isUptodate(file) ? ResourceStatus.UNMODIFIED : ResourceStatus.MODIFIED;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof FileState)) {
+      return false;
+    }
+    FileState other = (FileState) obj;
+    return lastModified == other.lastModified && length == other.length;
   }
 }

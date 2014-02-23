@@ -12,9 +12,9 @@ class DefaultBuildContextState implements Serializable {
 
   final Map<String, byte[]> configuration;
 
-  final Map<File, FileState> outputs = new HashMap<File, FileState>();
+  final Map<File, ResourceHolder<File>> outputs = new HashMap<File, ResourceHolder<File>>();
 
-  final Map<Object, FileState> inputs = new HashMap<Object, FileState>();
+  final Map<Object, ResourceHolder<?>> inputs = new HashMap<Object, ResourceHolder<?>>();
 
   final Map<Object, Collection<File>> inputOutputs = new HashMap<Object, Collection<File>>();
 
