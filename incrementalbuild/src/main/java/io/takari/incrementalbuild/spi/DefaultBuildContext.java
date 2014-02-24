@@ -87,11 +87,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private boolean getEscalated(Map<String, byte[]> configuration) {
-    if (oldState == null) {
-      log.debug("No previous build state {}", stateFile);
-      return true;
-    }
-
     Map<String, byte[]> oldConfiguration = oldState.configuration;
 
     if (!oldConfiguration.keySet().equals(configuration.keySet())) {
@@ -138,7 +133,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     } catch (Exception e) {
       log.debug("Could not read build state file {}", stateFile, e);
     }
-    return null; // XXX return empty immutable state, this will simplify things everywhere
+    return DefaultBuildContextState.emptyState();
   }
 
   private void storeState() throws IOException {
@@ -230,10 +225,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * @throws IOException if an orphaned output file cannot be deleted.
    */
   public Iterable<DefaultOutputMetadata> deleteStaleOutputs(boolean eager) throws IOException {
-    if (oldState == null) {
-      return Collections.emptyList();
-    }
-
     List<DefaultOutputMetadata> deleted = new ArrayList<DefaultOutputMetadata>();
 
     oldOutputs: for (File outputFile : oldState.outputs.keySet()) {
@@ -303,14 +294,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   public ResourceStatus getInputStatus(Object inputResource, boolean associated) {
     if (!state.inputs.containsKey(inputResource)) {
-      if (oldState != null && oldState.inputs.containsKey(inputResource)) {
+      if (oldState.inputs.containsKey(inputResource)) {
         return ResourceStatus.REMOVED;
       }
       throw new IllegalArgumentException("Unregistered input file " + inputResource);
-    }
-
-    if (oldState == null) {
-      return ResourceStatus.NEW;
     }
 
     ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
@@ -574,16 +561,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
 
-    if (oldState != null) {
-      Collection<Object> oldInputResources = oldState.requirementInputs.get(requirement);
-      if (oldInputResources != null) {
-        for (Object inputResource : oldInputResources) {
-          ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
-          if (inputResource instanceof File) {
-            if (!result.containsKey(inputResource)
-                && oldInputState.getStatus() != ResourceStatus.REMOVED) {
-              result.put(inputResource, registerInput((File) inputResource));
-            }
+    Collection<Object> oldInputResources = oldState.requirementInputs.get(requirement);
+    if (oldInputResources != null) {
+      for (Object inputResource : oldInputResources) {
+        ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
+        if (inputResource instanceof File) {
+          if (!result.containsKey(inputResource)
+              && oldInputState.getStatus() != ResourceStatus.REMOVED) {
+            result.put(inputResource, registerInput((File) inputResource));
           }
         }
       }
@@ -602,11 +587,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       state.resourceAttributes.put(resource, attributes);
     }
     attributes.put(key, value);
-    if (oldState != null) {
-      Map<String, Serializable> oldAttributes = oldState.resourceAttributes.get(resource);
-      return oldAttributes != null ? (Serializable) oldAttributes.get(key) : null;
-    }
-    return null;
+    Map<String, Serializable> oldAttributes = oldState.resourceAttributes.get(resource);
+    return oldAttributes != null ? (Serializable) oldAttributes.get(key) : null;
   }
 
   public <T extends Serializable> T getResourceAttribute(File resource, String key, Class<T> clazz) {
@@ -634,56 +616,54 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     // carry over relevant parts of the old state
 
-    if (oldState != null) {
-      for (Object inputResource : oldState.inputs.keySet()) {
-        if (!processedInputs.containsKey(inputResource) && state.inputs.containsKey(inputResource)) {
-          // copy associated outputs
-          Collection<File> associatedOutputs = oldState.inputOutputs.get(inputResource);
-          if (associatedOutputs != null) {
-            for (File outputFile : associatedOutputs) {
-              carryOverOutput(inputResource, outputFile);
+    for (Object inputResource : oldState.inputs.keySet()) {
+      if (!processedInputs.containsKey(inputResource) && state.inputs.containsKey(inputResource)) {
+        // copy associated outputs
+        Collection<File> associatedOutputs = oldState.inputOutputs.get(inputResource);
+        if (associatedOutputs != null) {
+          for (File outputFile : associatedOutputs) {
+            carryOverOutput(inputResource, outputFile);
+          }
+        }
+
+        // copy associated included inputs
+        Collection<Object> includedInputs = oldState.inputIncludedInputs.get(inputResource);
+        if (includedInputs != null) {
+          state.inputIncludedInputs.put(inputResource, new LinkedHashSet<Object>(includedInputs));
+
+          for (Object includedInput : includedInputs) {
+            ResourceHolder<?> oldHolder = oldState.inputs.get(includedInput);
+            state.inputs.put(oldHolder.getResource(), oldHolder);
+          }
+        }
+
+        // copy requirements
+        Collection<QualifiedName> requirements = oldState.inputRequirements.get(inputResource);
+        if (requirements != null) {
+          for (QualifiedName requirement : requirements) {
+            addInputRequirement(inputResource, requirement);
+          }
+        }
+
+        // copy messages
+        Collection<Message> messages = oldState.inputMessages.get(inputResource);
+        if (messages != null) {
+          state.inputMessages.put(inputResource, new ArrayList<Message>(messages));
+
+          // replay old messages
+          for (Message message : messages) {
+            logMessage(inputResource, message.line, message.column, message.message,
+                message.severity, message.cause);
+            if (message.severity == SEVERITY_ERROR) {
+              errorCount.incrementAndGet();
             }
           }
+        }
 
-          // copy associated included inputs
-          Collection<Object> includedInputs = oldState.inputIncludedInputs.get(inputResource);
-          if (includedInputs != null) {
-            state.inputIncludedInputs.put(inputResource, new LinkedHashSet<Object>(includedInputs));
-
-            for (Object includedInput : includedInputs) {
-              ResourceHolder<?> oldHolder = oldState.inputs.get(includedInput);
-              state.inputs.put(oldHolder.getResource(), oldHolder);
-            }
-          }
-
-          // copy requirements
-          Collection<QualifiedName> requirements = oldState.inputRequirements.get(inputResource);
-          if (requirements != null) {
-            for (QualifiedName requirement : requirements) {
-              addInputRequirement(inputResource, requirement);
-            }
-          }
-
-          // copy messages
-          Collection<Message> messages = oldState.inputMessages.get(inputResource);
-          if (messages != null) {
-            state.inputMessages.put(inputResource, new ArrayList<Message>(messages));
-
-            // replay old messages
-            for (Message message : messages) {
-              logMessage(inputResource, message.line, message.column, message.message,
-                  message.severity, message.cause);
-              if (message.severity == SEVERITY_ERROR) {
-                errorCount.incrementAndGet();
-              }
-            }
-          }
-
-          // copy attributes
-          Map<String, Serializable> attributes = oldState.resourceAttributes.get(inputResource);
-          if (attributes != null) {
-            state.resourceAttributes.put(inputResource, attributes);
-          }
+        // copy attributes
+        Map<String, Serializable> attributes = oldState.resourceAttributes.get(inputResource);
+        if (attributes != null) {
+          state.resourceAttributes.put(inputResource, attributes);
         }
       }
     }

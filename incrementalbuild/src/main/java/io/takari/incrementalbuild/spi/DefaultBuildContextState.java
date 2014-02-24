@@ -3,6 +3,7 @@ package io.takari.incrementalbuild.spi;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,6 +40,11 @@ class DefaultBuildContextState implements Serializable {
 
   public DefaultBuildContextState(Map<String, byte[]> configuration) {
     this.configuration = new HashMap<String, byte[]>(configuration);
+  }
+
+  public static DefaultBuildContextState emptyState() {
+    // TODO make immutable
+    return new DefaultBuildContextState(Collections.<String, byte[]>emptyMap());
   }
 
 }

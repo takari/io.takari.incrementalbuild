@@ -563,12 +563,14 @@ public class DefaultBuildContextTest {
     File inputFile = temp.newFile("inputFile");
 
     DefaultBuildContext<?> context = newBuildContext();
-    DefaultInput<File> input = context.registerInput(inputFile).process();
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    Assert.assertNull(metadata.getValue("key", String.class));
+    DefaultInput<File> input = metadata.process();
     Assert.assertNull(input.setValue("key", "value"));
     context.commit();
 
     context = newBuildContext();
-    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    metadata = context.registerInput(inputFile);
     Assert.assertEquals("value", metadata.getValue("key", String.class));
     context.commit();
 

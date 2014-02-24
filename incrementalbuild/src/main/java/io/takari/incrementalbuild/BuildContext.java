@@ -56,12 +56,17 @@ public interface BuildContext {
      */
     public ResourceStatus getStatus();
 
+    /**
+     * Returns outputs associated with this input during the previous build.
+     */
     public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs();
 
+    /**
+     * Returns attribute value associated with the key during previous build.
+     */
     public <V extends Serializable> V getValue(String key, Class<V> clazz);
 
     public Input<T> process();
-
   }
 
   /**
@@ -76,7 +81,7 @@ public interface BuildContext {
     public Output<File> associateOutput(File outputFile);
 
     /**
-     * Returns value associated with the key during previous build.
+     * Returns attribute value associated with the key during previous build.
      */
     public <V extends Serializable> Serializable setValue(String key, V value);
 
@@ -109,11 +114,12 @@ public interface BuildContext {
   /**
    * Registers specified input {@code File} with this build context.
    * 
-   * @return {@link InputMetadata} representing the input file, never {@code null}.
-   * @throws IllegalArgumentException if inputFile does not exist or cannot be read
+   * @TODO this method behaves differently before and after input was processed. Once input is
+   *       processed, the returned InputMetadata represent input's new state, which maybe confusing.
+   *       There is also no way to access input's old state.
    * 
-   * @see #processInput(File)
-   * @see #processInputs(Iterable)
+   * @return {@link InputMetadata} representing the input file, never {@code null}.
+   * @throws IllegalArgumentException if inputFile is not a file or cannot be read
    */
   public InputMetadata<File> registerInput(File inputFile);
 
