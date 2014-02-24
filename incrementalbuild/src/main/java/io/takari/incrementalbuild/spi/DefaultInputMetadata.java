@@ -6,6 +6,7 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -32,6 +33,9 @@ public class DefaultInputMetadata<T> implements InputMetadata<T> {
 
   @Override
   public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs() {
+    if (state == null) {
+      return Collections.emptyList();
+    }
     return context.getAssociatedOutputs(state, resource);
   }
 
@@ -42,6 +46,9 @@ public class DefaultInputMetadata<T> implements InputMetadata<T> {
 
   @Override
   public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+    if (state == null) {
+      return null;
+    }
     Map<String, Serializable> attributes = state.resourceAttributes.get(resource);
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }

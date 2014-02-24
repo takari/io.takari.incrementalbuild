@@ -138,7 +138,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     } catch (Exception e) {
       log.debug("Could not read build state file {}", stateFile, e);
     }
-    return null;
+    return null; // XXX return empty immutable state, this will simplify things everywhere
   }
 
   private void storeState() throws IOException {
@@ -399,21 +399,25 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   @Override
   public Iterable<DefaultInputMetadata<File>> getRegisteredInputs() {
-    Set<DefaultInputMetadata<File>> result = new LinkedHashSet<DefaultInputMetadata<File>>();
+    return getRegisteredInputs(File.class);
+  }
+
+  public <T> Iterable<DefaultInputMetadata<T>> getRegisteredInputs(Class<T> clazz) {
+    Set<DefaultInputMetadata<T>> result = new LinkedHashSet<DefaultInputMetadata<T>>();
     for (Object inputResource : state.inputs.keySet()) {
-      if (inputResource instanceof File) {
-        DefaultInputMetadata<File> input = getProcessedInput((File) inputResource);
+      if (clazz.isInstance(inputResource)) {
+        DefaultInputMetadata<T> input = getProcessedInput(clazz.cast(inputResource));
         if (input == null) {
-          input = new DefaultInputMetadata<File>(this, state, (File) inputResource);
+          input = new DefaultInputMetadata<T>(this, state, clazz.cast(inputResource));
         }
         result.add(input);
       }
     }
     if (oldState != null) {
       for (Object inputResource : oldState.inputs.keySet()) {
-        if (!state.inputs.containsKey(inputResource) && inputResource instanceof File) {
+        if (!state.inputs.containsKey(inputResource) && clazz.isInstance(inputResource)) {
           // removed
-          result.add(new DefaultInputMetadata<File>(this, oldState, (File) inputResource));
+          result.add(new DefaultInputMetadata<T>(this, oldState, clazz.cast(inputResource)));
         }
       }
     }
