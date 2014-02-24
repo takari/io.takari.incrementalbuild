@@ -359,7 +359,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return registerInput(new FileState(normalize(inputFile)));
   }
 
-  public <T> DefaultInputMetadata<T> registerInput(ResourceHolder<T> holder) {
+  public <T extends Serializable> DefaultInputMetadata<T> registerInput(ResourceHolder<T> holder) {
     T resource = holder.getResource();
 
     if (holder.getStatus() == ResourceStatus.REMOVED) {

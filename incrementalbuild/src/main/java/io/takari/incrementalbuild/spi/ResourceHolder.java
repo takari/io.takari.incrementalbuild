@@ -10,9 +10,11 @@ import java.io.Serializable;
  *
  * @param <R> must provide correct implementation of {@code hashCode()} and {@code equals(Object)}
  */
-public interface ResourceHolder<R> extends Serializable {
+public interface ResourceHolder<R extends Serializable> extends Serializable {
 
   public R getResource();
+
+  // TODO introduce K getResourceKey(), relax R serializable requirement
 
   public ResourceStatus getStatus();
 }
