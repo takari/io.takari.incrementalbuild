@@ -612,4 +612,45 @@ public class DefaultBuildContextTest {
     Assert.assertEquals("value", output.setValue("key", "newValue"));
     context.commit();
   }
+
+  @Test
+  public void testOutputStatus() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = new File(temp.getRoot(), "outputFile");
+
+    Assert.assertFalse(outputFile.canRead());
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultOutput output = context.registerInput(inputFile).process().associateOutput(outputFile);
+    Assert.assertEquals(ResourceStatus.NEW, output.getStatus());
+    output.newOutputStream().close();
+    context.commit();
+
+    // no-change rebuild
+    context = newBuildContext();
+    output = context.registerInput(inputFile).process().associateOutput(outputFile);
+    Assert.assertEquals(ResourceStatus.UNMODIFIED, output.getStatus());
+    context.commit();
+
+    // modified output
+    Files.write("test", outputFile, Charsets.UTF_8);
+    context = newBuildContext();
+    output = context.registerInput(inputFile).process().associateOutput(outputFile);
+    Assert.assertEquals(ResourceStatus.MODIFIED, output.getStatus());
+    context.commit();
+
+    // no-change rebuild
+    context = newBuildContext();
+    output = context.registerInput(inputFile).process().associateOutput(outputFile);
+    Assert.assertEquals(ResourceStatus.UNMODIFIED, output.getStatus());
+    context.commit();
+
+    // deleted output
+    Assert.assertTrue(outputFile.delete());
+    context = newBuildContext();
+    output = context.registerInput(inputFile).process().associateOutput(outputFile);
+    Assert.assertEquals(ResourceStatus.REMOVED, output.getStatus());
+    output.newOutputStream().close(); // processed outputs must exit or commit fails
+    context.commit();
+  }
 }

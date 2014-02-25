@@ -345,7 +345,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         oldState != null ? oldState.outputs.get(outputFile) : null;
 
     if (oldOutputState == null) {
-      if (state.outputs.containsKey(outputFile)) {
+      if (processedOutputs.containsKey(outputFile)) {
         return ResourceStatus.NEW;
       }
       throw new IllegalArgumentException("Output is not processed " + outputFile);
