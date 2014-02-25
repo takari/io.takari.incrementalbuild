@@ -78,6 +78,15 @@ public interface BuildContext {
     // included input
     public void associateIncludedInput(File included);
 
+    public Output<File> associateOutput(Output<File> output);
+
+    /**
+     * Convenience method, has the same effect as
+     * 
+     * <pre>
+     * {@code input.associateOutput(context.processOutput(outputFile));}
+     * </pre>
+     */
     public Output<File> associateOutput(File outputFile);
 
     /**

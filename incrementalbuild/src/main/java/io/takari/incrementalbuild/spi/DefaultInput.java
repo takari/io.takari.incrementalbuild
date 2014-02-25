@@ -1,6 +1,7 @@
 package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.BuildContext.Output;
 
 import java.io.File;
 import java.io.Serializable;
@@ -18,6 +19,15 @@ public class DefaultInput<T> extends DefaultInputMetadata<T> implements BuildCon
   public void associateIncludedInput(File includedFile) {
     DefaultInputMetadata<File> included = context.registerInput(includedFile);
     context.associateIncludedInput(this, included);
+  }
+
+  @Override
+  public DefaultOutput associateOutput(Output<File> output) {
+    if (!(output instanceof DefaultOutput)) {
+      throw new IllegalArgumentException();
+    }
+    context.associate(this, (DefaultOutput) output);
+    return (DefaultOutput) output;
   }
 
   @Override
