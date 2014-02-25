@@ -20,17 +20,17 @@ import java.util.Set;
  */
 public class SimpleBuildContext implements BuildContext {
 
-  private class SimpleInputMetadata implements InputMetadata<File> {
+  public class SimpleInputMetadata<R> implements InputMetadata<R> {
 
-    private File file;
+    private R resource;
 
-    public SimpleInputMetadata(File file) {
-      this.file = file;
+    public SimpleInputMetadata(R file) {
+      this.resource = file;
     }
 
     @Override
-    public File getResource() {
-      return file;
+    public R getResource() {
+      return resource;
     }
 
     @Override
@@ -49,26 +49,30 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public Input<File> process() {
-      SimpleInput input = new SimpleInput(file);
-      processedInputs.put(file, input);
-      return input;
+    @SuppressWarnings("unchecked")
+    public Input<R> process() {
+      if (resource instanceof File) {
+        SimpleInput<File> input = new SimpleInput<File>((File) resource);
+        processedInputs.put((File) resource, input);
+        return (Input<R>) input;
+      }
+      return new SimpleInput<R>(resource);
     }
   }
 
-  private class SimpleInput implements Input<File> {
+  public class SimpleInput<R> implements Input<R> {
 
-    private final File file;
+    private final R resource;
 
     private final Map<String, Serializable> properties = new HashMap<String, Serializable>();
 
-    public SimpleInput(File file) {
-      this.file = file;
+    public SimpleInput(R resource) {
+      this.resource = resource;
     }
 
     @Override
-    public File getResource() {
-      return file;
+    public R getResource() {
+      return resource;
     }
 
     @Override
@@ -82,7 +86,7 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public Input<File> process() {
+    public Input<R> process() {
       return this;
     }
 
@@ -93,6 +97,11 @@ public class SimpleBuildContext implements BuildContext {
 
     @Override
     public void associateIncludedInput(File included) {}
+
+    @Override
+    public Output<File> associateOutput(Output<File> output) {
+      return output;
+    }
 
     @Override
     public Output<File> associateOutput(File outputFile) {
@@ -108,7 +117,7 @@ public class SimpleBuildContext implements BuildContext {
     public void addMessage(int line, int column, String message, int severity, Throwable cause) {}
   }
 
-  private class SimpleOutput implements Output<File> {
+  public class SimpleOutput implements Output<File> {
 
     private final File file;
 
@@ -154,32 +163,37 @@ public class SimpleBuildContext implements BuildContext {
 
   private final Set<File> registeredInputs = new LinkedHashSet<File>();
 
-  private final Map<File, SimpleInput> processedInputs = new LinkedHashMap<File, SimpleInput>();
+  private final Map<File, SimpleInput<File>> processedInputs =
+      new LinkedHashMap<File, SimpleInput<File>>();
 
   private final Map<File, SimpleOutput> processedOutputs = new LinkedHashMap<File, SimpleOutput>();
 
   @Override
   public InputMetadata<File> registerInput(File inputFile) {
     registeredInputs.add(inputFile);
-    return new SimpleInputMetadata(inputFile);
+    return new SimpleInputMetadata<File>(inputFile);
+  }
+
+  public <R> InputMetadata<R> registerInput(R inputResource) {
+    return new SimpleInputMetadata<R>(inputResource);
   }
 
   @Override
   public Iterable<? extends InputMetadata<File>> registerInputs(Iterable<File> inputFiles) {
-    Set<SimpleInputMetadata> result = new LinkedHashSet<SimpleInputMetadata>();
+    Set<SimpleInputMetadata<File>> result = new LinkedHashSet<SimpleInputMetadata<File>>();
     for (File inputFile : inputFiles) {
       registeredInputs.add(inputFile);
-      result.add(new SimpleInputMetadata(inputFile));
+      result.add(new SimpleInputMetadata<File>(inputFile));
     }
     return result;
   }
 
   @Override
   public Iterable<? extends Input<File>> registerAndProcessInputs(Iterable<File> inputFiles) {
-    Set<SimpleInput> result = new LinkedHashSet<SimpleInput>();
+    Set<SimpleInput<File>> result = new LinkedHashSet<SimpleInput<File>>();
     for (File inputFile : inputFiles) {
       if (!processedInputs.containsKey(inputFile)) {
-        SimpleInput input = new SimpleInput(inputFile);
+        SimpleInput<File> input = new SimpleInput<File>(inputFile);
         registeredInputs.add(inputFile);
         processedInputs.put(inputFile, input);
         result.add(input);
@@ -204,7 +218,7 @@ public class SimpleBuildContext implements BuildContext {
     for (File inputFile : registeredInputs) {
       InputMetadata<File> input = processedInputs.get(inputFile);
       if (input == null) {
-        input = new SimpleInput(inputFile);
+        input = new SimpleInput<File>(inputFile);
       }
       result.add(input);
     }
