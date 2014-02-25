@@ -1,18 +1,14 @@
 package io.takari.incremental.demo;
 
-import io.takari.incrementalbuild.BuildContext.Input;
-import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
+import io.takari.incrementalbuild.spi.DefaultInput;
+import io.takari.incrementalbuild.spi.DefaultInputMetadata;
 import io.takari.incrementalbuild.spi.ResourceHolder;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import org.apache.maven.artifact.Artifact;
 
@@ -21,120 +17,106 @@ import org.apache.maven.artifact.Artifact;
  */
 public class DependencyResourceMockup {
 
-  private static final String RESOURCE_PATH = "some/file";
-
   DefaultBuildContext<?> context;
 
-  Artifact dependency;
+  Artifact artifact;
+  String artifactPath;
 
-  private static class ArtifactResourceKey implements Serializable {
-    private final String groupId;
-    private final String artifactId;
-    private final String path;
+  static class ArtifactFile implements Serializable {
+    final String groupId;
+    final String artifactId;
+    final String path;
 
-    public ArtifactResourceKey(String groupId, String artifactId, String path) {
-      this.groupId = groupId;
-      this.artifactId = artifactId;
+    public ArtifactFile(Artifact artifact, String path) {
+      this.groupId = artifact.getGroupId();
+      this.artifactId = artifact.getArtifactId();
       this.path = path;
     }
 
     @Override
     public int hashCode() {
-      // TODO Auto-generated method stub
-      return 0;
+      int hash = 31;
+      hash = hash * 17 + groupId.hashCode();
+      hash = hash * 17 + artifactId.hashCode();
+      hash = hash * 17 + path.hashCode();
+      return hash;
     }
 
     @Override
     public boolean equals(Object obj) {
-      // TODO Auto-generated method stub
-      return false;
+      if (this == obj) {
+        return true;
+      }
+
+      if (!(obj instanceof ArtifactFile)) {
+        return false;
+      }
+
+      ArtifactFile other = (ArtifactFile) obj;
+
+      return groupId.equals(other.groupId) && artifactId.equals(other.artifactId)
+          && path.equals(other.path);
     }
   }
 
-  private static class ArtifactResource implements ResourceHolder<ArtifactResourceKey> {
+  static class ArtifactFileHolder implements ResourceHolder<ArtifactFile> {
 
-    private ArtifactResource(ArtifactResourceKey key, byte[] digest) {
-      // TODO Auto-generated method stub
+    final ArtifactFile artifactFile;
+
+    public ArtifactFileHolder(Artifact artifact, String path) {
+      this.artifactFile = new ArtifactFile(artifact, path);
     }
 
     @Override
-    public ArtifactResourceKey getResource() {
-      // TODO Auto-generated method stub
-      return null;
+    public ArtifactFile getResource() {
+      return artifactFile;
     }
 
     @Override
     public ResourceStatus getStatus() {
-      // TODO Auto-generated method stub
-      return null;
-    }
-
-    public static ArtifactResource fromFile(Artifact artifact, String path, File resource) {
-      // TODO Auto-generated method stub
-      return null;
-    }
-
-    public static ArtifactResource fromJarEntry(Artifact artifact, String path, JarFile jar,
-        JarEntry entry) {
-      // TODO Auto-generated method stub
-      return null;
-    }
-
-    public static ArtifactResource fromNothing(Artifact artifact, String path) {
-      // TODO Auto-generated method stub
-      return null;
+      // status of this resource can't be determined without looking at new resolution results
+      // this is not supported directly by BuildContext, so this will be handled in client code
+      return ResourceStatus.UNMODIFIED;
     }
   }
 
   public void execute() throws IOException {
-    File file = dependency.getFile();
+    File file = artifact.getFile();
 
-    if (file == null || !file.exists()) {
-      // artifact was not resolved
-      throw new IllegalStateException();
+    // ArtifactFile is (groupId, artifactId, path) 3-tuple
+    DefaultInputMetadata<ArtifactFile> metadata =
+        context.registerInput(new ArtifactFileHolder(artifact, artifactPath));
+
+    File oldFile = metadata.getValue("file", File.class);
+    long oldLength = metadata.getValue("file.length", Long.class);
+    long oldLastModified = metadata.getValue("file.lastModified", Long.class);
+
+    if (file.equals(oldFile) && file.lastModified() == oldLastModified
+        && file.length() == oldLength) {
+      // artifact/path is up-to-date, no need to process it again
+
+      return;
     }
 
-    if (file.isFile()) {
-      InputMetadata<File> jarMetadata = context.registerInput(file);
-      if (jarMetadata.getStatus() == ResourceStatus.UNMODIFIED) {
-        // jar has not changed since last build
-        // need to register the resource to indicate it is still relevant
-        // otherwise resource's outputs will be considered orphaned are removed
-        context.registerInput(ArtifactResource.fromNothing(dependency, RESOURCE_PATH));
-      } else {
-        // jar changed, need to look inside and check if jar entry changed or not
-        JarFile jar = new JarFile(file);
-        try {
-          JarEntry resource = jar.getJarEntry(RESOURCE_PATH);
-          InputMetadata<ArtifactResourceKey> metadata =
-              context.registerInput(ArtifactResource.fromJarEntry(dependency, RESOURCE_PATH, jar,
-                  resource));
-          if (metadata.getStatus() != ResourceStatus.UNMODIFIED) {
-            InputStream is = jar.getInputStream(resource);
-            try {
-              doSomethingUsefulWithResource(metadata.process(), is);
-            } finally {
-              is.close();
-            }
-          }
-        } finally {
-          jar.close();
-        }
-      }
-    } else if (file.isDirectory()) {
-      File resource = new File(file, RESOURCE_PATH);
-      InputMetadata<ArtifactResourceKey> metadata =
-          context.registerInput(ArtifactResource.fromFile(dependency, RESOURCE_PATH, resource));
-      if (metadata.getStatus() != ResourceStatus.UNMODIFIED) {
-        InputStream is = new FileInputStream(resource);
-        try {
-          doSomethingUsefulWithResource(metadata.process(), is);
-        } finally {
-          is.close();
-        }
-      }
+    // artifact has changed, check if resource itself changed or not
+
+    // all interesting state is held in metadata attributes
+
+    // does artifact.file have the same path as before?
+    // if artifact.file is a file
+    // - does artifact.file have the same lastModified and length as before?
+    // - does archive /path entry inside artifact.file have the same sha1 as before?
+    // if artifact.file is a directory
+    // - does directory /path file have the same sha1 as before?
+
+    if (metadata.getStatus() != ResourceStatus.UNMODIFIED) {
+      doSomethingUsefulWithResource(metadata.process());
     }
   }
 
-  private void doSomethingUsefulWithResource(Input<ArtifactResourceKey> input, InputStream is) {}
+  private void doSomethingUsefulWithResource(DefaultInput<ArtifactFile> process) {
+
+
+  }
+
 }
