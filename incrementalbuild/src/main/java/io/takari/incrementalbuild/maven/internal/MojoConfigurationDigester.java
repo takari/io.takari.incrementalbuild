@@ -94,7 +94,7 @@ public class MojoConfigurationDigester {
     }
 
     // m2e workspace launch
-    // executionProperties.remove( "classworlds.conf" );
+    executionProperties.remove("classworlds.conf");
 
     Iterator<Map.Entry<String, String>> iter = executionProperties.entrySet().iterator();
     while (iter.hasNext()) {
