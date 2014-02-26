@@ -30,23 +30,27 @@ public class MojoConfigurationDigester {
   private static final Charset UTF_8 = Charset.forName("UTF-8");
 
   private final Logger logger;
+  private final ClasspathDigester digester;
+
   private final MavenSession session;
   private final MavenProject project;
   private final MojoExecution execution;
 
+
   @Inject
   public MojoConfigurationDigester(MavenSession session, MavenProject project,
-      MojoExecution execution, Logger logger) {
+      MojoExecution execution, Logger logger, ClasspathDigester digester) {
     this.session = session;
     this.project = project;
     this.execution = execution;
     this.logger = logger;
+    this.digester = digester;
   }
 
   public Map<String, byte[]> digest() throws IOException {
     Map<String, byte[]> result = new LinkedHashMap<String, byte[]>();
     List<Artifact> classpath = execution.getMojoDescriptor().getPluginDescriptor().getArtifacts();
-    result.put("mojo.classpath", new ClasspathDigester().digest(classpath));
+    result.put("mojo.classpath", digester.digest(classpath));
     result.put("mojo.mavenProject", digestMavenProject(project));
     result.put("mojo.sessionProperties", digestSessionProperties(session));
     return result;

@@ -9,45 +9,144 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.apache.maven.artifact.Artifact;
 
 /**
  * Specialized digester for Maven plugin classpath dependencies. Uses class file contents and immune
  * to file timestamp changes caused by rebuilds of the same sources.
+ * 
+ * @TODO make cache session singleton, which does not depend on number of classloaders that load
+ *       this code.
  */
+@Named
+@Singleton
 public class ClasspathDigester {
-  private final byte[] buf = new byte[4096];
 
-  private final MessageDigest digester;
+  private final ConcurrentHashMap<String, byte[]> cache = new ConcurrentHashMap<String, byte[]>();
 
-  public ClasspathDigester() {
-    this.digester = SHA1Digester.newInstance();
+  public ClasspathDigester() {}
+
+  private static class JarDigester implements Callable<byte[]> {
+
+    private final File file;
+
+    public JarDigester(File file) {
+      this.file = file;
+    }
+
+    @Override
+    public byte[] call() throws IOException {
+      MessageDigest digester = SHA1Digester.newInstance();
+      try {
+        digestZip(digester, file);
+      } catch (ZipException e) {
+        digestFile(digester, file);
+      }
+      return digester.digest();
+    }
+
+  }
+
+  private static class ClassDirectoryDigester implements Callable<byte[]> {
+
+    private final File directory;
+
+    public ClassDirectoryDigester(File directory) {
+      this.directory = directory;
+    }
+
+    @Override
+    public byte[] call() throws IOException {
+      MessageDigest digester = SHA1Digester.newInstance();
+
+      TreeSet<File> sorted = new TreeSet<File>();
+      lsLR(directory, sorted);
+      for (File file : sorted) {
+        digestFile(digester, file);
+      }
+
+      return digester.digest();
+    }
+
+    private void lsLR(File directory, TreeSet<File> sorted) {
+      File[] files = directory.listFiles();
+      if (files != null) {
+        for (File file : files) {
+          if (file.isDirectory()) {
+            lsLR(file, sorted);
+          } else {
+            sorted.add(file);
+          }
+        }
+      }
+    }
   }
 
   public byte[] digest(List<Artifact> artifacts) throws IOException {
-    digester.reset();
+    MessageDigest digester = SHA1Digester.newInstance();
     for (Artifact artifact : artifacts) {
       File file = artifact.getFile();
-      if (file.isFile()) {
-        try {
-          digestZipFile(file);
-        } catch (ZipException e) {
-          digestFile(file);
+      String cacheKey = getArtifactKey(artifact);
+      byte[] hash = cache.get(cacheKey);
+      if (hash == null) {
+        if (file.isFile()) {
+          hash = new JarDigester(file).call();
+        } else if (file.isDirectory()) {
+          hash = new ClassDirectoryDigester(file).call();
+        } else {
+          // does not exist
         }
-      } else if (file.isDirectory()) {
-        digestClassDirectory(file);
-      } else {
-        // file does not exist
+        byte[] existing = cache.putIfAbsent(cacheKey, hash);
+        if (existing == null) {
+          existing = hash;
+        }
+        digester.update(existing);
       }
     }
     return digester.digest();
   }
 
-  private void digestZipFile(File file) throws ZipException, IOException {
+  private String getArtifactKey(Artifact artifact) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(artifact.getGroupId());
+    sb.append(':');
+    sb.append(artifact.getArtifactId());
+    sb.append(':');
+    sb.append(artifact.getVersion());
+    if (artifact.getClassifier() != null) {
+      sb.append(':');
+      sb.append(artifact.getClassifier());
+    }
+    return sb.toString();
+  }
+
+  static void digest(MessageDigest digester, InputStream is) throws IOException {
+    byte[] buf = new byte[4096];
+    int r;
+    while ((r = is.read(buf)) > 0) {
+      digester.update(buf, 0, r);
+    }
+  }
+
+  static void digestFile(MessageDigest digester, File file) throws IOException {
+    FileInputStream is = new FileInputStream(file);
+    try {
+      digest(digester, is);
+    } finally {
+      is.close();
+    }
+  }
+
+  static void digestZip(MessageDigest digester, File file) throws IOException {
     ZipFile zip = new ZipFile(file);
     try {
       // sort entries.
@@ -63,46 +162,15 @@ public class ClasspathDigester {
         sorted.add(entries.nextElement());
       }
       for (ZipEntry entry : sorted) {
-        digestAndCloseStream(zip.getInputStream(entry));
+        InputStream is = zip.getInputStream(entry);
+        try {
+          digest(digester, is);
+        } finally {
+          is.close();
+        }
       }
     } finally {
       zip.close();
     }
-  }
-
-  private void digestAndCloseStream(InputStream inputStream) throws IOException {
-    try {
-      int len;
-      while ((len = inputStream.read(buf)) > 0) {
-        digester.update(buf, 0, len);
-      }
-    } finally {
-      inputStream.close();
-    }
-  }
-
-  private void digestClassDirectory(File directory) throws IOException {
-    TreeSet<File> sorted = new TreeSet<File>();
-    lsLR(directory, sorted);
-    for (File file : sorted) {
-      digestFile(file);
-    }
-  }
-
-  private void lsLR(File directory, TreeSet<File> sorted) {
-    File[] files = directory.listFiles();
-    if (files != null) {
-      for (File file : files) {
-        if (file.isDirectory()) {
-          lsLR(file, sorted);
-        } else {
-          sorted.add(file);
-        }
-      }
-    }
-  }
-
-  private void digestFile(File file) throws IOException {
-    digestAndCloseStream(new FileInputStream(file));
   }
 }
