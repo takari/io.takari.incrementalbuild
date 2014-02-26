@@ -676,7 +676,7 @@ public class DefaultBuildContextTest {
       context.commit();
 
       context = newBuildContext();
-      Assert.assertFalse(context.isEscalated());
+      Assert.assertFalse(((TestBuildContext) context).isEscalated());
       Assert.assertNotNull(context.registerInput(inputFile).getValue("dummy", Serializable.class));
       // no commit
     } finally {

@@ -19,4 +19,9 @@ class TestBuildContext extends DefaultBuildContext<Exception> {
   protected Exception newBuildFailureException(int errorCount) {
     return new Exception();
   }
+
+  @Override
+  public boolean isEscalated() {
+    return super.isEscalated();
+  }
 }

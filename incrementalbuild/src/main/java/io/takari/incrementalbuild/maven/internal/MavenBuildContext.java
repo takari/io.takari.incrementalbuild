@@ -45,6 +45,16 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution)
       throws IOException {
     super(conventions.getExecuteStateLocation(project, execution), digester.digest());
+
+    if (isEscalated()) {
+      // this is printed right after mojo execution header
+      // no need to repeat project/execution info, just print why the build is escalated
+      if (!stateFile.canRead()) {
+        log.info("incrementalbuild state does not exist, processing all inputs");
+      } else {
+        log.info("incrementalbuild detected configuration change, processing all inputs");
+      }
+    }
   }
 
   @Override

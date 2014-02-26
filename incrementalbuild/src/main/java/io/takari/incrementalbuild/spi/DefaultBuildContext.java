@@ -39,9 +39,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     implements
       BuildContext {
 
-  private final Logger log = LoggerFactory.getLogger(getClass());
+  protected final Logger log = LoggerFactory.getLogger(getClass());
 
-  private final File stateFile;
+  protected final File stateFile;
 
   private final DefaultBuildContextState state;
 
@@ -181,7 +181,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   /**
    * @noreference this method is public to facilitate testing
    */
-  public boolean isEscalated() {
+  protected boolean isEscalated() {
     return escalated;
   }
 
@@ -378,17 +378,31 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   @Override
   public DefaultInputMetadata<File> registerInput(File inputFile) {
-    return registerInput(new FileState(normalize(inputFile)));
+    inputFile = normalize(inputFile);
+    if (state.inputs.containsKey(inputFile)) {
+      // performance shortcut, avoids IO during new FileState
+      return new DefaultInputMetadata<File>(this, oldState, inputFile);
+    }
+
+    return registerInput(new FileState(inputFile));
   }
 
   public <T extends Serializable> DefaultInputMetadata<T> registerInput(ResourceHolder<T> holder) {
     T resource = holder.getResource();
 
-    if (holder.getStatus() == ResourceStatus.REMOVED) {
-      throw new IllegalArgumentException("Input does not exist " + resource);
-    }
+    ResourceHolder<?> other = state.inputs.get(resource);
 
-    state.inputs.put(resource, holder);
+    if (other == null) {
+      if (holder.getStatus() == ResourceStatus.REMOVED) {
+        throw new IllegalArgumentException("Input does not exist " + resource);
+      }
+
+      state.inputs.put(resource, holder);
+    } else {
+      if (!holder.equals(other)) {
+        throw new IllegalArgumentException("Inconsistent input state " + resource);
+      }
+    }
 
     // this returns different instance each invocation. This should not be a problem because
     // each instance is a stateless flyweight.

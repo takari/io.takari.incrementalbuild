@@ -54,6 +54,6 @@ class FileState implements ResourceHolder<File> {
       return false;
     }
     FileState other = (FileState) obj;
-    return lastModified == other.lastModified && length == other.length;
+    return file.equals(other.file) && lastModified == other.lastModified && length == other.length;
   }
 }
