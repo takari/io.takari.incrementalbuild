@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,13 +81,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     this.stateFile = stateFile;
-    this.state = new DefaultBuildContextState(configuration);
+    this.state = DefaultBuildContextState.withConfiguration(configuration);
     this.oldState = loadState(stateFile);
 
-    this.escalated = getEscalated(configuration);
+    this.escalated = getEscalated();
   }
 
-  private boolean getEscalated(Map<String, byte[]> configuration) {
+  private boolean getEscalated() {
+    Map<String, byte[]> configuration = state.configuration;
     Map<String, byte[]> oldConfiguration = oldState.configuration;
 
     if (!oldConfiguration.keySet().equals(configuration.keySet())) {
@@ -118,7 +120,20 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     try {
       ObjectInputStream is =
           new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(
-              stateFile))));
+              stateFile)))) {
+            @Override
+            protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException,
+                ClassNotFoundException {
+              // TODO does it matter if TCCL or super is called first?
+              try {
+                ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+                Class<?> clazz = tccl.loadClass(desc.getName());
+                return clazz;
+              } catch (ClassNotFoundException e) {
+                return super.resolveClass(desc);
+              }
+            }
+          };
       try {
         return (DefaultBuildContextState) is.readObject();
       } finally {
@@ -131,7 +146,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     } catch (FileNotFoundException e) {
       // this is expected, ignore
     } catch (Exception e) {
-      log.debug("Could not read build state file {}", stateFile, e);
+      throw new IllegalStateException("Could not read build state file " + stateFile, e);
     }
     return DefaultBuildContextState.emptyState();
   }
@@ -161,6 +176,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         // ignore secondary exception
       }
     }
+  }
+
+  /**
+   * @noreference this method is public to facilitate testing
+   */
+  public boolean isEscalated() {
+    return escalated;
   }
 
   public <T> DefaultInput<T> processInput(DefaultInputMetadata<T> inputMetadata) {

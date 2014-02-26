@@ -12,6 +12,9 @@ import io.takari.incrementalbuild.spi.DefaultInputMetadata;
 import io.takari.incrementalbuild.spi.DefaultOutput;
 
 import java.io.File;
+import java.io.Serializable;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -653,4 +656,41 @@ public class DefaultBuildContextTest {
     output.newOutputStream().close(); // processed outputs must exit or commit fails
     context.commit();
   }
+
+  @Test
+  public void testStateSerialization_useTCCL() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+
+    URL dummyJar = new File("src/test/projects/dummy/dummy-1.0.jar").toURI().toURL();
+    ClassLoader tccl = new URLClassLoader(new URL[] {dummyJar});
+    ClassLoader origTCCL = Thread.currentThread().getContextClassLoader();
+    try {
+      Thread.currentThread().setContextClassLoader(tccl);
+
+      Object dummy = tccl.loadClass("dummy.Dummy").newInstance();
+
+      DefaultInput<File> input = context.registerInput(inputFile).process();
+      input.setValue("dummy", (Serializable) dummy);
+      context.commit();
+
+      context = newBuildContext();
+      Assert.assertFalse(context.isEscalated());
+      Assert.assertNotNull(context.registerInput(inputFile).getValue("dummy", Serializable.class));
+      // no commit
+    } finally {
+      Thread.currentThread().setContextClassLoader(origTCCL);
+    }
+
+    // sanity check, make sure state can't be loaded without proper TCCL
+    try {
+      context = newBuildContext();
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      Assert.assertTrue(e.getMessage().contains("Could not read build state"));
+    }
+
+  }
+
 }
