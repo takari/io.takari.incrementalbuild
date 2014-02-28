@@ -11,29 +11,45 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
+import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.execution.scope.MojoExecutionScoped;
+import org.eclipse.aether.SessionData;
 
 /**
  * Specialized digester for Maven plugin classpath dependencies. Uses class file contents and immune
  * to file timestamp changes caused by rebuilds of the same sources.
- * 
- * @TODO make cache session singleton, which does not depend on number of classloaders that load
- *       this code.
  */
 @Named
-@Singleton
+@MojoExecutionScoped
 public class ClasspathDigester {
 
-  private final ConcurrentHashMap<String, byte[]> cache = new ConcurrentHashMap<String, byte[]>();
+  private static final String SESSION_DATA_KEY = ClasspathDigester.class.getName();
 
-  public ClasspathDigester() {}
+  private final ConcurrentMap<String, byte[]> cache;
+
+  @Inject
+  public ClasspathDigester(MavenSession session) {
+    this.cache = getCache(session);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static ConcurrentMap<String, byte[]> getCache(MavenSession session) {
+    // this assumes that Aether repository session data does not change during reactor build
+    SessionData sessionData = session.getRepositorySession().getData();
+    if (sessionData.get(SESSION_DATA_KEY) == null) {
+      sessionData.set(SESSION_DATA_KEY, null, new ConcurrentHashMap<String, byte[]>());
+    }
+    return (ConcurrentMap<String, byte[]>) sessionData.get(SESSION_DATA_KEY);
+  }
 
   private static class JarDigester implements Callable<byte[]> {
 
