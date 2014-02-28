@@ -42,6 +42,12 @@ public class BasicTest {
     verifier.executeGoal("compile");
     verifier.verifyErrorFreeLog();
     verifier.assertFilePresent("target/output.txt");
+
+    // build extension should be optional
+    verifier = getVerifier(resources.getBasedir("buildextension/project-noextension"));
+    verifier.executeGoal("compile");
+    verifier.verifyErrorFreeLog();
+    verifier.assertFilePresent("target/output.txt");
   }
 
   protected Verifier getVerifier(File basedir) throws VerificationException, IOException {

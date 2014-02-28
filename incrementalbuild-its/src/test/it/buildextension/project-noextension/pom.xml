@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.takari.incrementalbuild.test.buildextension</groupId>
+  <artifactId>project-noextension</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <incrementalbuild.version>0.0.1-sfdc-01</incrementalbuild.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.takari.incrementalbuild.test.buildextension</groupId>
+        <artifactId>plugin</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <executions>
+          <execution>
+            <id>test</id>
+            <goals>
+              <goal>copyfile</goal>
+            </goals>
+            <configuration>
+              <input>input.txt</input>
+              <output>target/output.txt</output>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
