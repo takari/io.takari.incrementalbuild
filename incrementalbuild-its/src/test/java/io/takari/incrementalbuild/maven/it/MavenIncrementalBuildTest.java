@@ -13,7 +13,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class BasicTest {
+public class MavenIncrementalBuildTest {
 
   @Rule
   public final TestResources resources = new TestResources("src/test/it", "target/it");
@@ -68,7 +68,7 @@ public class BasicTest {
 
   private static String getTestProperty(String name) throws IOException {
     Properties properties = new Properties();
-    InputStream is = BasicTest.class.getClassLoader().getResourceAsStream("test.properties");
+    InputStream is = MavenIncrementalBuildTest.class.getClassLoader().getResourceAsStream("test.properties");
     try {
       properties.load(is);
     } finally {
