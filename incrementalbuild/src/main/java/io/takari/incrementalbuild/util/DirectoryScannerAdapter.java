@@ -1,4 +1,4 @@
-package io.takari.incrementalbuild.maven;
+package io.takari.incrementalbuild.util;
 
 import io.takari.incrementalbuild.BuildContext;
 
