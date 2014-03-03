@@ -1,15 +1,11 @@
 package io.takari.incrementalbuild.maven.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.security.MessageDigest;
-import java.util.Iterator;
+import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -17,115 +13,83 @@ import javax.inject.Named;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
-import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.plugin.MojoExecution;
-import org.apache.maven.project.MavenProject;
-import org.slf4j.Logger;
+import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
+import org.codehaus.plexus.configuration.PlexusConfiguration;
+import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
+import org.codehaus.plexus.util.StringUtils;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 @Named
 @MojoExecutionScoped
 public class MojoConfigurationDigester {
 
-  // dies with class not found error if UTF-8 charset is not present
-  private static final Charset UTF_8 = Charset.forName("UTF-8");
-
-  private final Logger logger;
-  private final ClasspathDigester digester;
+  private final ClasspathDigester classpathDigester;
 
   private final MavenSession session;
-  private final MavenProject project;
   private final MojoExecution execution;
 
-
   @Inject
-  public MojoConfigurationDigester(MavenSession session, MavenProject project,
-      MojoExecution execution, Logger logger, ClasspathDigester digester) {
+  public MojoConfigurationDigester(MavenSession session, MojoExecution execution) {
     this.session = session;
-    this.project = project;
     this.execution = execution;
-    this.logger = logger;
-    this.digester = digester;
+    this.classpathDigester = new ClasspathDigester(session);
   }
 
-  public Map<String, byte[]> digest() throws IOException {
-    Map<String, byte[]> result = new LinkedHashMap<String, byte[]>();
+  public Map<String, Serializable> digest() throws IOException {
+    Map<String, Serializable> result = new LinkedHashMap<String, Serializable>();
+
     List<Artifact> classpath = execution.getMojoDescriptor().getPluginDescriptor().getArtifacts();
-    result.put("mojo.classpath", digester.digest(classpath));
-    result.put("mojo.mavenProject", digestMavenProject(project));
-    result.put("mojo.sessionProperties", digestSessionProperties(session));
-    return result;
-  }
+    result.put("mojo.classpath", classpathDigester.digest(classpath));
 
-  private byte[] digestMavenProject(MavenProject project) {
-    MessageDigest digester = SHA1Digester.newInstance();
-
-    // effective pom.xml defines project configuration, rebuild whenever project configuration
-    // changes we can't be more specific here because mojo can access entire project model, not just
-    // its own configuration
-    ByteArrayOutputStream buf = new ByteArrayOutputStream();
-    try {
-      new MavenXpp3Writer().write(buf, project.getModel());
-    } catch (IOException e) {
-      // can't happen
-    }
-    return digester.digest(buf.toByteArray());
-  }
-
-  @SuppressWarnings("deprecation")
-  private byte[] digestSessionProperties(MavenSession session) {
-
-    // execution properties define build parameters passed in from command line and jvm used
-    SortedMap<String, String> executionProperties = new TreeMap<String, String>();
-
-    for (Map.Entry<Object, Object> property : session.getExecutionProperties().entrySet()) {
-      // TODO unit test non-string keys do not cause problems at runtime
-      // TODO test if non-string values can or cannot be used
-      Object key = property.getKey();
-      Object value = property.getValue();
-      if (key instanceof String && value instanceof String) {
-        executionProperties.put(key.toString(), value.toString());
-      } else {
-        if (logger.isDebugEnabled()) {
-          String keyClass = key != null ? key.getClass().getName() : null;
-          String valueClass = value != null ? value.getClass().getName() : null;
-          logger.debug("Not a string property {}@{} = {}@{}", keyClass, key, valueClass, value);
+    Xpp3Dom dom = execution.getConfiguration();
+    if (dom != null) {
+      PlexusConfiguration configuration = new XmlPlexusConfiguration(dom);
+      ExpressionEvaluator evaluator = new PluginParameterExpressionEvaluator(session, execution);
+      for (PlexusConfiguration child : configuration.getChildren()) {
+        String name = fromXML(child.getName());
+        Field field = getField(execution.getMojoDescriptor().getImplementationClass(), name);
+        if (field != null) {
+          try {
+            String expression = child.getValue(null);
+            if (expression == null) {
+              expression = child.getAttribute("default-value");
+            }
+            if (expression != null) {
+              Object value = evaluator.evaluate(expression);
+              if (value != null) {
+                Serializable digest = Digesters.digest(field, value);
+                if (digest != null) {
+                  result.put("mojo.parameter." + name, digest);
+                }
+              }
+            }
+          } catch (ExpressionEvaluationException e) {
+            // TODO decide what to do about it, if anything
+          }
         }
       }
     }
-
-    // m2e workspace launch
-    executionProperties.remove("classworlds.conf");
-
-    Iterator<Map.Entry<String, String>> iter = executionProperties.entrySet().iterator();
-    while (iter.hasNext()) {
-      Map.Entry<String, String> property = iter.next();
-
-      // Environment has PID of java process (env.JAVA_MAIN_CLASS_<PID>), SSH_AGENT_PID, unique
-      // TMPDIR (on OSX)
-      // and other volatile variables.
-      if (property.getKey().startsWith("env.")) {
-        iter.remove();
-      }
-    }
-
-    MessageDigest digester = SHA1Digester.newInstance();
-
-    for (Map.Entry<String, String> property : executionProperties.entrySet()) {
-      digester.update(property.getKey().getBytes(UTF_8));
-      digester.update(property.getValue().getBytes(UTF_8));
-    }
-
-    return digester.digest();
-    // final boolean changed = digest(digester, "mojo.sessionProperties", local.finish());
-    // if (changed && logger.isDebugEnabled()) {
-    // StringBuilder msg = new StringBuilder();
-    // msg.append("Session properties changed for mojo " + execution.toString()).append('\n');
-    // for (Map.Entry<String, String> property : executionProperties.entrySet()) {
-    // msg.append("   ").append(property.getKey()).append('=').append(property.getValue());
-    // msg.append('\n');
-    // }
-    // logger.debug(msg.toString());
-    // }
+    return result;
   }
 
+  private Field getField(Class<?> clazz, String name) {
+    for (Field field : clazz.getDeclaredFields()) {
+      if (name.equals(field.getName())) {
+        return field;
+      }
+    }
+    if (clazz.getSuperclass() != null) {
+      return getField(clazz.getSuperclass(), name);
+    }
+    return null;
+  }
+
+  // first-name --> firstName, see
+  // org.codehaus.plexus.component.configurator.converters.AbstractConfigurationConverter.fromXML(String)
+  protected String fromXML(final String elementName) {
+    return StringUtils.lowercaseFirstLetter(StringUtils.removeAndHump(elementName, "-"));
+  }
 }

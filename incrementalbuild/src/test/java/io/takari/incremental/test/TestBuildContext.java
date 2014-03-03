@@ -3,11 +3,12 @@ package io.takari.incremental.test;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Map;
 
 class TestBuildContext extends DefaultBuildContext<Exception> {
 
-  public TestBuildContext(File stateFile, Map<String, byte[]> configuration) {
+  public TestBuildContext(File stateFile, Map<String, Serializable> configuration) {
     super(stateFile, configuration);
   }
 

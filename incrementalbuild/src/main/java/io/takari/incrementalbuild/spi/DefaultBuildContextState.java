@@ -11,7 +11,7 @@ class DefaultBuildContextState implements Serializable {
 
   private static final long serialVersionUID = 6195150574931820441L;
 
-  final Map<String, byte[]> configuration;
+  final Map<String, Serializable> configuration;
 
   final Map<File, ResourceHolder<File>> outputs = new HashMap<File, ResourceHolder<File>>();
 
@@ -38,20 +38,20 @@ class DefaultBuildContextState implements Serializable {
 
   final Map<Object, Collection<Message>> inputMessages = new HashMap<Object, Collection<Message>>();
 
-  private DefaultBuildContextState(Map<String, byte[]> configuration) {
+  private DefaultBuildContextState(Map<String, Serializable> configuration) {
     this.configuration = configuration;
   }
 
-  public static DefaultBuildContextState withConfiguration(Map<String, byte[]> configuration) {
-    HashMap<String, byte[]> copy = new HashMap<String, byte[]>(configuration);
+  public static DefaultBuildContextState withConfiguration(Map<String, Serializable> configuration) {
+    HashMap<String, Serializable> copy = new HashMap<String, Serializable>(configuration);
     // configuration marker used to distinguish between empty and new state
-    copy.put("incremental", new byte[] {1});
+    copy.put("incremental", Boolean.TRUE);
     return new DefaultBuildContextState(Collections.unmodifiableMap(copy));
   }
 
   public static DefaultBuildContextState emptyState() {
     // TODO make state immutable
-    return new DefaultBuildContextState(Collections.<String, byte[]>emptyMap());
+    return new DefaultBuildContextState(Collections.<String, Serializable>emptyMap());
   }
 
 }

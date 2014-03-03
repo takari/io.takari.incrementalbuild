@@ -14,7 +14,6 @@ import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,7 +70,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    */
   private final AtomicInteger errorCount = new AtomicInteger();
 
-  public DefaultBuildContext(File stateFile, Map<String, byte[]> configuration) {
+  public DefaultBuildContext(File stateFile, Map<String, Serializable> configuration) {
     // preconditions
     if (stateFile == null) {
       throw new NullPointerException();
@@ -88,8 +87,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private boolean getEscalated() {
-    Map<String, byte[]> configuration = state.configuration;
-    Map<String, byte[]> oldConfiguration = oldState.configuration;
+    Map<String, Serializable> configuration = state.configuration;
+    Map<String, Serializable> oldConfiguration = oldState.configuration;
 
     if (!oldConfiguration.keySet().equals(configuration.keySet())) {
       log.debug("Inconsistent configuration keys, old={}, new={}", oldConfiguration.keySet(),
@@ -99,7 +98,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     Set<String> keys = new TreeSet<String>();
     for (String key : oldConfiguration.keySet()) {
-      if (!Arrays.equals(oldConfiguration.get(key), configuration.get(key))) {
+      if (!equals(oldConfiguration.get(key), configuration.get(key))) {
         keys.add(key);
       }
     }
@@ -112,6 +111,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     // XXX need a way to debug detailed configuration of changed keys
 
     return false;
+  }
+
+  private static boolean equals(Serializable a, Serializable b) {
+    return a != null ? a.equals(b) : b == null;
   }
 
   private DefaultBuildContextState loadState(File stateFile) {

@@ -5,6 +5,7 @@ import io.takari.incrementalbuild.BuildContext.Output;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Collections;
 
 import org.junit.Assert;
@@ -19,7 +20,7 @@ public class DefaultOutputTest {
 
   private DefaultBuildContext<?> newBuildContext() {
     File stateFile = new File(temp.getRoot(), "buildstate.ctx");
-    return new TestBuildContext(stateFile, Collections.<String, byte[]>emptyMap());
+    return new TestBuildContext(stateFile, Collections.<String, Serializable>emptyMap());
   }
 
   @Test

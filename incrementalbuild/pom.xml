@@ -59,6 +59,12 @@
       <version>${guava.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-compat</artifactId>
+      <version>${apache-maven.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

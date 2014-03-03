@@ -1,0 +1,6 @@
+<plugin>
+  <name>plugin</name>
+  <groupId>io.takari.incrementalbuild.test.digester</groupId>
+  <artifactId>plugin</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+</plugin>

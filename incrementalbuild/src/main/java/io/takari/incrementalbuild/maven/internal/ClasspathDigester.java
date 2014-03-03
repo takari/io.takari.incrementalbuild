@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.security.MessageDigest;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -17,20 +18,16 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.eclipse.aether.SessionData;
 
 /**
  * Specialized digester for Maven plugin classpath dependencies. Uses class file contents and immune
  * to file timestamp changes caused by rebuilds of the same sources.
  */
-@Named
-@MojoExecutionScoped
-public class ClasspathDigester {
+class ClasspathDigester {
 
   private static final String SESSION_DATA_KEY = ClasspathDigester.class.getName();
 
@@ -107,7 +104,7 @@ public class ClasspathDigester {
     }
   }
 
-  public byte[] digest(List<Artifact> artifacts) throws IOException {
+  public Serializable digest(List<Artifact> artifacts) throws IOException {
     MessageDigest digester = SHA1Digester.newInstance();
     for (Artifact artifact : artifacts) {
       File file = artifact.getFile();
@@ -128,7 +125,7 @@ public class ClasspathDigester {
         digester.update(existing);
       }
     }
-    return digester.digest();
+    return new BytesHash(digester.digest());
   }
 
   private String getArtifactKey(Artifact artifact) {

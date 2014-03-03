@@ -37,7 +37,7 @@ public class DefaultBuildContextTest {
 
   private DefaultBuildContext<?> newBuildContext() {
     File stateFile = new File(temp.getRoot(), "buildstate.ctx");
-    return new TestBuildContext(stateFile, Collections.<String, byte[]>emptyMap());
+    return new TestBuildContext(stateFile, Collections.<String, Serializable>emptyMap());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -354,7 +354,7 @@ public class DefaultBuildContextTest {
   public void testCreateStateParentDirectory() throws Exception {
     File stateFile = new File(temp.getRoot(), "sub/dir/buildstate.ctx");
     TestBuildContext context =
-        new TestBuildContext(stateFile, Collections.<String, byte[]>emptyMap());
+        new TestBuildContext(stateFile, Collections.<String, Serializable>emptyMap());
     context.commit();
     Assert.assertTrue(stateFile.canRead());
   }

@@ -1,6 +1,7 @@
 package test.plugin;
 
 import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.configuration.Configuration;;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +32,7 @@ public class CopyFileMojo extends AbstractMojo {
   private File output;
 
   @Component
+  @Configuration(ignored=true)
   private MavenProject project;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
