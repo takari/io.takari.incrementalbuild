@@ -9,7 +9,7 @@
   <packaging>jar</packaging>
 
   <properties>
-    <incrementalbuild.version>0.0.1-sfdc-01</incrementalbuild.version>
+    <incrementalbuild.version>0.0.1-SNAPSHOT</incrementalbuild.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
