@@ -1,7 +1,7 @@
 package io.takari.incremental.test.maven;
 
 import io.takari.incrementalbuild.maven.internal.MojoConfigurationDigester;
-import io.takari.incrementalbuild.maven.testing.BuildAvoidanceRule;
+import io.takari.incrementalbuild.maven.testing.IncrementalBuildRule;
 
 import java.io.File;
 import java.io.Serializable;
@@ -28,7 +28,7 @@ public class MojoConfigurationDigesterTest {
   public final TestResources resources = new TestResources();
 
   @Rule
-  public final BuildAvoidanceRule mojos = new BuildAvoidanceRule();
+  public final IncrementalBuildRule mojos = new IncrementalBuildRule();
 
   private File basedir;
 

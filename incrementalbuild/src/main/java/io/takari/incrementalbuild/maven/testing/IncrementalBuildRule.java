@@ -19,10 +19,10 @@ import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.project.MavenProject;
 import org.junit.Assert;
 
-public class BuildAvoidanceRule extends MojoRule {
+public class IncrementalBuildRule extends MojoRule {
 
-  public BuildAvoidanceRule() {
-    super(new BuildAvoidanceRuntime());
+  public IncrementalBuildRule() {
+    super(new IncrementalBuildRuntime());
   }
 
   public void executeMojo(MavenSession session, MavenProject project, MojoExecution execution)
