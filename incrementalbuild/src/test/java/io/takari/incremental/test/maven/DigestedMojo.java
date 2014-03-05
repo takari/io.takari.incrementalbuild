@@ -3,7 +3,11 @@ package io.takari.incremental.test.maven;
 import io.takari.incrementalbuild.configuration.Configuration;
 
 import java.io.File;
+import java.util.List;
+import java.util.Set;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -25,6 +29,12 @@ public class DigestedMojo extends AbstractMojo {
 
   @Configuration(ignored = false)
   private String notignored;
+
+  private ArtifactRepository localrepo;
+
+  private List<ArtifactRepository> remotes;
+
+  private Set<Artifact> dependencies;
 
   @Override
   public void execute() throws MojoExecutionException, MojoFailureException {}

@@ -1,8 +1,11 @@
 package io.takari.incrementalbuild.maven.internal;
 
+import io.takari.incrementalbuild.maven.internal.Digesters.UnsupportedParameterTypeException;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +18,7 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
+import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
 import org.codehaus.plexus.configuration.PlexusConfiguration;
@@ -29,11 +33,15 @@ public class MojoConfigurationDigester {
   private final ClasspathDigester classpathDigester;
 
   private final MavenSession session;
+  private final MavenProject project;
   private final MojoExecution execution;
 
+
   @Inject
-  public MojoConfigurationDigester(MavenSession session, MojoExecution execution) {
+  public MojoConfigurationDigester(MavenSession session, MavenProject project,
+      MojoExecution execution) {
     this.session = session;
+    this.project = project;
     this.execution = execution;
     this.classpathDigester = new ClasspathDigester(session);
   }
@@ -46,13 +54,14 @@ public class MojoConfigurationDigester {
 
     Xpp3Dom dom = execution.getConfiguration();
     if (dom != null) {
+      List<String> errors = new ArrayList<String>();
       PlexusConfiguration configuration = new XmlPlexusConfiguration(dom);
       ExpressionEvaluator evaluator = new PluginParameterExpressionEvaluator(session, execution);
       for (PlexusConfiguration child : configuration.getChildren()) {
         String name = fromXML(child.getName());
-        Field field = getField(execution.getMojoDescriptor().getImplementationClass(), name);
-        if (field != null) {
-          try {
+        try {
+          Field field = getField(execution.getMojoDescriptor().getImplementationClass(), name);
+          if (field != null) {
             String expression = child.getValue(null);
             if (expression == null) {
               expression = child.getAttribute("default-value");
@@ -66,10 +75,21 @@ public class MojoConfigurationDigester {
                 }
               }
             }
-          } catch (ExpressionEvaluationException e) {
-            // TODO decide what to do about it, if anything
           }
+        } catch (UnsupportedParameterTypeException e) {
+          errors.add("parameter " + name + " has unsupported type " + e.type.getName());
+        } catch (ExpressionEvaluationException e) {
+          errors.add("parameter " + name + " " + e.getMessage());
         }
+      }
+      if (!errors.isEmpty()) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(project.toString());
+        sb.append(" could not digest configuration of ").append(execution.toString());
+        for (String error : errors) {
+          sb.append("\n   ").append(error);
+        }
+        throw new IllegalArgumentException(sb.toString());
       }
     }
     return result;

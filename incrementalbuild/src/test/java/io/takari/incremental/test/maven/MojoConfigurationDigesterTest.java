@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
@@ -33,10 +34,13 @@ public class MojoConfigurationDigesterTest {
 
   private MavenProject project;
 
+  private MavenSession session;
+
   @Before
   public void setUp() throws Exception {
     basedir = resources.getBasedir("digester");
     project = mojos.readMavenProject(basedir);
+    session = mojos.newMavenSession(project);
   }
 
   private Xpp3Dom newParameter(String name, String value) {
@@ -46,7 +50,6 @@ public class MojoConfigurationDigesterTest {
   }
 
   private Map<String, Serializable> digest(Xpp3Dom... parameters) throws Exception {
-    MavenSession session = mojos.newMavenSession(project);
 
     PluginDescriptor plugin = new PluginDescriptor();
     plugin.setArtifacts(Collections.<Artifact>emptyList());
@@ -61,7 +64,7 @@ public class MojoConfigurationDigesterTest {
     }
     execution.setConfiguration(configuration);
 
-    return new MojoConfigurationDigester(session, execution).digest();
+    return new MojoConfigurationDigester(session, project, execution).digest();
   }
 
   @Test
@@ -82,9 +85,9 @@ public class MojoConfigurationDigesterTest {
     Assert.assertEquals("notignored", digest.get("mojo.parameter.notignored"));
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testUnsupported() throws Exception {
-    digest(newParameter("project", "${project}"));
+  public void testProject() throws Exception {
+    Map<String, Serializable> digest = digest(newParameter("project", "${project}"));
+    Assert.assertNotNull(digest.get("project"));
   }
 
   @Test
@@ -103,5 +106,27 @@ public class MojoConfigurationDigesterTest {
   public void testXmlParameterName() throws Exception {
     Map<String, Serializable> digest = digest(newParameter("camel-case", "string"));
     Assert.assertEquals("string", digest.get("mojo.parameter.camelCase"));
+  }
+
+  @Test
+  public void testLocalRepository() throws Exception {
+    MavenArtifactRepository localrepo = new MavenArtifactRepository();
+    localrepo.setUrl("file:///local/repo/url");
+    session.getRequest().setLocalRepository(localrepo);
+    Map<String, Serializable> digest = digest(newParameter("localrepo", "${localRepository}"));
+    Assert.assertEquals(localrepo.getUrl(), digest.get("mojo.parameter.localrepo"));
+  }
+
+  @Test
+  public void testArtifactRepositoryCollection() throws Exception {
+    Map<String, Serializable> digest =
+        digest(newParameter("remotes", "${project.remoteArtifactRepositories}"));
+    Assert.assertNotNull("string", digest.get("mojo.parameter.remotes"));
+  }
+
+  @Test
+  public void testArtifactCollection() throws Exception {
+    Map<String, Serializable> digest = digest(newParameter("dependencies", "${project.artifacts}"));
+    Assert.assertNotNull(digest.get("mojo.parameter.dependencies"));
   }
 }
