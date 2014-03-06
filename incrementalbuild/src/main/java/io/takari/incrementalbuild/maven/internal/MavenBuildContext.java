@@ -74,8 +74,8 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
 
   @Override
   protected void logMessage(Object inputResource, int line, int column, String message,
-      int severity, Throwable cause) {
-    if (severity == SEVERITY_ERROR) {
+      Severity severity, Throwable cause) {
+    if (severity == Severity.ERROR) {
       log.error("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);
     } else {
       log.warn("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);

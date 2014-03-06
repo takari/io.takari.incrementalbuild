@@ -14,7 +14,7 @@ class TestBuildContext extends DefaultBuildContext<Exception> {
 
   @Override
   protected void logMessage(Object inputResource, int line, int column, String message,
-      int severity, Throwable cause) {}
+      Severity severity, Throwable cause) {}
 
   @Override
   protected Exception newBuildFailureException(int errorCount) {

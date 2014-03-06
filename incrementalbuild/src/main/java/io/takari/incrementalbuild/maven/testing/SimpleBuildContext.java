@@ -114,7 +114,7 @@ public class SimpleBuildContext implements BuildContext {
     }
 
     @Override
-    public void addMessage(int line, int column, String message, int severity, Throwable cause) {}
+    public void addMessage(int line, int column, String message, Severity severity, Throwable cause) {}
   }
 
   public class SimpleOutput implements Output<File> {

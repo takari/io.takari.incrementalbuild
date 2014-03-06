@@ -2,6 +2,7 @@ package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
 import io.takari.incrementalbuild.BuildContext.Output;
+import io.takari.incrementalbuild.BuildContext.Severity;
 
 import java.io.File;
 import java.io.Serializable;
@@ -47,7 +48,7 @@ public class DefaultInput<T> extends DefaultInputMetadata<T> implements BuildCon
   }
 
   @Override
-  public void addMessage(int line, int column, String message, int severity, Throwable cause) {
+  public void addMessage(int line, int column, String message, Severity severity, Throwable cause) {
     context.addMessage(this, line, column, message, severity, cause);
   }
 

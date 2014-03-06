@@ -52,22 +52,20 @@ public class CopyFileMojo extends AbstractMojo {
     }
 
     BuildContext.Input<File> input = context.registerInput(this.input).process();
-    if (input != null) {
+    try {
+      InputStream is = new FileInputStream(input.getResource());
       try {
-        InputStream is = new FileInputStream(input.getResource());
+        OutputStream os = input.associateOutput(this.output).newOutputStream();
         try {
-          OutputStream os = input.associateOutput(this.output).newOutputStream();
-          try {
-            IOUtil.copy(is, os);
-          } finally {
-            IOUtil.close(os);
-          }
+          IOUtil.copy(is, os);
         } finally {
-          IOUtil.close(is);
+          IOUtil.close(os);
         }
-      } catch (IOException e) {
-        throw new MojoExecutionException("Could not copy file", e);
+      } finally {
+        IOUtil.close(is);
       }
+    } catch (IOException e) {
+      throw new MojoExecutionException("Could not copy file", e);
     }
   }
 }

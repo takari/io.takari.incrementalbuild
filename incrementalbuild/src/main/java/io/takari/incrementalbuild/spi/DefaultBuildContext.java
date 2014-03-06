@@ -637,12 +637,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // messages
 
-  public void addMessage(DefaultInput<?> input, int line, int column, String message, int severity,
-      Throwable cause) {
+  public void addMessage(DefaultInput<?> input, int line, int column, String message,
+      Severity severity, Throwable cause) {
     put(state.inputMessages, input.getResource(), new Message(line, column, message, severity,
         cause));
 
-    if (severity == SEVERITY_ERROR) {
+    if (severity == Severity.ERROR) {
       errorCount.incrementAndGet();
     }
 
@@ -693,7 +693,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           for (Message message : messages) {
             logMessage(inputResource, message.line, message.column, message.message,
                 message.severity, message.cause);
-            if (message.severity == SEVERITY_ERROR) {
+            if (message.severity == Severity.ERROR) {
               errorCount.incrementAndGet();
             }
           }
@@ -740,7 +740,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   protected abstract void logMessage(Object inputResource, int line, int column, String message,
-      int severity, Throwable cause);
+      Severity severity, Throwable cause);
 
   // XXX not too happy with errorCount parameter
   protected abstract BuildFailureException newBuildFailureException(int errorCount);

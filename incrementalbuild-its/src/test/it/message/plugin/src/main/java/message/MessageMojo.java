@@ -30,7 +30,7 @@ public class MessageMojo extends AbstractMojo {
 
   public void execute() throws MojoExecutionException, MojoFailureException {
     BuildContext.Input<File> input = context.registerInput(this.input).process();
-    input.addMessage(0, 0, "error message", BuildContext.SEVERITY_ERROR, null);
-    input.addMessage(0, 0, "warning message", BuildContext.SEVERITY_WARNING, null);
+    input.addMessage(0, 0, "error message", BuildContext.Severity.ERROR, null);
+    input.addMessage(0, 0, "warning message", BuildContext.Severity.WARNING, null);
   }
 }

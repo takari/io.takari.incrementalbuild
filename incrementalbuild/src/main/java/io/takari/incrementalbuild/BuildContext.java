@@ -15,9 +15,9 @@ import java.io.Serializable;
  */
 public interface BuildContext {
 
-  public static final int SEVERITY_ERROR = 1;
-
-  public static final int SEVERITY_WARNING = 2;
+  public static enum Severity {
+    ERROR, WARNING
+  }
 
   public static enum ResourceStatus {
 
@@ -94,7 +94,7 @@ public interface BuildContext {
      */
     public <V extends Serializable> Serializable setValue(String key, V value);
 
-    public void addMessage(int line, int column, String message, int severity, Throwable cause);
+    public void addMessage(int line, int column, String message, Severity severity, Throwable cause);
   }
 
   public static interface OutputMetadata<T> {

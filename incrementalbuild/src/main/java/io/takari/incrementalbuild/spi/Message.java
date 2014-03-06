@@ -1,5 +1,7 @@
 package io.takari.incrementalbuild.spi;
 
+import io.takari.incrementalbuild.BuildContext.Severity;
+
 import java.io.Serializable;
 
 class Message implements Serializable {
@@ -12,13 +14,13 @@ class Message implements Serializable {
 
   public final String message;
 
-  public final int severity;
+  public final Severity severity;
 
   public final Throwable cause;
 
   private final int hashCode;
 
-  public Message(int line, int column, String message, int severity, Throwable cause) {
+  public Message(int line, int column, String message, Severity severity, Throwable cause) {
     this.line = line;
     this.column = column;
     this.message = message;
@@ -32,7 +34,7 @@ class Message implements Serializable {
     result = result * 17 + line;
     result = result * 17 + column;
     result = result * 17 + message.hashCode();
-    result = result * 17 + severity;
+    result = result * 17 + severity.hashCode();
     result = result * 17 + (cause != null ? cause.hashCode() : 0);
     return result;
   }

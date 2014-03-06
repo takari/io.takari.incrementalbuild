@@ -46,25 +46,15 @@ class TestBuildContext extends MavenBuildContext {
 
   @Override
   protected void logMessage(Object inputResource, int line, int column, String message,
-      int severity, Throwable cause) {
+      Severity severity, Throwable cause) {
     if (!(inputResource instanceof File)) {
       // XXX I am too lazy right now, need to fix this later
       throw new IllegalArgumentException();
     }
     File file = (File) inputResource;
-    String msg = String.format("%s %s [%d:%d] %s", getSeverityStr(severity), //
+    String msg = String.format("%s %s [%d:%d] %s", severity.name(), //
         file.getName(), line, column, message);
     logger.addMessage(file, msg);
     super.logMessage(inputResource, line, column, message, severity, cause);
-  }
-
-  private String getSeverityStr(int severity) {
-    switch (severity) {
-      case SEVERITY_ERROR:
-        return "ERROR";
-      case SEVERITY_WARNING:
-        return "WARNING";
-    }
-    return "UNKNOWN(" + severity + ")";
   }
 }
