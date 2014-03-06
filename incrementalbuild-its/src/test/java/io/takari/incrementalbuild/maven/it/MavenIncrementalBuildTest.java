@@ -50,6 +50,23 @@ public class MavenIncrementalBuildTest {
     verifier.assertFilePresent("target/output.txt");
   }
 
+  @Test
+  public void testMessages() throws Exception {
+    Verifier verifier = getVerifier(resources.getBasedir("message/plugin"));
+    verifier.executeGoal("install");
+    verifier.verifyErrorFreeLog();
+
+    verifier = getVerifier(resources.getBasedir("message/project"));
+    try {
+      verifier.executeGoal("compile");
+      Assert.fail();
+    } catch (VerificationException e) {
+      // expected
+    }
+    verifier.verifyTextInLog("error message");
+    verifier.verifyTextInLog("warning message");
+  }
+
   protected Verifier getVerifier(File basedir) throws VerificationException, IOException {
     String mavenVersion = getTestProperty("apache-maven.version");
     File mavenHome = new File("target/dependency/apache-maven-" + mavenVersion);
@@ -68,7 +85,8 @@ public class MavenIncrementalBuildTest {
 
   private static String getTestProperty(String name) throws IOException {
     Properties properties = new Properties();
-    InputStream is = MavenIncrementalBuildTest.class.getClassLoader().getResourceAsStream("test.properties");
+    InputStream is =
+        MavenIncrementalBuildTest.class.getClassLoader().getResourceAsStream("test.properties");
     try {
       properties.load(is);
     } finally {
