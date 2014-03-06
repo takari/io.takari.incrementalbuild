@@ -241,9 +241,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * exist.
    * <p>
    * If {@code eager == false}, preserves outputs associated with existing inputs during the
-   * previous build. This is useful if generator needs access to old output files during multi-round
-   * build. For example, java incremental compiler needs to compare old and new version of class
-   * files to determine if changes need to be propagated.
+   * previous build and outputs that do not have associated inputs. This is useful if generator
+   * needs access to old output files during multi-round build. For example, java incremental
+   * compiler needs to compare old and new version of class files to determine if changes need to be
+   * propagated.
    * 
    * @return deleted outputs
    * 
@@ -275,6 +276,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
             continue oldOutputs;
           }
         }
+      } else if (!eager) {
+        // outputs without inputs maybe recreated, retained during non-eager delete
+        continue oldOutputs;
       }
 
       // don't double-delete already deleted outputs

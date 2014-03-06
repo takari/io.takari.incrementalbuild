@@ -193,6 +193,24 @@ public class DefaultBuildContextTest {
   }
 
   @Test
+  public void testDeleteStaleOutputs_noAssociatedInputs() throws Exception {
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    context.processOutput(outputFile);
+    context.commit();
+
+    context = newBuildContext();
+    // outputs without inputs may or may not be recreated and should be retained by non-eager delete
+    Assert.assertEquals(0, toList(context.deleteStaleOutputs(false)).size());
+    Assert.assertTrue(outputFile.canRead());
+
+    // stale output is removed during commit after non-eager delete
+    context.commit();
+    Assert.assertFalse(outputFile.canRead());
+  }
+
+  @Test
   public void testGetInputStatus() throws Exception {
     File inputFile = temp.newFile("inputFile");
 
