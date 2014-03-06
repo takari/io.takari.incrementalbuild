@@ -515,6 +515,23 @@ public class DefaultBuildContextTest {
   }
 
   @Test
+  public void testGetRemovedInputs() throws Exception {
+    File inputFile1 = temp.newFile("inputFile1");
+    File inputFile2 = temp.newFile("inputFile2");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    inputFile1 = context.registerInput(inputFile1).getResource();
+    inputFile2 = context.registerInput(inputFile2).getResource();
+    context.commit();
+
+    context = newBuildContext();
+    context.registerInput(inputFile1); // UNMODIFIED
+    List<DefaultInputMetadata<File>> removed = toList(context.getRemovedInputs(File.class));
+    Assert.assertEquals(1, removed.size());
+    Assert.assertEquals(inputFile2, removed.get(0).getResource());
+  }
+
+  @Test
   public void testGetProcessedOutputs() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile1 = temp.newFile("outputFile1");

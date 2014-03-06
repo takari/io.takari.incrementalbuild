@@ -443,6 +443,17 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         result.add(input);
       }
     }
+    addRemovedInputs(result, clazz);
+    return result;
+  }
+
+  public <T> Iterable<DefaultInputMetadata<T>> getRemovedInputs(Class<T> clazz) {
+    Set<DefaultInputMetadata<T>> result = new LinkedHashSet<DefaultInputMetadata<T>>();
+    addRemovedInputs(result, clazz);
+    return result;
+  }
+
+  private <T> void addRemovedInputs(Set<DefaultInputMetadata<T>> result, Class<T> clazz) {
     if (oldState != null) {
       for (Object inputResource : oldState.inputs.keySet()) {
         if (!state.inputs.containsKey(inputResource) && clazz.isInstance(inputResource)) {
@@ -451,8 +462,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         }
       }
     }
-    return result;
   }
+
 
   @Override
   public Iterable<DefaultOutputMetadata> getProcessedOutputs() {
