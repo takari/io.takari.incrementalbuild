@@ -46,6 +46,15 @@ class FileState implements ResourceHolder<File> {
   }
 
   @Override
+  public int hashCode() {
+    int hash = 31;
+    hash = hash * 17 + file.hashCode();
+    hash = hash * 17 + (int) lastModified;
+    hash = hash * 17 + (int) length;
+    return hash;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (this == obj) {
       return true;

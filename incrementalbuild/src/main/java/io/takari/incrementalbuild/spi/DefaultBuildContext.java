@@ -2,16 +2,8 @@ package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,8 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +71,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     this.stateFile = stateFile;
     this.state = DefaultBuildContextState.withConfiguration(configuration);
-    this.oldState = loadState(stateFile);
+
+    final long start = System.currentTimeMillis();
+    this.oldState = DefaultBuildContextState.loadFrom(stateFile);
+    log.info("Loaded build context state {} in {} {}", stateFile, System.currentTimeMillis()
+        - start, oldState.getStats());
 
     this.escalated = getEscalated();
   }
@@ -115,70 +109,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private static boolean equals(Serializable a, Serializable b) {
     return a != null ? a.equals(b) : b == null;
-  }
-
-  private DefaultBuildContextState loadState(File stateFile) {
-    // TODO verify stateFile location has not changed since last build
-    // TODO wrap collections in corresponding immutable collections
-    try {
-      ObjectInputStream is =
-          new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(
-              stateFile)))) {
-            @Override
-            protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException,
-                ClassNotFoundException {
-              // TODO does it matter if TCCL or super is called first?
-              try {
-                ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-                Class<?> clazz = tccl.loadClass(desc.getName());
-                return clazz;
-              } catch (ClassNotFoundException e) {
-                return super.resolveClass(desc);
-              }
-            }
-          };
-      try {
-        return (DefaultBuildContextState) is.readObject();
-      } finally {
-        try {
-          is.close();
-        } catch (IOException e) {
-          // ignore secondary exceptions
-        }
-      }
-    } catch (FileNotFoundException e) {
-      // this is expected, ignore
-    } catch (Exception e) {
-      throw new IllegalStateException("Could not read build state file " + stateFile, e);
-    }
-    return DefaultBuildContextState.emptyState();
-  }
-
-  private void storeState() throws IOException {
-    // timestamp processed output files
-    for (File outputFile : processedOutputs.keySet()) {
-      if (state.outputs.get(outputFile) == null) {
-        state.outputs.put(outputFile, new FileState(outputFile));
-      }
-    }
-
-    File parent = stateFile.getParentFile();
-    if (!parent.isDirectory() && !parent.mkdirs()) {
-      throw new IOException("Could not create direcotyr " + parent);
-    }
-
-    ObjectOutputStream os =
-        new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(
-            stateFile))));
-    try {
-      os.writeObject(state);
-    } finally {
-      try {
-        os.close();
-      } catch (IOException e) {
-        // ignore secondary exception
-      }
-    }
   }
 
   public boolean isEscalated() {
@@ -727,7 +657,17 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
 
-    storeState();
+    // timestamp processed output files
+    for (File outputFile : processedOutputs.keySet()) {
+      if (state.outputs.get(outputFile) == null) {
+        state.outputs.put(outputFile, new FileState(outputFile));
+      }
+    }
+
+    final long start = System.currentTimeMillis();
+    state.storeTo(stateFile);
+    log.info("Stored build context state {} in {} {}", stateFile, System.currentTimeMillis()
+        - start, state.getStats());
 
     if (errorCount.get() > 0) {
       throw newBuildFailureException(errorCount.get());
