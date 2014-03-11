@@ -483,6 +483,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
                 break;
               }
             }
+          } else {
+            result.add(new DefaultOutputMetadata(this, oldState, outputFile));
           }
         }
       }
@@ -736,12 +738,16 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   protected void carryOverOutput(Object inputResource, File outputFile) {
-    processedOutputs.put(outputFile, new DefaultOutput(this, state, outputFile));
-
-    state.outputs.put(outputFile, oldState.outputs.get(outputFile));
+    carryOverOutput(outputFile);
 
     put(state.inputOutputs, inputResource, outputFile);
     put(state.outputInputs, outputFile, inputResource);
+  }
+
+  public void carryOverOutput(File outputFile) {
+    processedOutputs.put(outputFile, new DefaultOutput(this, state, outputFile));
+
+    state.outputs.put(outputFile, oldState.outputs.get(outputFile));
 
     Collection<QualifiedName> capabilities = oldState.outputCapabilities.get(outputFile);
     if (capabilities != null) {

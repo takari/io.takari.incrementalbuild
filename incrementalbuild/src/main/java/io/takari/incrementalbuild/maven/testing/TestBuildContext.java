@@ -39,9 +39,9 @@ class TestBuildContext extends MavenBuildContext {
   }
 
   @Override
-  protected void carryOverOutput(Object inputResource, File outputFile) {
+  public void carryOverOutput(File outputFile) {
     logger.addCarryoverOutput(outputFile);
-    super.carryOverOutput(inputResource, outputFile);
+    super.carryOverOutput(outputFile);
   }
 
   @Override

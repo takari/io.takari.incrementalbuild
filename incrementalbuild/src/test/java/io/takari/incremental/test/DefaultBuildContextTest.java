@@ -10,6 +10,7 @@ import io.takari.incrementalbuild.spi.DefaultBuildContext;
 import io.takari.incrementalbuild.spi.DefaultInput;
 import io.takari.incrementalbuild.spi.DefaultInputMetadata;
 import io.takari.incrementalbuild.spi.DefaultOutput;
+import io.takari.incrementalbuild.spi.DefaultOutputMetadata;
 
 import java.io.File;
 import java.io.Serializable;
@@ -586,6 +587,34 @@ public class DefaultBuildContextTest {
     Assert.assertNotNull(outputs.get(outputFile1));
     Assert.assertNotNull(outputs.get(outputFile3));
     context.commit();
+  }
+
+  @Test
+  public void testOutputWithoutInputs_carryOver() throws Exception {
+    File outputFile = temp.newFile("output_without_inputs");
+    DefaultBuildContext<?> context = newBuildContext();
+
+    DefaultOutput output = context.processOutput(outputFile);
+    outputFile = output.getResource();
+    output.setValue("key", "value");
+    context.commit();
+
+    context = newBuildContext();
+    List<DefaultOutputMetadata> outputs = toList(context.getProcessedOutputs());
+    Assert.assertEquals(1, outputs.size());
+    Assert.assertEquals(outputFile, outputs.get(0).getResource());
+    Assert.assertEquals("value", outputs.get(0).getValue("key", String.class));
+    context.carryOverOutput(outputs.get(0).getResource());
+    context.commit();
+    Assert.assertTrue(outputFile.canRead());
+
+    context = newBuildContext();
+    outputs = toList(context.getProcessedOutputs());
+    Assert.assertEquals(1, outputs.size());
+    Assert.assertEquals(outputFile, outputs.get(0).getResource());
+    Assert.assertEquals("value", outputs.get(0).getValue("key", String.class));
+    context.commit();
+    Assert.assertFalse(outputFile.canRead());
   }
 
   private <T> Map<T, OutputMetadata<T>> toMap(Iterable<? extends OutputMetadata<T>> elements) {
