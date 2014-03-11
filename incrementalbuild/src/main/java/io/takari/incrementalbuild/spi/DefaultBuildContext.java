@@ -181,10 +181,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
   }
 
-  /**
-   * @noreference this method is public to facilitate testing
-   */
-  protected boolean isEscalated() {
+  public boolean isEscalated() {
     return escalated;
   }
 
@@ -447,7 +444,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return result;
   }
 
-  public <T> Iterable<DefaultInputMetadata<T>> getRemovedInputs(Class<T> clazz) {
+  public <T> Set<DefaultInputMetadata<T>> getRemovedInputs(Class<T> clazz) {
     Set<DefaultInputMetadata<T>> result = new LinkedHashSet<DefaultInputMetadata<T>>();
     addRemovedInputs(result, clazz);
     return result;
