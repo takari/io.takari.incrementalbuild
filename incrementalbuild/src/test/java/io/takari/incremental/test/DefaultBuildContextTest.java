@@ -37,8 +37,12 @@ public class DefaultBuildContextTest {
   public final TemporaryFolder temp = new TemporaryFolder();
 
   private DefaultBuildContext<?> newBuildContext() {
+    return newBuildContext(Collections.<String, Serializable>emptyMap());
+  }
+
+  private DefaultBuildContext<?> newBuildContext(Map<String, Serializable> config) {
     File stateFile = new File(temp.getRoot(), "buildstate.ctx");
-    return new TestBuildContext(stateFile, Collections.<String, Serializable>emptyMap());
+    return new TestBuildContext(stateFile, config);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -754,7 +758,28 @@ public class DefaultBuildContextTest {
     } catch (IllegalStateException e) {
       Assert.assertTrue(e.getMessage().contains("Could not read build state"));
     }
-
   }
 
+  @Test
+  public void testConfigurationChange() throws Exception {
+    File inputFile = temp.newFile("input");
+    File outputFile = temp.newFile("output");
+    File looseOutputFile = temp.newFile("looseOutputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    context.registerInput(inputFile).process().associateOutput(outputFile);
+    context.processOutput(looseOutputFile);
+    context.commit();
+
+    context =
+        newBuildContext(Collections.<String, Serializable>singletonMap("config", "parameter"));
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    Assert.assertEquals(ResourceStatus.MODIFIED, metadata.getStatus());
+    DefaultInput<File> input = metadata.process();
+    Assert.assertEquals(ResourceStatus.MODIFIED, input.getStatus());
+    DefaultOutput output = input.associateOutput(outputFile);
+    Assert.assertEquals(ResourceStatus.MODIFIED, output.getStatus());
+    DefaultOutput looseOutput = context.processOutput(looseOutputFile);
+    Assert.assertEquals(ResourceStatus.MODIFIED, looseOutput.getStatus());
+  }
 }

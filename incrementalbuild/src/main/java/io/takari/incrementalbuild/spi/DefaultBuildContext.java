@@ -307,7 +307,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       throw new IllegalArgumentException("Output is not processed " + outputFile);
     }
 
-    return oldOutputState.getStatus();
+    ResourceStatus status = oldOutputState.getStatus();
+
+    if (escalated && status == ResourceStatus.UNMODIFIED) {
+      status = ResourceStatus.MODIFIED;
+    }
+
+    return status;
   }
 
   @Override
