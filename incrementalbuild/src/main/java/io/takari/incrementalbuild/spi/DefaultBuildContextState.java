@@ -16,7 +16,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DefaultBuildContextState implements Serializable {
+
+  private static final transient Logger log = LoggerFactory
+      .getLogger(DefaultBuildContextState.class);
 
   private static final long serialVersionUID = 6195150574931820441L;
 
@@ -82,6 +88,8 @@ public class DefaultBuildContextState implements Serializable {
   }
 
   public void storeTo(File stateFile) throws IOException {
+    final long start = System.currentTimeMillis();
+
     File parent = stateFile.getParentFile();
     if (!parent.isDirectory() && !parent.mkdirs()) {
       throw new IOException("Could not create directory " + parent);
@@ -98,6 +106,9 @@ public class DefaultBuildContextState implements Serializable {
         // ignore secondary exception
       }
     }
+
+    log.debug("Stored incremental build state {} ({} ms)", stateFile, System.currentTimeMillis()
+        - start);
   }
 
   public static DefaultBuildContextState loadFrom(File stateFile) {
@@ -120,7 +131,11 @@ public class DefaultBuildContextState implements Serializable {
             }
           };
       try {
-        return (DefaultBuildContextState) is.readObject();
+        final long start = System.currentTimeMillis();
+        DefaultBuildContextState state = (DefaultBuildContextState) is.readObject();
+        log.debug("Loaded incremental build state {} ({} ms)", stateFile,
+            System.currentTimeMillis() - start);
+        return state;
       } finally {
         try {
           is.close();
@@ -130,10 +145,10 @@ public class DefaultBuildContextState implements Serializable {
       }
     } catch (FileNotFoundException e) {
       // this is expected, ignore
+      return DefaultBuildContextState.emptyState();
     } catch (Exception e) {
-      throw new IllegalStateException("Could not read build state file " + stateFile, e);
+      throw new IllegalStateException("Could not load incremental build state " + stateFile, e);
     }
-    return DefaultBuildContextState.emptyState();
   }
 
 }

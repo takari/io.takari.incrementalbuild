@@ -72,39 +72,58 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     this.stateFile = stateFile;
     this.state = DefaultBuildContextState.withConfiguration(configuration);
 
-    final long start = System.currentTimeMillis();
     this.oldState = DefaultBuildContextState.loadFrom(stateFile);
-    log.info("Loaded build context state {} in {} {}", stateFile, System.currentTimeMillis()
-        - start, oldState.getStats());
 
     this.escalated = getEscalated();
+
+    if (escalated) {
+      if (!stateFile.canRead()) {
+        log.info("Previous incremental build state does not exist, peforming full build");
+      } else {
+        log.info("Incremental build configuration change detected, peforming full build");
+      }
+    } else {
+      log.info("Peforming incremental build");
+    }
   }
 
   private boolean getEscalated() {
     Map<String, Serializable> configuration = state.configuration;
     Map<String, Serializable> oldConfiguration = oldState.configuration;
 
-    if (!oldConfiguration.keySet().equals(configuration.keySet())) {
-      log.debug("Inconsistent configuration keys, old={}, new={}", oldConfiguration.keySet(),
-          configuration.keySet());
-      return true;
+    if (oldConfiguration.isEmpty()) {
+      return true; // no previous state
     }
 
     Set<String> keys = new TreeSet<String>();
-    for (String key : oldConfiguration.keySet()) {
-      if (!equals(oldConfiguration.get(key), configuration.get(key))) {
-        keys.add(key);
+    keys.addAll(configuration.keySet());
+    keys.addAll(oldConfiguration.keySet());
+
+    boolean result = false;
+    StringBuilder msg = new StringBuilder();
+
+    for (String key : keys) {
+      Serializable value = configuration.get(key);
+      Serializable oldValue = oldConfiguration.get(key);
+      if (!equals(oldValue, value)) {
+        result = true;
+        msg.append("\n   ");
+        if (value == null) {
+          msg.append("REMOVED");
+        } else if (oldValue == null) {
+          msg.append("ADDED");
+        } else {
+          msg.append("CHANGED");
+        }
+        msg.append(' ').append(key);
       }
     }
 
-    if (!keys.isEmpty()) {
-      log.debug("Configuration changed, changed keys={}", keys);
-      return true;
+    if (result) {
+      log.debug("Incremental build configuration key changes:{}", msg.toString());
     }
 
-    // XXX need a way to debug detailed configuration of changed keys
-
-    return false;
+    return result;
   }
 
   private static boolean equals(Serializable a, Serializable b) {
@@ -636,10 +655,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
         // copy messages
         Collection<Message> messages = oldState.inputMessages.get(inputResource);
-        if (messages != null) {
+        if (messages != null && !messages.isEmpty()) {
           state.inputMessages.put(inputResource, new ArrayList<Message>(messages));
 
-          // replay old messages
+          // TODO don't use log here, need proper API to announce message replay
+          log.info("Replaying recorded messages...");
           for (Message message : messages) {
             logMessage(inputResource, message.line, message.column, message.message,
                 message.severity, message.cause);
@@ -670,10 +690,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
 
-    final long start = System.currentTimeMillis();
     state.storeTo(stateFile);
-    log.info("Stored build context state {} in {} {}", stateFile, System.currentTimeMillis()
-        - start, state.getStats());
 
     if (errorCount.get() > 0) {
       throw newBuildFailureException(errorCount.get());
