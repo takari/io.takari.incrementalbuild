@@ -1,6 +1,7 @@
 package io.takari.incrementalbuild.maven.internal;
 
-import io.takari.incrementalbuild.configuration.Configuration;
+import io.takari.incrementalbuild.Incremental;
+import io.takari.incrementalbuild.Incremental.Configuration;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -167,8 +168,8 @@ class Digesters {
 
   public static Serializable digest(Member member, Object value) {
     if (member instanceof AnnotatedElement) {
-      Configuration configuration = ((AnnotatedElement) member).getAnnotation(Configuration.class);
-      if (configuration != null && configuration.ignored()) {
+      Incremental configuration = ((AnnotatedElement) member).getAnnotation(Incremental.class);
+      if (configuration != null && configuration.configuration() == Configuration.ignore) {
         return null; // no digest, ignore
       }
     }

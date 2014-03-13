@@ -756,7 +756,7 @@ public class DefaultBuildContextTest {
       context = newBuildContext();
       Assert.fail();
     } catch (IllegalStateException e) {
-      Assert.assertTrue(e.getMessage().contains("Could not read build state"));
+      Assert.assertTrue(e.getMessage().contains("Could not load incremental build state"));
     }
   }
 

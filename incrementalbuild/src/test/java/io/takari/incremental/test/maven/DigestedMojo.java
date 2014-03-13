@@ -1,6 +1,7 @@
 package io.takari.incremental.test.maven;
 
-import io.takari.incrementalbuild.configuration.Configuration;
+import io.takari.incrementalbuild.Incremental;
+import io.takari.incrementalbuild.Incremental.Configuration;
 
 import java.io.File;
 import java.util.List;
@@ -24,10 +25,10 @@ public class DigestedMojo extends AbstractMojo {
 
   private String camelCase;
 
-  @Configuration(ignored = true)
+  @Incremental(configuration = Configuration.ignore)
   private String ignored;
 
-  @Configuration(ignored = false)
+  @Incremental(configuration = Configuration.consider)
   private String notignored;
 
   private ArtifactRepository localrepo;
