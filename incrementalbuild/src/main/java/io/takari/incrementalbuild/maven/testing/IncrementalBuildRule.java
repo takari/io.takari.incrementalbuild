@@ -67,8 +67,8 @@ public class IncrementalBuildRule extends MojoRule {
     executeMojo(session, project, execution);
   }
 
-  public BuildContextLog getBuildContextLog() throws Exception {
-    return lookup(BuildContextLog.class);
+  public IncrementalBuildLog getBuildContextLog() throws Exception {
+    return lookup(IncrementalBuildLog.class);
   }
 
   /**

@@ -42,7 +42,7 @@ class IncrementalBuildRuntime extends AbstractMojoTestCase {
         bind(BuildContext.class).to(TestBuildContext.class).in(executionScope);
         bind(DefaultBuildContext.class).to(TestBuildContext.class).in(executionScope);
         bind(MavenBuildContext.class).to(TestBuildContext.class).in(executionScope);
-        bind(BuildContextLog.class).in(Singleton.class);
+        bind(IncrementalBuildLog.class).in(Singleton.class);
       }
     });
   }

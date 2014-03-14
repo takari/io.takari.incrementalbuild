@@ -15,12 +15,12 @@ import org.apache.maven.project.MavenProject;
 
 class TestBuildContext extends MavenBuildContext {
 
-  private final BuildContextLog logger;
+  private final IncrementalBuildLog logger;
 
   @Inject
   public TestBuildContext(MojoConfigurationDigester digester,
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution,
-      BuildContextLog logger) throws IOException {
+      IncrementalBuildLog logger) throws IOException {
     super(digester, conventions, project, execution);
     this.logger = logger;
   }

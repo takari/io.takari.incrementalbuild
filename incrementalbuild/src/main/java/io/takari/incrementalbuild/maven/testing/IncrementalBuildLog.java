@@ -8,8 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// XXX better name
-public class BuildContextLog {
+public class IncrementalBuildLog {
 
   private final List<File> registeredOutputs = new ArrayList<File>();
 
