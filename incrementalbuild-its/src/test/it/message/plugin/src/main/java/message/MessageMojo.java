@@ -1,7 +1,6 @@
 package message;
 
 import io.takari.incrementalbuild.BuildContext;
-import io.takari.incrementalbuild.configuration.Configuration;;
 
 import java.io.File;
 import java.io.FileInputStream;
