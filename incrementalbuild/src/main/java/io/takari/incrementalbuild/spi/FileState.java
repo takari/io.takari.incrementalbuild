@@ -25,7 +25,7 @@ class FileState implements ResourceHolder<File> {
   }
 
   private boolean isUptodate(File file) {
-    return isPresent(file) && length == file.length() && lastModified == file.lastModified();
+    return length == file.length() && lastModified == file.lastModified();
   }
 
   private static boolean isPresent(File file) {
