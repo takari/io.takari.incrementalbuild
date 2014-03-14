@@ -46,6 +46,7 @@
 
   <modules>
     <module>incrementalbuild</module>
+    <module>incrementalbuild-watchdog</module>
     <module>incrementalbuild-its</module>
   </modules>
 

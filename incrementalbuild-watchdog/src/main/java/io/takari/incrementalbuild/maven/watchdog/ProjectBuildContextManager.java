@@ -1,4 +1,6 @@
-package io.takari.incrementalbuild.maven.internal;
+package io.takari.incrementalbuild.maven.watchdog;
+
+import io.takari.incrementalbuild.maven.internal.MavenIncrementalConventions;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
