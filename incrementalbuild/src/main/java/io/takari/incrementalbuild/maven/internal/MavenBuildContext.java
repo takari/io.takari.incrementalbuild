@@ -44,7 +44,7 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
   public MavenBuildContext(MojoConfigurationDigester digester,
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution)
       throws IOException {
-    super(conventions.getExecuteStateLocation(project, execution), digester.digest());
+    super(conventions.getExecutionStateLocation(project, execution), digester.digest());
   }
 
   @Override

@@ -19,7 +19,7 @@ public class MavenIncrementalConventions {
   /**
    * Returns conventional location of MojoExecution incremental build state
    */
-  public File getExecuteStateLocation(MavenProject project, MojoExecution execution) {
+  public File getExecutionStateLocation(MavenProject project, MojoExecution execution) {
     File stateDirectory = getProjectStateLocation(project);
     String builderId = getExecutionId(execution);
     return new File(stateDirectory, builderId);
