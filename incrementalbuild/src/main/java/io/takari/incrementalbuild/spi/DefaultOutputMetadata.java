@@ -15,10 +15,7 @@ import java.util.Set;
 /**
  * @noinstantiate clients are not expected to instantiate this class
  */
-public class DefaultOutputMetadata
-    implements
-      BuildContext.OutputMetadata<File>,
-      CapabilitiesProvider {
+public class DefaultOutputMetadata implements BuildContext.OutputMetadata<File> {
 
   final DefaultBuildContext<?> context;
 
@@ -47,7 +44,6 @@ public class DefaultOutputMetadata
     return context.getAssociatedInputs(state, file, clazz);
   }
 
-  @Override
   public Collection<String> getCapabilities(String qualifier) {
     Collection<QualifiedName> capabilities = state.outputCapabilities.get(file);
     if (capabilities == null) {

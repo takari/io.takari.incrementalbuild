@@ -12,10 +12,7 @@ import java.io.Serializable;
 /**
  * @noinstantiate clients are not expected to instantiate this class
  */
-public class DefaultOutput extends DefaultOutputMetadata
-    implements
-      BuildContext.Output<File>,
-      CapabilitiesProvider {
+public class DefaultOutput extends DefaultOutputMetadata implements BuildContext.Output<File> {
 
   DefaultOutput(DefaultBuildContext<?> context, DefaultBuildContextState state, File file) {
     super(context, state, file);

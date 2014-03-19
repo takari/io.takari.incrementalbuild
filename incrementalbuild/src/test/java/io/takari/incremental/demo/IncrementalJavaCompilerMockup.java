@@ -1,7 +1,6 @@
 package io.takari.incremental.demo;
 
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
-import io.takari.incrementalbuild.spi.CapabilitiesProvider;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 import io.takari.incrementalbuild.spi.DefaultInput;
 import io.takari.incrementalbuild.spi.DefaultOutput;
@@ -66,7 +65,7 @@ public class IncrementalJavaCompilerMockup {
     }
   }
 
-  private void enqueueAffectedInputs(CapabilitiesProvider output) {
+  private void enqueueAffectedInputs(DefaultOutputMetadata output) {
     // Ideally, API should expose both new and old capabilities provided by the output
     // this is not necessary for Java because type/simpleType are tightly coupled to
     // output identity and do not change from one build to the next
