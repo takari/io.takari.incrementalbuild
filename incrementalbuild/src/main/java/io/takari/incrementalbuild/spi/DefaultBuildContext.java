@@ -523,6 +523,20 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     addRequirement(input, new QualifiedName(qualifier, localName));
   }
 
+  Collection<String> getRequirements(DefaultInputMetadata<?> input, DefaultBuildContextState state,
+      String qualifier) {
+    Set<String> requirements = new HashSet<String>();
+    Collection<QualifiedName> inputRequirements = state.inputRequirements.get(input.getResource());
+    if (inputRequirements != null) {
+      for (QualifiedName requirement : inputRequirements) {
+        if (qualifier.equals(requirement.getQualifier())) {
+          requirements.add(requirement.getLocalName());
+        }
+      }
+    }
+    return requirements;
+  }
+
   private void addRequirement(DefaultInput<?> input, QualifiedName requirement) {
     addInputRequirement(input.getResource(), requirement);
   }

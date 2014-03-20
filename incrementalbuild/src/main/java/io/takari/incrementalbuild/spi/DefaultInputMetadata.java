@@ -6,6 +6,7 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -51,4 +52,7 @@ public class DefaultInputMetadata<T> implements InputMetadata<T> {
     return context.processInput(this);
   }
 
+  public Collection<String> getRequiredCapabilities(String qualifier) {
+    return context.getRequirements(this, state, qualifier);
+  }
 }
