@@ -31,9 +31,9 @@ public class MavenIncrementalConventions {
   public String getExecutionId(MojoExecution execution) {
     PluginDescriptor pluginDescriptor = execution.getMojoDescriptor().getPluginDescriptor();
     StringBuilder builderId = new StringBuilder();
-    builderId.append(pluginDescriptor.getGroupId()).append(':')
+    builderId.append(pluginDescriptor.getGroupId()).append('_')
         .append(pluginDescriptor.getArtifactId());
-    builderId.append(':').append(execution.getGoal()).append(':')
+    builderId.append('_').append(execution.getGoal()).append('_')
         .append(execution.getExecutionId());
     return builderId.toString();
   }
