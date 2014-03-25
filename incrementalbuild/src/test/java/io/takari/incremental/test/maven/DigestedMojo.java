@@ -20,9 +20,17 @@ public class DigestedMojo extends AbstractMojo {
 
   private String string;
 
+  @Incremental(configuration = Configuration.consider)
   private MavenProject project;
 
+  @Incremental(configuration = Configuration.consider)
   private MavenSession session;
+
+  private MavenProject unannotatedProject;
+
+  private List<MavenProject> unannotatedProjectList;
+
+  private MavenSession unannotatedSession;
 
   private File output;
 

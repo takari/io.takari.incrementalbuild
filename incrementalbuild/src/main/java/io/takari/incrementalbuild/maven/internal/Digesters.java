@@ -43,7 +43,7 @@ class Digesters {
   }
 
   static interface Digester<T> {
-    Serializable digest(T value);
+    Serializable digest(Member member, T value);
   }
 
   private static final Map<Class<?>, Digester<?>> DIGESTERS;
@@ -51,14 +51,18 @@ class Digesters {
 
   private static final Digester<Serializable> DIGESTER_ECHO = new Digester<Serializable>() {
     @Override
-    public Serializable digest(Serializable value) {
+    public Serializable digest(Member member, Serializable value) {
       return value;
     }
   };
 
   private static final Digester<MavenProject> DIGESTER_MAVENPROJECT = new Digester<MavenProject>() {
     @Override
-    public Serializable digest(MavenProject value) {
+    public Serializable digest(Member member, MavenProject value) {
+      if (getConfiguration(member) == null) {
+        throw new IllegalArgumentException("Explicit @Incremental required: " + member);
+      }
+
       final MessageDigest digester = SHA1Digester.newInstance();
 
       // effective pom.xml defines project configuration, rebuild whenever project configuration
@@ -82,7 +86,11 @@ class Digesters {
   private static final Digester<MavenSession> DIGESTER_MAVENSESSION = new Digester<MavenSession>() {
     @Override
     @SuppressWarnings("deprecation")
-    public Serializable digest(MavenSession session) {
+    public Serializable digest(Member member, MavenSession session) {
+      if (getConfiguration(member) == null) {
+        throw new IllegalArgumentException("Explicit @Incremental required: " + member);
+      }
+
       // execution properties define build parameters passed in from command line and jvm used
       SortedMap<String, String> executionProperties = new TreeMap<String, String>();
 
@@ -124,11 +132,11 @@ class Digesters {
 
   private static final Digester<Collection<?>> DIGESTER_COLLECTION = new Digester<Collection<?>>() {
     @Override
-    public Serializable digest(Collection<?> collection) {
+    public Serializable digest(Member member, Collection<?> collection) {
       // TODO consider collapsing to single SHA1 hash
       ArrayList<Serializable> digest = new ArrayList<Serializable>();
       for (Object element : collection) {
-        Serializable elementDigest = Digesters.digest(element);
+        Serializable elementDigest = rawtypesDigest(member, element);
         if (elementDigest != null) {
           digest.add(elementDigest);
         }
@@ -139,7 +147,7 @@ class Digesters {
 
   private static Digester<Artifact> DIGESTER_ARTIFACT = new Digester<Artifact>() {
     @Override
-    public Serializable digest(Artifact value) {
+    public Serializable digest(Member member, Artifact value) {
       return value.getFile();
     }
   };
@@ -147,7 +155,7 @@ class Digesters {
   private static Digester<ArtifactRepository> DIGESTER_ARTIFACTREPOSITORY =
       new Digester<ArtifactRepository>() {
         @Override
-        public Serializable digest(ArtifactRepository value) {
+        public Serializable digest(Member member, ArtifactRepository value) {
           return value.getUrl();
         }
       };
@@ -167,19 +175,24 @@ class Digesters {
   }
 
   public static Serializable digest(Member member, Object value) {
-    if (member instanceof AnnotatedElement) {
-      Incremental configuration = ((AnnotatedElement) member).getAnnotation(Incremental.class);
-      if (configuration != null && configuration.configuration() == Configuration.ignore) {
-        return null; // no digest, ignore
-      }
+    Incremental configuration = getConfiguration(member);
+    if (configuration != null && configuration.configuration() == Configuration.ignore) {
+      return null; // no digest, ignore
     }
 
-    return digest(value);
+    return rawtypesDigest(member, value);
+  }
+
+  static Incremental getConfiguration(Member member) {
+    if (member instanceof AnnotatedElement) {
+      return ((AnnotatedElement) member).getAnnotation(Incremental.class);
+    }
+    return null;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static Serializable digest(Object value) {
-    return ((Digester) getDigester(value)).digest(value);
+  private static Serializable rawtypesDigest(Member member, Object value) {
+    return ((Digester) getDigester(value)).digest(member, value);
   }
 
   private static Digester<?> getDigester(Object value) {

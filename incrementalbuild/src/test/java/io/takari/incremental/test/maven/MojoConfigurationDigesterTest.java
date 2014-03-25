@@ -91,10 +91,25 @@ public class MojoConfigurationDigesterTest {
     Assert.assertNotNull(digest.get("mojo.parameter.project"));
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testUnAnnotatedProject() throws Exception {
+    digest(newParameter("unannotatedProject", "${project}"));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testUnAnnotatedProjectList() throws Exception {
+    digest(newParameter("unannotatedProjectList", "${session.projects}"));
+  }
+
   @Test
   public void testSession() throws Exception {
     Map<String, Serializable> digest = digest(newParameter("session", "${session}"));
     Assert.assertNotNull(digest.get("mojo.parameter.session"));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testUnAnnotatedSession() throws Exception {
+    digest(newParameter("unannotatedSession", "${session}"));
   }
 
   @Test
