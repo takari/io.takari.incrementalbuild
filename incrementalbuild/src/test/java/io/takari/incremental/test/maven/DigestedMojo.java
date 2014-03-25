@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -20,6 +21,8 @@ public class DigestedMojo extends AbstractMojo {
   private String string;
 
   private MavenProject project;
+
+  private MavenSession session;
 
   private File output;
 

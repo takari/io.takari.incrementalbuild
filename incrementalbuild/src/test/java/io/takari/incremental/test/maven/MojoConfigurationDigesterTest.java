@@ -85,9 +85,16 @@ public class MojoConfigurationDigesterTest {
     Assert.assertEquals("notignored", digest.get("mojo.parameter.notignored"));
   }
 
+  @Test
   public void testProject() throws Exception {
     Map<String, Serializable> digest = digest(newParameter("project", "${project}"));
-    Assert.assertNotNull(digest.get("project"));
+    Assert.assertNotNull(digest.get("mojo.parameter.project"));
+  }
+
+  @Test
+  public void testSession() throws Exception {
+    Map<String, Serializable> digest = digest(newParameter("session", "${session}"));
+    Assert.assertNotNull(digest.get("mojo.parameter.session"));
   }
 
   @Test
