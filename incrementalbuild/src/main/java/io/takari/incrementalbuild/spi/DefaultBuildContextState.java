@@ -51,7 +51,7 @@ public class DefaultBuildContextState implements Serializable {
   final Map<Object, Map<String, Serializable>> resourceAttributes =
       new HashMap<Object, Map<String, Serializable>>();
 
-  final Map<Object, Collection<Message>> inputMessages = new HashMap<Object, Collection<Message>>();
+  final Map<Object, Collection<Message>> messages = new HashMap<Object, Collection<Message>>();
 
   private DefaultBuildContextState(Map<String, Serializable> configuration) {
     this.configuration = configuration;
@@ -82,7 +82,7 @@ public class DefaultBuildContextState implements Serializable {
     sb.append(inputRequirements.size()).append(' ');
     sb.append(outputCapabilities.size()).append(' ');
     sb.append(resourceAttributes.size()).append(' ');
-    sb.append(inputMessages.size()).append(' ');
+    sb.append(messages.size()).append(' ');
 
     return sb.toString();
   }

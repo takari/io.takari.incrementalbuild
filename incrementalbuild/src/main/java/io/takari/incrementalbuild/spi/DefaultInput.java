@@ -49,7 +49,7 @@ public class DefaultInput<T> extends DefaultInputMetadata<T> implements BuildCon
 
   @Override
   public void addMessage(int line, int column, String message, Severity severity, Throwable cause) {
-    context.addMessage(this, line, column, message, severity, cause);
+    context.addMessage(getResource(), line, column, message, severity, cause);
   }
 
   @Override

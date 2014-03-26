@@ -620,17 +620,23 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // messages
 
-  public void addMessage(DefaultInput<?> input, int line, int column, String message,
-      Severity severity, Throwable cause) {
-    put(state.inputMessages, input.getResource(), new Message(line, column, message, severity,
-        cause));
+  public void addMessage(Object resource, int line, int column, String message, Severity severity,
+      Throwable cause) {
+    put(state.messages, resource, new Message(line, column, message, severity, cause));
 
     if (severity == Severity.ERROR) {
       errorCount.incrementAndGet();
     }
 
     // echo message
-    logMessage(input.getResource(), line, column, message, severity, cause);
+    logMessage(resource, line, column, message, severity, cause);
+  }
+
+  Collection<Message> getMessages(Object resource) {
+    if (processedInputs.containsKey(resource) || processedOutputs.containsKey(resource)) {
+      return state.messages.get(resource);
+    }
+    return oldState.messages.get(resource);
   }
 
   public void commit() throws BuildFailureException, IOException {
@@ -668,20 +674,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         }
 
         // copy messages
-        Collection<Message> messages = oldState.inputMessages.get(inputResource);
-        if (messages != null && !messages.isEmpty()) {
-          state.inputMessages.put(inputResource, new ArrayList<Message>(messages));
-
-          // TODO don't use log here, need proper API to announce message replay
-          log.info("Replaying recorded messages...");
-          for (Message message : messages) {
-            logMessage(inputResource, message.line, message.column, message.message,
-                message.severity, message.cause);
-            if (message.severity == Severity.ERROR) {
-              errorCount.incrementAndGet();
-            }
-          }
-        }
+        carryOverMessages(inputResource);
 
         // copy attributes
         Map<String, Serializable> attributes = oldState.resourceAttributes.get(inputResource);
@@ -711,6 +704,24 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
   }
 
+  private void carryOverMessages(Object resource) {
+    Collection<Message> messages = oldState.messages.get(resource);
+    if (messages != null && !messages.isEmpty()) {
+      state.messages.put(resource, new ArrayList<Message>(messages));
+
+      // XXX needs to replay all messages together, not per resource
+      // TODO don't use log here, need proper API to announce message replay
+      log.info("Replaying recorded messages...");
+      for (Message message : messages) {
+        logMessage(resource, message.line, message.column, message.message, message.severity,
+            message.cause);
+        if (message.severity == Severity.ERROR) {
+          errorCount.incrementAndGet();
+        }
+      }
+    }
+  }
+
   protected void carryOverOutput(Object inputResource, File outputFile) {
     carryOverOutput(outputFile);
 
@@ -732,6 +743,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (attributes != null) {
       state.resourceAttributes.put(outputFile, attributes);
     }
+
+    carryOverMessages(outputFile);
   }
 
   protected abstract void logMessage(Object inputResource, int line, int column, String message,

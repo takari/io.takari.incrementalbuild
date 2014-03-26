@@ -42,18 +42,39 @@ public interface BuildContext {
     REMOVED;
   }
 
+  public static interface ResourceMetadata<T> {
+
+    public T getResource();
+
+    public ResourceStatus getStatus();
+
+    /**
+     * Returns attribute value associated with the key during previous build.
+     */
+    public <V extends Serializable> V getValue(String key, Class<V> clazz);
+  }
+
+  public static interface Resource<T> extends ResourceMetadata<T> {
+
+    /**
+     * Returns attribute value associated with the key during previous build.
+     */
+    public <V extends Serializable> Serializable setValue(String key, V value);
+
+    public void addMessage(int line, int column, String message, Severity severity, Throwable cause);
+  }
+
   /**
    * Read-only state associated with input. Use {@link #process()} to manipulate the state.
    */
-  public static interface InputMetadata<T> {
-
-    public T getResource();
+  public static interface InputMetadata<T> extends ResourceMetadata<T> {
 
     /**
      * Returns up-to-date status of this input compared to the previous build. Covers status of the
      * input itself, included inputs, if any, and associated outputs, if any. Honours context build
      * escalation.
      */
+    @Override
     public ResourceStatus getStatus();
 
     /**
@@ -61,18 +82,13 @@ public interface BuildContext {
      */
     public Iterable<? extends OutputMetadata<File>> getAssociatedOutputs();
 
-    /**
-     * Returns attribute value associated with the key during previous build.
-     */
-    public <V extends Serializable> V getValue(String key, Class<V> clazz);
-
     public Input<T> process();
   }
 
   /**
    * Read-write state associated with input.
    */
-  public static interface Input<T> extends InputMetadata<T> {
+  public static interface Input<T> extends InputMetadata<T>, Resource<T> {
 
     // TODO return IncludedInput<File>, which can be used to track messages associated with the
     // included input
@@ -88,36 +104,25 @@ public interface BuildContext {
      * </pre>
      */
     public Output<File> associateOutput(File outputFile);
-
-    /**
-     * Returns attribute value associated with the key during previous build.
-     */
-    public <V extends Serializable> Serializable setValue(String key, V value);
-
-    public void addMessage(int line, int column, String message, Severity severity, Throwable cause);
   }
 
-  public static interface OutputMetadata<T> {
-    public T getResource();
+  public static interface OutputMetadata<T> extends ResourceMetadata<T> {
 
     /**
      * Returns up-to-date status of this output compared to the previous build. Does not consider
      * associated inputs.
      */
+    @Override
     public ResourceStatus getStatus();
 
     public <I> Iterable<? extends InputMetadata<I>> getAssociatedInputs(Class<I> clazz);
-
-    public <V extends Serializable> V getValue(String key, Class<V> clazz);
   }
 
-  public static interface Output<T> extends OutputMetadata<T> {
+  public static interface Output<T> extends OutputMetadata<T>, Resource<T> {
 
     public OutputStream newOutputStream() throws IOException;
 
     public <I> void associateInput(InputMetadata<I> input);
-
-    public <V extends Serializable> Serializable setValue(String key, V value);
   }
 
   /**

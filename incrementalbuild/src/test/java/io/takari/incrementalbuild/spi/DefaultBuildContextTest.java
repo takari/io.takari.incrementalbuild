@@ -1,4 +1,4 @@
-package io.takari.incremental.test;
+package io.takari.incrementalbuild.spi;
 
 import static io.takari.incrementalbuild.BuildContext.ResourceStatus.MODIFIED;
 import static io.takari.incrementalbuild.BuildContext.ResourceStatus.NEW;
@@ -6,11 +6,7 @@ import static io.takari.incrementalbuild.BuildContext.ResourceStatus.UNMODIFIED;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.OutputMetadata;
 import io.takari.incrementalbuild.BuildContext.ResourceStatus;
-import io.takari.incrementalbuild.spi.DefaultBuildContext;
-import io.takari.incrementalbuild.spi.DefaultInput;
-import io.takari.incrementalbuild.spi.DefaultInputMetadata;
-import io.takari.incrementalbuild.spi.DefaultOutput;
-import io.takari.incrementalbuild.spi.DefaultOutputMetadata;
+import io.takari.incrementalbuild.BuildContext.Severity;
 
 import java.io.File;
 import java.io.Serializable;
@@ -119,6 +115,10 @@ public class DefaultBuildContextTest {
   }
 
   private static <T> List<T> toList(Iterable<T> iterable) {
+    if (iterable == null) {
+      return null;
+    }
+
     List<T> result = new ArrayList<T>();
     for (T t : iterable) {
       result.add(t);
@@ -782,4 +782,116 @@ public class DefaultBuildContextTest {
     DefaultOutput looseOutput = context.processOutput(looseOutputFile);
     Assert.assertEquals(ResourceStatus.MODIFIED, looseOutput.getStatus());
   }
+
+  @Test
+  public void testInputMessages() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    // initial message
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    inputFile = metadata.getResource();
+    DefaultInput<File> input = metadata.process();
+    input.addMessage(0, 0, "message", Severity.WARNING, null);
+    context.commit();
+
+    // the message is retained during no-change rebuild
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    List<Message> messages = toList(context.getMessages(inputFile));
+    Assert.assertEquals(1, messages.size());
+    Assert.assertEquals("message", messages.get(0).message);
+    context.commit();
+
+    // the message is retained during second no-change rebuild
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    messages = toList(context.getMessages(inputFile));
+    Assert.assertEquals(1, messages.size());
+    Assert.assertEquals("message", messages.get(0).message);
+    context.commit();
+
+    // new message
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    input = metadata.process();
+    input.addMessage(0, 0, "newMessage", Severity.WARNING, null);
+    context.commit();
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    messages = toList(context.getMessages(inputFile));
+    Assert.assertEquals(1, messages.size());
+    Assert.assertEquals("newMessage", messages.get(0).message);
+    context.commit();
+
+    // removed message
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    input = metadata.process();
+    context.commit();
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    Assert.assertNull(context.getMessages(inputFile));
+    context.commit();
+  }
+
+  @Test
+  public void testOutputMessages() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    // initial message
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    DefaultInput<File> input = metadata.process();
+    DefaultOutput output = input.associateOutput(outputFile);
+    output.addMessage(0, 0, "message", Severity.WARNING, null);
+    context.commit();
+
+    // the message is retained during no-change rebuild
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    OutputMetadata<File> outputMetadata = toList(metadata.getAssociatedOutputs()).get(0);
+    List<Message> messages = toList(context.getMessages(outputMetadata.getResource()));
+    Assert.assertEquals(1, messages.size());
+    Assert.assertEquals("message", messages.get(0).message);
+    context.commit();
+
+    // the message is retained during second no-change rebuild
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    outputMetadata = toList(metadata.getAssociatedOutputs()).get(0);
+    messages = toList(context.getMessages(outputMetadata.getResource()));
+    Assert.assertEquals(1, messages.size());
+    Assert.assertEquals("message", messages.get(0).message);
+    context.commit();
+
+    // new message
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    input = metadata.process();
+    output = input.associateOutput(outputFile);
+    output.addMessage(0, 0, "newMessage", Severity.WARNING, null);
+    context.commit();
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    outputMetadata = toList(metadata.getAssociatedOutputs()).get(0);
+    messages = toList(context.getMessages(outputMetadata.getResource()));
+    Assert.assertEquals(1, messages.size());
+    Assert.assertEquals("newMessage", messages.get(0).message);
+    context.commit();
+
+    // removed message
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    input = metadata.process();
+    output = input.associateOutput(outputFile);
+    context.commit();
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    outputMetadata = toList(metadata.getAssociatedOutputs()).get(0);
+    Assert.assertNull(context.getMessages(outputMetadata.getResource()));
+    context.commit();
+  }
+
 }

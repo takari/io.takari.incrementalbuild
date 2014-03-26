@@ -2,6 +2,7 @@ package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
+import io.takari.incrementalbuild.BuildContext.Severity;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -68,5 +69,10 @@ public class DefaultOutput extends DefaultOutputMetadata implements BuildContext
   @Override
   public <V extends Serializable> Serializable setValue(String key, V value) {
     return context.setResourceAttribute(file, key, value);
+  }
+
+  @Override
+  public void addMessage(int line, int column, String message, Severity severity, Throwable cause) {
+    context.addMessage(getResource(), line, column, message, severity, cause);
   }
 }

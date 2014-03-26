@@ -159,6 +159,9 @@ public class SimpleBuildContext implements BuildContext {
     public <V extends Serializable> V getValue(String key, Class<V> clazz) {
       return clazz.cast(properties.get(key));
     }
+
+    @Override
+    public void addMessage(int line, int column, String message, Severity severity, Throwable cause) {}
   }
 
   private final Set<File> registeredInputs = new LinkedHashSet<File>();
