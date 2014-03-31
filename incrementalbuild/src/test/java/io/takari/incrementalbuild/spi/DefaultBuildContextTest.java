@@ -894,4 +894,73 @@ public class DefaultBuildContextTest {
     context.commit();
   }
 
+  @Test
+  public void testIsProcessingRequired() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File includedInputFile = temp.newFile("included_input_file");
+    File outputFile = temp.newFile("outputFile");
+    File outputWithoutInput = temp.newFile("output_without_inputs");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
+    input.associateOutput(outputFile);
+    // input.associateIncludedInput(includedInputFile); // XXX this is broken, fix it!
+    context.processOutput(outputWithoutInput);
+    context.commit();
+
+    // no change
+    context = newBuildContext();
+    context.registerInput(inputFile);
+    Assert.assertFalse(context.isProcessingRequired());
+
+    // processed input
+    context = newBuildContext();
+    context.registerInput(inputFile).process();
+    Assert.assertTrue(context.isProcessingRequired());
+
+    // processed output
+    context = newBuildContext();
+    context.registerInput(inputFile);
+    context.processOutput(outputWithoutInput);
+    Assert.assertTrue(context.isProcessingRequired());
+
+    // removed input
+    context = newBuildContext();
+    Assert.assertTrue(context.isProcessingRequired());
+
+    // modified input
+    Files.append("test", inputFile, Charsets.UTF_8);
+    context = newBuildContext();
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    Assert.assertTrue(context.isProcessingRequired());
+    metadata.process().associateOutput(outputFile);
+    context.processOutput(outputWithoutInput);
+    context.commit();
+
+    // modified output
+    Files.append("test", outputFile, Charsets.UTF_8);
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    Assert.assertTrue(context.isProcessingRequired());
+    metadata.process().associateOutput(outputFile);
+    context.processOutput(outputWithoutInput);
+    context.commit();
+
+    // modified output without inputs
+    Files.append("test", outputWithoutInput, Charsets.UTF_8);
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    Assert.assertTrue(context.isProcessingRequired());
+    metadata.process().associateOutput(outputFile);
+    context.processOutput(outputWithoutInput);
+    context.commit();
+
+    // XXX modified included input
+
+    // configuration changed
+    context = newBuildContext(Collections.<String, Serializable>singletonMap("test", "modified"));
+    metadata = context.registerInput(inputFile);
+    Assert.assertTrue(context.isProcessingRequired());
+
+  }
 }

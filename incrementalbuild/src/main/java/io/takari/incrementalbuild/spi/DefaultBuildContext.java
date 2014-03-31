@@ -747,6 +747,29 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     carryOverMessages(outputFile);
   }
 
+  public boolean isProcessingRequired() {
+    if (escalated || !processedInputs.isEmpty() || !processedOutputs.isEmpty()) {
+      return true;
+    }
+    for (Object inputResource : state.inputs.keySet()) {
+      ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
+      if (oldInputState == null || oldInputState.getStatus() != ResourceStatus.UNMODIFIED) {
+        return true;
+      }
+    }
+    for (Object oldInputResource : oldState.inputs.keySet()) {
+      if (!state.inputs.containsKey(oldInputResource)) {
+        return true;
+      }
+    }
+    for (ResourceHolder<File> oldOutputState : oldState.outputs.values()) {
+      if (oldOutputState.getStatus() != ResourceStatus.UNMODIFIED) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   protected void logMessage(Object inputResource, int line, int column, String message,
       Severity severity, Throwable cause) {
     if (severity == Severity.ERROR) {
