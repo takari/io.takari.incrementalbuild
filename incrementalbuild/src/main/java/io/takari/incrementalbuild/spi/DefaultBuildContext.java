@@ -747,8 +747,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     carryOverMessages(outputFile);
   }
 
-  protected abstract void logMessage(Object inputResource, int line, int column, String message,
-      Severity severity, Throwable cause);
+  protected void logMessage(Object inputResource, int line, int column, String message,
+      Severity severity, Throwable cause) {
+    if (severity == Severity.ERROR) {
+      log.error("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);
+    } else {
+      log.warn("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);
+    }
+  }
 
   // XXX not too happy with errorCount parameter
   protected abstract BuildFailureException newBuildFailureException(int errorCount);

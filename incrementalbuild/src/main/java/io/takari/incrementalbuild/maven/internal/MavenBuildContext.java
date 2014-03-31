@@ -63,16 +63,6 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
   public void afterExecutionFailure(MojoExecutionEvent event) {}
 
   @Override
-  protected void logMessage(Object inputResource, int line, int column, String message,
-      Severity severity, Throwable cause) {
-    if (severity == Severity.ERROR) {
-      log.error("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);
-    } else {
-      log.warn("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);
-    }
-  }
-
-  @Override
   protected MojoExecutionException newBuildFailureException(int errorCount) {
     return new MojoExecutionException(errorCount
         + " error(s) encountered, see previous message(s) for details");
