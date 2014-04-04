@@ -43,7 +43,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private final boolean escalated;
 
   /**
-   * All inputs selected for processing during this build.
+   * Inputs selected for processing during this build.
    */
   private final Map<Object, DefaultInput<?>> processedInputs =
       new HashMap<Object, DefaultInput<?>>();
@@ -267,6 +267,18 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return output;
   }
 
+  public DefaultInput<File> processIncludedInput(File inputFile) {
+    inputFile = normalize(inputFile);
+
+    if (state.includedInputs.containsKey(inputFile)) {
+      return new DefaultInput<File>(this, state, inputFile);
+    }
+
+    File file = registerInput(state.includedInputs, new FileState(inputFile));
+
+    return new DefaultInput<File>(this, state, file);
+  }
+
   public ResourceStatus getInputStatus(Object inputResource, boolean associated) {
     if (!state.inputs.containsKey(inputResource)) {
       if (oldState.inputs.containsKey(inputResource)) {
@@ -294,7 +306,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       Collection<Object> includedInputs = oldState.inputIncludedInputs.get(inputResource);
       if (includedInputs != null) {
         for (Object includedInput : includedInputs) {
-          ResourceHolder<?> includedInputState = oldState.inputs.get(includedInput);
+          ResourceHolder<?> includedInputState = oldState.includedInputs.get(includedInput);
           if (includedInputState.getStatus() != ResourceStatus.UNMODIFIED) {
             return ResourceStatus.MODIFIED;
           }
@@ -347,26 +359,33 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public <T extends Serializable> DefaultInputMetadata<T> registerInput(ResourceHolder<T> holder) {
+    T resource = registerInput(state.inputs, holder);
+
+    // this returns different instance each invocation. This should not be a problem because
+    // each instance is a stateless flyweight.
+
+    return new DefaultInputMetadata<T>(this, oldState, resource);
+  }
+
+  private <T extends Serializable> T registerInput(Map<Object, ResourceHolder<?>> inputs,
+      ResourceHolder<T> holder) {
     T resource = holder.getResource();
 
-    ResourceHolder<?> other = state.inputs.get(resource);
+    ResourceHolder<?> other = inputs.get(resource);
 
     if (other == null) {
       if (holder.getStatus() == ResourceStatus.REMOVED) {
         throw new IllegalArgumentException("Input does not exist " + resource);
       }
 
-      state.inputs.put(resource, holder);
+      inputs.put(resource, holder);
     } else {
       if (!holder.equals(other)) {
         throw new IllegalArgumentException("Inconsistent input state " + resource);
       }
     }
 
-    // this returns different instance each invocation. This should not be a problem because
-    // each instance is a stateless flyweight.
-
-    return new DefaultInputMetadata<T>(this, oldState, resource);
+    return resource;
   }
 
   @Override
@@ -513,7 +532,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return outputs;
   }
 
-  public void associateIncludedInput(DefaultInput<?> input, DefaultInputMetadata<?> included) {
+  public void associateIncludedInput(DefaultInput<?> input, DefaultInput<File> included) {
     put(state.inputIncludedInputs, input.getResource(), included.getResource());
   }
 
@@ -660,8 +679,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           state.inputIncludedInputs.put(inputResource, new LinkedHashSet<Object>(includedInputs));
 
           for (Object includedInput : includedInputs) {
-            ResourceHolder<?> oldHolder = oldState.inputs.get(includedInput);
-            state.inputs.put(oldHolder.getResource(), oldHolder);
+            ResourceHolder<?> oldHolder = oldState.includedInputs.get(includedInput);
+            state.includedInputs.put(oldHolder.getResource(), oldHolder);
           }
         }
 
@@ -759,6 +778,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
     for (Object oldInputResource : oldState.inputs.keySet()) {
       if (!state.inputs.containsKey(oldInputResource)) {
+        return true;
+      }
+    }
+    for (ResourceHolder<?> oldIncludedInputState : oldState.includedInputs.values()) {
+      if (oldIncludedInputState.getStatus() != ResourceStatus.UNMODIFIED) {
         return true;
       }
     }

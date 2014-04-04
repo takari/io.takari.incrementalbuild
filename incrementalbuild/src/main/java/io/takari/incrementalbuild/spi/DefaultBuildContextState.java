@@ -32,6 +32,8 @@ public class DefaultBuildContextState implements Serializable {
 
   final Map<Object, ResourceHolder<?>> inputs = new HashMap<Object, ResourceHolder<?>>();
 
+  final Map<Object, ResourceHolder<?>> includedInputs = new HashMap<Object, ResourceHolder<?>>();
+
   final Map<Object, Collection<File>> inputOutputs = new HashMap<Object, Collection<File>>();
 
   final Map<File, Collection<Object>> outputInputs = new HashMap<File, Collection<Object>>();
@@ -74,6 +76,7 @@ public class DefaultBuildContextState implements Serializable {
 
     sb.append(configuration.size()).append(' ');
     sb.append(inputs.size()).append(' ');
+    sb.append(includedInputs.size()).append(' ');
     sb.append(outputs.size()).append(' ');
     sb.append(inputOutputs.size()).append(' ');
     sb.append(outputInputs.size()).append(' ');

@@ -18,7 +18,7 @@ public class DefaultInput<T> extends DefaultInputMetadata<T> implements BuildCon
 
   @Override
   public void associateIncludedInput(File includedFile) {
-    DefaultInputMetadata<File> included = context.registerInput(includedFile);
+    DefaultInput<File> included = context.processIncludedInput(includedFile);
     context.associateIncludedInput(this, included);
   }
 
