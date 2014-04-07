@@ -643,7 +643,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   public void addMessage(Object resource, int line, int column, String message, Severity severity,
       Throwable cause) {
-    put(state.messages, resource, new Message(line, column, message, severity, cause));
+    put(state.resourceMessages, resource, new Message(line, column, message, severity, cause));
 
     if (severity == Severity.ERROR) {
       errorCount.incrementAndGet();
@@ -655,9 +655,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   Collection<Message> getMessages(Object resource) {
     if (processedInputs.containsKey(resource) || processedOutputs.containsKey(resource)) {
-      return state.messages.get(resource);
+      return state.resourceMessages.get(resource);
     }
-    return oldState.messages.get(resource);
+    return oldState.resourceMessages.get(resource);
   }
 
   public void commit() throws BuildFailureException, IOException {
@@ -726,9 +726,9 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private void carryOverMessages(Object resource) {
-    Collection<Message> messages = oldState.messages.get(resource);
+    Collection<Message> messages = oldState.resourceMessages.get(resource);
     if (messages != null && !messages.isEmpty()) {
-      state.messages.put(resource, new ArrayList<Message>(messages));
+      state.resourceMessages.put(resource, new ArrayList<Message>(messages));
 
       // XXX needs to replay all messages together, not per resource
       // TODO don't use log here, need proper API to announce message replay
