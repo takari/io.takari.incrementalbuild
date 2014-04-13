@@ -632,8 +632,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return oldAttributes != null ? (Serializable) oldAttributes.get(key) : null;
   }
 
-  public <T extends Serializable> T getResourceAttribute(File resource, String key, Class<T> clazz) {
-    Map<String, Serializable> attributes = state.resourceAttributes.get(resource);
+  public <T extends Serializable> T getResourceAttribute(Object resource, String key,
+      boolean previous, Class<T> clazz) {
+    Map<String, Serializable> attributes =
+        (previous ? oldState : state).resourceAttributes.get(resource);
     return attributes != null ? clazz.cast(attributes.get(key)) : null;
   }
 

@@ -72,4 +72,9 @@ public class DefaultInput<T> extends DefaultInputMetadata<T> implements BuildCon
     // must be from the same context to be equal
     return context == other.context && resource.equals(other.resource);
   }
+
+  @Override
+  public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+    return context.getResourceAttribute(resource, key, false /* this build */, clazz);
+  }
 }

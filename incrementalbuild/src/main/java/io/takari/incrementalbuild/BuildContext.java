@@ -49,7 +49,13 @@ public interface BuildContext {
     public ResourceStatus getStatus();
 
     /**
-     * Returns attribute value associated with the key during previous build.
+     * Returns current attribute value.
+     * <p>
+     * For registered (but not processed) inputs and carried over outputs, returns value associated
+     * with the key during previous build. For processed inputs and outputs, returns value
+     * associated with the key during this build.
+     * <p>
+     * XXX rename to getAttribute
      */
     public <V extends Serializable> V getValue(String key, Class<V> clazz);
   }
@@ -58,6 +64,8 @@ public interface BuildContext {
 
     /**
      * Returns attribute value associated with the key during previous build.
+     * <p>
+     * XXX rename to setAttribute
      */
     public <V extends Serializable> Serializable setValue(String key, V value);
 

@@ -649,8 +649,10 @@ public class DefaultBuildContextTest {
     metadata = context.registerInput(inputFile);
     Assert.assertEquals("value", metadata.getValue("key", String.class));
     input = metadata.process();
+    Assert.assertNull(input.getValue("key", String.class));
     Assert.assertEquals("value", input.setValue("key", "newValue"));
     Assert.assertEquals("value", input.setValue("key", "newValue"));
+    Assert.assertEquals("newValue", input.getValue("key", String.class));
     context.commit();
 
     context = newBuildContext();
@@ -681,6 +683,7 @@ public class DefaultBuildContextTest {
     Assert.assertNull(output.getValue("key", String.class)); // no value during current build
     Assert.assertEquals("value", output.setValue("key", "newValue"));
     Assert.assertEquals("value", output.setValue("key", "newValue"));
+    Assert.assertEquals("newValue", output.getValue("key", String.class));
     context.commit();
   }
 

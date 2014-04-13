@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -60,7 +59,6 @@ public class DefaultOutputMetadata implements BuildContext.OutputMetadata<File> 
 
   @Override
   public <V extends Serializable> V getValue(String key, Class<V> clazz) {
-    Map<String, Serializable> attributes = state.resourceAttributes.get(file);
-    return attributes != null ? clazz.cast(attributes.get(key)) : null;
+    return context.getResourceAttribute(file, key, true /* previous */, clazz);
   }
 }

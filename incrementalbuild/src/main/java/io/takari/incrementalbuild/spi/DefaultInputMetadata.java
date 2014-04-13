@@ -7,7 +7,6 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * @noinstantiate clients are not expected to instantiate this class
@@ -43,8 +42,7 @@ public class DefaultInputMetadata<T> implements InputMetadata<T> {
 
   @Override
   public <V extends Serializable> V getValue(String key, Class<V> clazz) {
-    Map<String, Serializable> attributes = state.resourceAttributes.get(resource);
-    return attributes != null ? clazz.cast(attributes.get(key)) : null;
+    return context.getResourceAttribute(resource, key, true /* previous */, clazz);
   }
 
   @Override
