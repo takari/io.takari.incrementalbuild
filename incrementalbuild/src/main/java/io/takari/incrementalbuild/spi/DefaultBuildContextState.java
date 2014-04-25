@@ -293,11 +293,15 @@ public class DefaultBuildContextState implements Serializable {
         }
       }
     } catch (FileNotFoundException e) {
-      // this is expected, ignore
-      return DefaultBuildContextState.emptyState();
+      // this is expected, silently ignore
+    } catch (RuntimeException e) {
+      // this is a bug in our code, let it bubble up as build failure
+      throw e;
     } catch (Exception e) {
-      throw new IllegalStateException("Could not load incremental build state " + stateFile, e);
+      // this is almost certainly caused incompatible state file, log and continue
+      log.debug("Could not load incremental build state {}", stateFile, e);
     }
+    return DefaultBuildContextState.emptyState();
   }
 
 
