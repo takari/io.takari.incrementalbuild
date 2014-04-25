@@ -754,13 +754,9 @@ public class DefaultBuildContextTest {
       Thread.currentThread().setContextClassLoader(origTCCL);
     }
 
-    // sanity check, make sure state can't be loaded without proper TCCL
-    try {
-      context = newBuildContext();
-      Assert.fail();
-    } catch (IllegalStateException e) {
-      Assert.assertTrue(e.getMessage().contains("Could not load incremental build state"));
-    }
+    // sanity check, make sure empty state is loaded without proper TCCL
+    context = newBuildContext();
+    Assert.assertTrue(((TestBuildContext) context).isEscalated());
   }
 
   @Test
