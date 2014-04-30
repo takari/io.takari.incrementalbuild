@@ -14,22 +14,15 @@ class FileState implements ResourceHolder<File> {
 
   final long length;
 
-  public FileState(File file) {
-    if (file == null || !isPresent(file)) {
-      throw new IllegalArgumentException("File does not exist or cannot be read " + file);
+  public FileState(File file, long lastModified, long length) {
+    if (file == null) {
+      // throw new IllegalArgumentException("File does not exist or cannot be read " + file);
+      throw new NullPointerException();
     }
 
     this.file = file;
-    this.lastModified = file.lastModified();
-    this.length = file.length();
-  }
-
-  private boolean isUptodate(File file) {
-    return length == file.length() && lastModified == file.lastModified();
-  }
-
-  private static boolean isPresent(File file) {
-    return file != null && file.isFile() && file.canRead();
+    this.lastModified = lastModified;
+    this.length = length;
   }
 
   @Override
@@ -39,10 +32,8 @@ class FileState implements ResourceHolder<File> {
 
   @Override
   public ResourceStatus getStatus() {
-    if (!isPresent(file)) {
-      return ResourceStatus.REMOVED;
-    }
-    return isUptodate(file) ? ResourceStatus.UNMODIFIED : ResourceStatus.MODIFIED;
+    // TODO slightly cleaner approach is to move #getStatus() to a separate optional interface
+    throw new UnsupportedOperationException();
   }
 
   @Override

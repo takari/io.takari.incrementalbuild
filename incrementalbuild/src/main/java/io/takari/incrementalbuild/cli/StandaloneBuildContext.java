@@ -1,6 +1,7 @@
 package io.takari.incrementalbuild.cli;
 
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
+import io.takari.incrementalbuild.spi.FilesystemWorkspace;
 
 import java.io.File;
 import java.io.Serializable;
@@ -11,7 +12,7 @@ import java.util.Map;
 public class StandaloneBuildContext extends DefaultBuildContext<Exception> {
 
   public StandaloneBuildContext(File stateFile, String[] args) {
-    super(stateFile, toConfiguration(args));
+    super(new FilesystemWorkspace(), stateFile, toConfiguration(args));
   }
 
   private static Map<String, Serializable> toConfiguration(String[] args) {

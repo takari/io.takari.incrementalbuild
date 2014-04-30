@@ -7,7 +7,7 @@ import java.util.Map;
 class TestBuildContext extends DefaultBuildContext<Exception> {
 
   public TestBuildContext(File stateFile, Map<String, Serializable> configuration) {
-    super(stateFile, configuration);
+    super(new FilesystemWorkspace(), stateFile, configuration);
   }
 
   @Override

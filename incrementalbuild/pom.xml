@@ -10,6 +10,12 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>io.takari</groupId>
+      <artifactId>incrementalbuild-workspace</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- lsf4j api is the only required external dependency -->
     <dependency>
       <groupId>org.slf4j</groupId>

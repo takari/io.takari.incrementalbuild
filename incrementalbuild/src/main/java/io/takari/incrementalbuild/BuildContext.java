@@ -151,6 +151,9 @@ public interface BuildContext {
    * parameter will match all files. {@code excludes} match takes precedence over {@code includes},
    * if a file matches one of excludes patterns it will not be registered regardless of includes
    * patterns match.
+   * <p>
+   * Implementation is not expected to handle changes {@code basedir}, {@code includes} or
+   * {@code excludes} incrementally.
    * 
    * @param basedir is the base directory to look for inputs, must not be {@code null}
    * @param includes glob patterns of the files to register, can be {@code null}
@@ -159,6 +162,12 @@ public interface BuildContext {
   public Iterable<? extends InputMetadata<File>> registerInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException;
 
+  /**
+   * Registers inputs identified by {@code basedir} and {@code includes}/{@code excludes} glob
+   * patterns. Processes inputs that are new or modified since previous build.
+   * 
+   * @returns processed inputs
+   */
   public Iterable<? extends Input<File>> registerAndProcessInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException;
 

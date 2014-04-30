@@ -41,10 +41,10 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
       WeakMojoExecutionListener {
 
   @Inject
-  public MavenBuildContext(MojoConfigurationDigester digester,
+  public MavenBuildContext(ProjectWorkspace workspace, MojoConfigurationDigester digester,
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution)
       throws IOException {
-    super(conventions.getExecutionStateLocation(project, execution), digester.digest());
+    super(workspace, conventions.getExecutionStateLocation(project, execution), digester.digest());
   }
 
   @Override

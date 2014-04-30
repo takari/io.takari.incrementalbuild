@@ -18,6 +18,9 @@ import java.io.Serializable;
  */
 public interface ResourceHolder<R extends Serializable> extends Serializable {
 
+  /**
+   * Returns resource handle, the resource does not have to exist.
+   */
   public R getResource();
 
   public ResourceStatus getStatus();

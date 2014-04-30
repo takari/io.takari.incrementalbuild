@@ -5,7 +5,6 @@ import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.Severity;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -21,11 +20,7 @@ public class DefaultOutput extends DefaultOutputMetadata implements BuildContext
 
   @Override
   public OutputStream newOutputStream() throws IOException {
-    File parent = getResource().getParentFile();
-    if (!parent.isDirectory() && !parent.mkdirs()) {
-      throw new IOException("Could not create directory " + parent);
-    }
-    return new FileOutputStream(getResource());
+    return context.newOutputStream(this);
   }
 
   public void addCapability(String qualifier, String localName) {

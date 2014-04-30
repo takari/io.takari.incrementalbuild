@@ -45,6 +45,13 @@
   </properties>
 
   <modules>
+    <!--
+      | TODO once workspace API has stabilized, deploy and version incrementalbuild-workspace separately
+      | changes to incrementalbuild-workspace will require update to io.takari.m2e.lifecycle and should
+      | be avoided if possible. 
+      | Don't forget to change incrementalbuild/pom.xml incrementalbuild-workspace version 
+     -->
+    <module>incrementalbuild-workspace</module>
     <module>incrementalbuild</module>
     <module>incrementalbuild-watchdog</module>
     <module>incrementalbuild-its</module>

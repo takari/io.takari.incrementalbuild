@@ -1,18 +1,15 @@
 package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.workspace.Workspace;
+import io.takari.incrementalbuild.workspace.Workspace.FileVisitor;
+import io.takari.incrementalbuild.workspace.Workspace.Mode;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
-import java.nio.file.DirectoryStream;
-import java.nio.file.DirectoryStream.Filter;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +58,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    */
   private final Map<File, DefaultOutput> processedOutputs = new HashMap<File, DefaultOutput>();
 
+  private final Set<File> deletedInputs = new HashSet<File>();
+
   private final Set<File> deletedOutputs = new HashSet<File>();
 
   /**
@@ -68,8 +67,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    */
   private final AtomicInteger errorCount = new AtomicInteger();
 
-  public DefaultBuildContext(File stateFile, Map<String, Serializable> configuration) {
+  private final Workspace workspace;
+
+  public DefaultBuildContext(Workspace workspace, File stateFile,
+      Map<String, Serializable> configuration) {
     // preconditions
+    if (workspace == null) {
+      throw new NullPointerException();
+    }
     if (stateFile == null) {
       throw new NullPointerException();
     }
@@ -79,10 +84,22 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     this.stateFile = stateFile;
     this.state = DefaultBuildContextState.withConfiguration(configuration);
-
     this.oldState = DefaultBuildContextState.loadFrom(stateFile);
 
-    this.escalated = getEscalated();
+    final boolean configurationChanged = getConfigurationChanged();
+    if (workspace.getMode() == Mode.ESCALATED) {
+      this.escalated = true;
+      this.workspace = workspace;
+    } else if (workspace.getMode() == Mode.SUPPRESSED) {
+      this.escalated = false;
+      this.workspace = workspace;
+    } else if (configurationChanged) {
+      this.escalated = true;
+      this.workspace = workspace.escalate();
+    } else {
+      this.escalated = false;
+      this.workspace = workspace;
+    }
 
     if (escalated) {
       if (!stateFile.canRead()) {
@@ -95,7 +112,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
   }
 
-  private boolean getEscalated() {
+  private boolean getConfigurationChanged() {
     Map<String, Serializable> configuration = state.configuration;
     Map<String, Serializable> oldConfiguration = oldState.configuration;
 
@@ -166,18 +183,39 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   @Override
   public Iterable<DefaultInput<File>> registerAndProcessInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException {
-    List<DefaultInput<File>> inputs = new ArrayList<DefaultInput<File>>();
-    for (DefaultInputMetadata<File> metadata : registerInputs(basedir, includes, excludes)) {
-      DefaultInput<File> input = getProcessedInput(metadata.getResource());
-      if (input == null) {
-        if (getInputStatus(metadata.getResource(), true) != ResourceStatus.UNMODIFIED) {
-          input = processInput(metadata);
+    final List<DefaultInput<File>> inputs = new ArrayList<DefaultInput<File>>();
+    final PathMatcher matcher = PathMatchers.relativeMatcher(basedir.toPath(), includes, excludes);
+    workspace.walk(basedir, new FileVisitor() {
+      @Override
+      public void visit(File file, long lastModified, long length, Workspace.ResourceStatus status) {
+        if (matcher.matches(file.toPath())) {
+          file = normalize(file);
+          switch (status) {
+            case MODIFIED:
+            case NEW: {
+              DefaultInput<File> input = getProcessedInput(file);
+              if (input == null) {
+                DefaultInputMetadata<File> metadata =
+                    registerNormalizedInput(normalize(file), lastModified, length);
+                if (workspace.getMode() == Mode.DELTA
+                    || getInputStatus(file, true) != ResourceStatus.UNMODIFIED) {
+                  input = metadata.process();
+                }
+              }
+              if (input != null) {
+                inputs.add(input);
+              }
+              break;
+            }
+            case REMOVED:
+              deletedInputs.add(file);
+              break;
+            default:
+              throw new IllegalArgumentException();
+          }
         }
       }
-      if (input != null) {
-        inputs.add(input);
-      }
-    }
+    });
     return inputs;
   }
 
@@ -219,8 +257,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         for (Object inputResource : associatedInputs) {
 
           // input is registered and not processed, not orphaned
-          if (state.inputs.containsKey(inputResource)
-              && !processedInputs.containsKey(inputResource)) {
+          if (isRegistered(inputResource) && !processedInputs.containsKey(inputResource)) {
             continue oldOutputs;
           }
 
@@ -248,10 +285,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return deleted;
   }
 
-  protected void deleteStaleOutput(File outputFile) throws IOException {
-    if (outputFile.exists() && !outputFile.delete()) {
-      throw new IOException("Could not delete file " + outputFile);
+  private boolean isRegistered(Object inputResource) {
+    if (workspace.getMode() == Mode.DELTA || workspace.getMode() == Mode.SUPPRESSED) {
+      return !deletedInputs.contains(inputResource);
     }
+    return state.inputs.containsKey(inputResource);
+  }
+
+  protected void deleteStaleOutput(File outputFile) throws IOException {
+    workspace.deleteFile(outputFile);
   }
 
   private static <K, V> void put(Map<K, Collection<V>> multimap, K key, V value) {
@@ -271,6 +313,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (output == null) {
       output = new DefaultOutput(this, state, outputFile);
       processedOutputs.put(outputFile, output);
+
+      workspace.processOutput(outputFile);
     }
 
     return output;
@@ -283,13 +327,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       return new DefaultInput<File>(this, state, inputFile);
     }
 
-    File file = registerInput(state.includedInputs, new FileState(inputFile));
+    File file = registerInput(state.includedInputs, newFileState(inputFile));
 
     return new DefaultInput<File>(this, state, file);
   }
 
   public ResourceStatus getInputStatus(Object inputResource, boolean associated) {
-    if (!state.inputs.containsKey(inputResource)) {
+    if (!isRegistered(inputResource)) {
       if (oldState.inputs.containsKey(inputResource)) {
         return ResourceStatus.REMOVED;
       }
@@ -305,7 +349,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       return ResourceStatus.MODIFIED;
     }
 
-    ResourceStatus status = oldInputState.getStatus();
+    ResourceStatus status = getResourceStatus(oldInputState);
 
     if (status != ResourceStatus.UNMODIFIED) {
       return status;
@@ -316,7 +360,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       if (includedInputs != null) {
         for (Object includedInput : includedInputs) {
           ResourceHolder<?> includedInputState = oldState.includedInputs.get(includedInput);
-          if (includedInputState.getStatus() != ResourceStatus.UNMODIFIED) {
+          if (getResourceStatus(includedInputState) != ResourceStatus.UNMODIFIED) {
             return ResourceStatus.MODIFIED;
           }
         }
@@ -326,7 +370,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       if (outputFiles != null) {
         for (File outputFile : outputFiles) {
           ResourceHolder<File> outputState = oldState.outputs.get(outputFile);
-          if (outputState.getStatus() != ResourceStatus.UNMODIFIED) {
+          if (getResourceStatus(outputState) != ResourceStatus.UNMODIFIED) {
             return ResourceStatus.MODIFIED;
           }
         }
@@ -334,6 +378,24 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     return ResourceStatus.UNMODIFIED;
+  }
+
+  private ResourceStatus getResourceStatus(ResourceHolder<?> holder) {
+    if (holder instanceof FileState) {
+      FileState fileState = (FileState) holder;
+      switch (workspace.getResourceStatus(fileState.file, fileState.lastModified, fileState.length)) {
+        case NEW:
+          return ResourceStatus.NEW;
+        case MODIFIED:
+          return ResourceStatus.MODIFIED;
+        case REMOVED:
+          return ResourceStatus.REMOVED;
+        case UNMODIFIED:
+          return ResourceStatus.UNMODIFIED;
+      }
+      throw new IllegalArgumentException();
+    }
+    return holder.getStatus();
   }
 
   public ResourceStatus getOutputStatus(File outputFile) {
@@ -347,7 +409,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       throw new IllegalArgumentException("Output is not processed " + outputFile);
     }
 
-    ResourceStatus status = oldOutputState.getStatus();
+    ResourceStatus status = getResourceStatus(oldOutputState);
 
     if (escalated && status == ResourceStatus.UNMODIFIED) {
       status = ResourceStatus.MODIFIED;
@@ -359,12 +421,18 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   @Override
   public DefaultInputMetadata<File> registerInput(File inputFile) {
     inputFile = normalize(inputFile);
-    if (state.inputs.containsKey(inputFile)) {
+    return registerNormalizedInput(inputFile, inputFile.lastModified(), inputFile.length());
+  }
+
+  private DefaultInputMetadata<File> registerNormalizedInput(File inputFile, long lastModified,
+      long length) {
+
+    if (isRegistered(inputFile)) {
       // performance shortcut, avoids IO during new FileState
       return new DefaultInputMetadata<File>(this, oldState, inputFile);
     }
 
-    return registerInput(new FileState(inputFile));
+    return registerInput(newFileState(inputFile, lastModified, length));
   }
 
   public <T extends Serializable> DefaultInputMetadata<T> registerInput(ResourceHolder<T> holder) {
@@ -383,7 +451,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     ResourceHolder<?> other = inputs.get(resource);
 
     if (other == null) {
-      if (holder.getStatus() == ResourceStatus.REMOVED) {
+      if (getResourceStatus(holder) == ResourceStatus.REMOVED) {
         throw new IllegalArgumentException("Input does not exist " + resource);
       }
 
@@ -401,70 +469,42 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   public Iterable<DefaultInputMetadata<File>> registerInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException {
     final List<DefaultInputMetadata<File>> result = new ArrayList<>();
-    final Path basepath = basedir.toPath();
-    final Filter<Path> filter =
-        newPathFilter(toPathMatchers(basepath, includes), toPathMatchers(basepath, excludes));
-    Files.walkFileTree(basepath, new SimpleFileVisitor<Path>() {
+    final PathMatcher matcher = PathMatchers.relativeMatcher(basedir.toPath(), includes, excludes);
+    workspace.walk(basedir, new FileVisitor() {
       @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        if (filter == null || filter.accept(file)) {
-          // TODO use attrs to avoid extra IO
-          result.add(registerInput(file.toFile()));
+      public void visit(File file, long lastModified, long length, Workspace.ResourceStatus status) {
+        if (matcher.matches(file.toPath())) {
+          switch (status) {
+            case MODIFIED:
+            case NEW:
+              result.add(registerNormalizedInput(normalize(file), lastModified, length));
+              break;
+            case REMOVED:
+              deletedInputs.add(file);
+              break;
+            default:
+              throw new IllegalArgumentException();
+          }
         }
-        return FileVisitResult.CONTINUE;
       }
     });
+    if (workspace.getMode() == Mode.DELTA) {
+      // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
+      // need to find any UNMODIFIED
+      final PathMatcher absoluteMatcher =
+          PathMatchers.absoluteMatcher(basedir.toPath(), includes, excludes);
+      for (Object resource : oldState.inputs.keySet()) {
+        if (resource instanceof File) {
+          File file = (File) resource;
+          if (!state.inputs.containsKey(file) && !deletedInputs.contains(file)
+              && absoluteMatcher.matches(file.toPath())) {
+            // TODO carry-over FileState
+            result.add(registerInput(file));
+          }
+        }
+      }
+    }
     return result;
-  }
-
-  private static final List<PathMatcher> toPathMatchers(Path basedir, Collection<String> globs) {
-    if (globs == null || globs.isEmpty()) {
-      return null;
-    }
-    ArrayList<PathMatcher> matchers = new ArrayList<>();
-    for (String glob : globs) {
-      StringBuilder gb = new StringBuilder("glob:");
-      if (!glob.startsWith("**")) {
-        gb.append("**/");
-      }
-      gb.append(glob);
-      matchers.add(basedir.getFileSystem().getPathMatcher(gb.toString()));
-    }
-    return matchers;
-  }
-
-  private DirectoryStream.Filter<Path> newPathFilter(final List<PathMatcher> includes,
-      final List<PathMatcher> excludes) {
-    if (includes == null && excludes == null) {
-      return null;
-    }
-    return new DirectoryStream.Filter<Path>() {
-      @Override
-      public boolean accept(Path entry) throws IOException {
-        // excludes, if specified, wins
-        if (excludes != null) {
-          for (PathMatcher matcher : excludes) {
-            if (matcher.matches(entry)) {
-              return false;
-            }
-          }
-        }
-
-        // includes, if specified, must explicitly match input
-        if (includes != null) {
-          for (PathMatcher matcher : includes) {
-            if (matcher.matches(entry)) {
-              return true;
-            }
-          }
-
-          return false;
-        }
-
-        // entry was not explicitly excluded and includes==null
-        return true;
-      }
-    };
   }
 
   @Override
@@ -496,7 +536,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private <T> void addRemovedInputs(Set<DefaultInputMetadata<T>> result, Class<T> clazz) {
     if (oldState != null) {
       for (Object inputResource : oldState.inputs.keySet()) {
-        if (!state.inputs.containsKey(inputResource) && clazz.isInstance(inputResource)) {
+        if (!isRegistered(inputResource) && clazz.isInstance(inputResource)) {
           // removed
           result.add(new DefaultInputMetadata<T>(this, oldState, clazz.cast(inputResource)));
         }
@@ -517,8 +557,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
           Collection<Object> associatedInputs = oldState.outputInputs.get(outputFile);
           if (associatedInputs != null) {
             for (Object inputResource : associatedInputs) {
-              if (state.inputs.containsKey(inputResource)
-                  && !processedInputs.containsKey(inputResource)) {
+              if (isRegistered(inputResource) && !processedInputs.containsKey(inputResource)) {
                 result.add(new DefaultOutputMetadata(this, oldState, outputFile));
                 break;
               }
@@ -534,7 +573,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private File normalize(File file) {
     if (file == null) {
-      return null;
+      throw new IllegalArgumentException();
     }
     try {
       return file.getCanonicalFile();
@@ -574,6 +613,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
     return inputs;
+  }
+
+  OutputStream newOutputStream(DefaultOutput output) throws IOException {
+    return workspace.newOutputStream(output.getResource());
   }
 
   public Iterable<DefaultOutput> getAssociatedOutputs(File inputFile) {
@@ -677,7 +720,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
         if (inputResource instanceof File) {
           if (!result.containsKey(inputResource)
-              && oldInputState.getStatus() != ResourceStatus.REMOVED) {
+              && getResourceStatus(oldInputState) != ResourceStatus.REMOVED) {
             result.put(inputResource, registerInput((File) inputResource));
           }
         }
@@ -735,7 +778,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     // carry over relevant parts of the old state
 
     for (Object inputResource : oldState.inputs.keySet()) {
-      if (!processedInputs.containsKey(inputResource) && state.inputs.containsKey(inputResource)) {
+      if (!processedInputs.containsKey(inputResource) && isRegistered(inputResource)) {
         // copy associated outputs
         Collection<File> associatedOutputs = oldState.inputOutputs.get(inputResource);
         if (associatedOutputs != null) {
@@ -775,7 +818,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     for (ResourceHolder<?> resource : state.inputs.values()) {
-      if (resource.getStatus() != ResourceStatus.UNMODIFIED) {
+      if (getResourceStatus(resource) != ResourceStatus.UNMODIFIED) {
         throw new IllegalStateException("Unexpected input change " + resource.getResource());
       }
     }
@@ -783,7 +826,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     // timestamp processed output files
     for (File outputFile : processedOutputs.keySet()) {
       if (state.outputs.get(outputFile) == null) {
-        state.outputs.put(outputFile, new FileState(outputFile));
+        state.outputs.put(outputFile, newFileState(outputFile));
       }
     }
 
@@ -792,6 +835,17 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (errorCount.get() > 0) {
       throw newBuildFailureException(errorCount.get());
     }
+  }
+
+  private FileState newFileState(File file) {
+    return newFileState(file, file.lastModified(), file.length());
+  }
+
+  private FileState newFileState(File file, long lastModified, long length) {
+    if (!workspace.isPresent(file)) {
+      throw new IllegalArgumentException("File does not exist or cannot be read " + file);
+    }
+    return new FileState(file, lastModified, length);
   }
 
   private void carryOverMessages(Object resource) {
@@ -843,22 +897,22 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
     for (Object inputResource : state.inputs.keySet()) {
       ResourceHolder<?> oldInputState = oldState.inputs.get(inputResource);
-      if (oldInputState == null || oldInputState.getStatus() != ResourceStatus.UNMODIFIED) {
+      if (oldInputState == null || getResourceStatus(oldInputState) != ResourceStatus.UNMODIFIED) {
         return true;
       }
     }
     for (Object oldInputResource : oldState.inputs.keySet()) {
-      if (!state.inputs.containsKey(oldInputResource)) {
+      if (!isRegistered(oldInputResource)) {
         return true;
       }
     }
     for (ResourceHolder<?> oldIncludedInputState : oldState.includedInputs.values()) {
-      if (oldIncludedInputState.getStatus() != ResourceStatus.UNMODIFIED) {
+      if (getResourceStatus(oldIncludedInputState) != ResourceStatus.UNMODIFIED) {
         return true;
       }
     }
     for (ResourceHolder<File> oldOutputState : oldState.outputs.values()) {
-      if (oldOutputState.getStatus() != ResourceStatus.UNMODIFIED) {
+      if (getResourceStatus(oldOutputState) != ResourceStatus.UNMODIFIED) {
         return true;
       }
     }

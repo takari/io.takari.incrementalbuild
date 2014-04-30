@@ -3,6 +3,7 @@ package io.takari.incrementalbuild.maven.testing;
 import io.takari.incrementalbuild.maven.internal.MavenBuildContext;
 import io.takari.incrementalbuild.maven.internal.MavenIncrementalConventions;
 import io.takari.incrementalbuild.maven.internal.MojoConfigurationDigester;
+import io.takari.incrementalbuild.maven.internal.ProjectWorkspace;
 import io.takari.incrementalbuild.spi.DefaultOutput;
 
 import java.io.File;
@@ -18,10 +19,10 @@ class TestBuildContext extends MavenBuildContext {
   private final IncrementalBuildLog logger;
 
   @Inject
-  public TestBuildContext(MojoConfigurationDigester digester,
+  public TestBuildContext(ProjectWorkspace workspace, MojoConfigurationDigester digester,
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution,
       IncrementalBuildLog logger) throws IOException {
-    super(digester, conventions, project, execution);
+    super(workspace, digester, conventions, project, execution);
     this.logger = logger;
   }
 
