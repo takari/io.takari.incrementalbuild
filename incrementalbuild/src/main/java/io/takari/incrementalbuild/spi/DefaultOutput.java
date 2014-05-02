@@ -62,12 +62,12 @@ public class DefaultOutput extends DefaultOutputMetadata implements BuildContext
   }
 
   @Override
-  public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+  public <V extends Serializable> V getAttribute(String key, Class<V> clazz) {
     return context.getResourceAttribute(file, key, false /* this build */, clazz);
   }
 
   @Override
-  public <V extends Serializable> Serializable setValue(String key, V value) {
+  public <V extends Serializable> Serializable setAttribute(String key, V value) {
     return context.setResourceAttribute(file, key, value);
   }
 

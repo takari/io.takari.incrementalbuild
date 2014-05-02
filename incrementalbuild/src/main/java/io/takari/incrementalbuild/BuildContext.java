@@ -55,20 +55,16 @@ public interface BuildContext {
      * For registered (but not processed) inputs and carried over outputs, returns value associated
      * with the key during previous build. For processed inputs and outputs, returns value
      * associated with the key during this build.
-     * <p>
-     * XXX rename to getAttribute
      */
-    public <V extends Serializable> V getValue(String key, Class<V> clazz);
+    public <V extends Serializable> V getAttribute(String key, Class<V> clazz);
   }
 
   public static interface Resource<T> extends ResourceMetadata<T> {
 
     /**
      * Returns attribute value associated with the key during previous build.
-     * <p>
-     * XXX rename to setAttribute
      */
-    public <V extends Serializable> Serializable setValue(String key, V value);
+    public <V extends Serializable> Serializable setAttribute(String key, V value);
 
     public void addMessage(int line, int column, String message, Severity severity, Throwable cause);
   }

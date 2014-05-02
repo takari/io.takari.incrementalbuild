@@ -604,14 +604,14 @@ public class DefaultBuildContextTest {
 
     DefaultOutput output = context.processOutput(outputFile);
     outputFile = output.getResource();
-    output.setValue("key", "value");
+    output.setAttribute("key", "value");
     context.commit();
 
     context = newBuildContext();
     List<DefaultOutputMetadata> outputs = toList(context.getProcessedOutputs());
     Assert.assertEquals(1, outputs.size());
     Assert.assertEquals(outputFile, outputs.get(0).getResource());
-    Assert.assertEquals("value", outputs.get(0).getValue("key", String.class));
+    Assert.assertEquals("value", outputs.get(0).getAttribute("key", String.class));
     context.carryOverOutput(outputs.get(0).getResource());
     context.commit();
     Assert.assertTrue(outputFile.canRead());
@@ -620,7 +620,7 @@ public class DefaultBuildContextTest {
     outputs = toList(context.getProcessedOutputs());
     Assert.assertEquals(1, outputs.size());
     Assert.assertEquals(outputFile, outputs.get(0).getResource());
-    Assert.assertEquals("value", outputs.get(0).getValue("key", String.class));
+    Assert.assertEquals("value", outputs.get(0).getAttribute("key", String.class));
     context.commit();
     Assert.assertFalse(outputFile.canRead());
   }
@@ -639,29 +639,29 @@ public class DefaultBuildContextTest {
 
     DefaultBuildContext<?> context = newBuildContext();
     DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
-    Assert.assertNull(metadata.getValue("key", String.class));
+    Assert.assertNull(metadata.getAttribute("key", String.class));
     DefaultInput<File> input = metadata.process();
-    Assert.assertNull(input.setValue("key", "value"));
+    Assert.assertNull(input.setAttribute("key", "value"));
     context.commit();
 
     context = newBuildContext();
     metadata = context.registerInput(inputFile);
-    Assert.assertEquals("value", metadata.getValue("key", String.class));
+    Assert.assertEquals("value", metadata.getAttribute("key", String.class));
     context.commit();
 
     context = newBuildContext();
     metadata = context.registerInput(inputFile);
-    Assert.assertEquals("value", metadata.getValue("key", String.class));
+    Assert.assertEquals("value", metadata.getAttribute("key", String.class));
     input = metadata.process();
-    Assert.assertNull(input.getValue("key", String.class));
-    Assert.assertEquals("value", input.setValue("key", "newValue"));
-    Assert.assertEquals("value", input.setValue("key", "newValue"));
-    Assert.assertEquals("newValue", input.getValue("key", String.class));
+    Assert.assertNull(input.getAttribute("key", String.class));
+    Assert.assertEquals("value", input.setAttribute("key", "newValue"));
+    Assert.assertEquals("value", input.setAttribute("key", "newValue"));
+    Assert.assertEquals("newValue", input.getAttribute("key", String.class));
     context.commit();
 
     context = newBuildContext();
     metadata = context.registerInput(inputFile);
-    Assert.assertEquals("newValue", metadata.getValue("key", String.class));
+    Assert.assertEquals("newValue", metadata.getAttribute("key", String.class));
     context.commit();
   }
 
@@ -672,22 +672,22 @@ public class DefaultBuildContextTest {
 
     DefaultBuildContext<?> context = newBuildContext();
     DefaultOutput output = context.registerInput(inputFile).process().associateOutput(outputFile);
-    Assert.assertNull(output.setValue("key", "value"));
+    Assert.assertNull(output.setAttribute("key", "value"));
     context.commit();
 
     // no change output, attributes should be carried over as-is
     context = newBuildContext();
     context.registerInput(inputFile);
     OutputMetadata<File> metadata = context.getProcessedOutputs().iterator().next();
-    Assert.assertEquals("value", metadata.getValue("key", String.class));
+    Assert.assertEquals("value", metadata.getAttribute("key", String.class));
     context.commit();
 
     context = newBuildContext();
     output = context.registerInput(inputFile).process().associateOutput(outputFile);
-    Assert.assertNull(output.getValue("key", String.class)); // no value during current build
-    Assert.assertEquals("value", output.setValue("key", "newValue"));
-    Assert.assertEquals("value", output.setValue("key", "newValue"));
-    Assert.assertEquals("newValue", output.getValue("key", String.class));
+    Assert.assertNull(output.getAttribute("key", String.class)); // no value during current build
+    Assert.assertEquals("value", output.setAttribute("key", "newValue"));
+    Assert.assertEquals("value", output.setAttribute("key", "newValue"));
+    Assert.assertEquals("newValue", output.getAttribute("key", String.class));
     context.commit();
   }
 
@@ -747,12 +747,12 @@ public class DefaultBuildContextTest {
       Object dummy = tccl.loadClass("dummy.Dummy").newInstance();
 
       DefaultInput<File> input = context.registerInput(inputFile).process();
-      input.setValue("dummy", (Serializable) dummy);
+      input.setAttribute("dummy", (Serializable) dummy);
       context.commit();
 
       context = newBuildContext();
       Assert.assertFalse(((TestBuildContext) context).isEscalated());
-      Assert.assertNotNull(context.registerInput(inputFile).getValue("dummy", Serializable.class));
+      Assert.assertNotNull(context.registerInput(inputFile).getAttribute("dummy", Serializable.class));
       // no commit
     } finally {
       Thread.currentThread().setContextClassLoader(origTCCL);

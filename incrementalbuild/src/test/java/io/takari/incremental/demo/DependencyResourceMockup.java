@@ -87,9 +87,9 @@ public class DependencyResourceMockup {
     DefaultInputMetadata<ArtifactFile> metadata =
         context.registerInput(new ArtifactFileHolder(artifact, artifactPath));
 
-    File oldFile = metadata.getValue("file", File.class);
-    long oldLength = metadata.getValue("file.length", Long.class);
-    long oldLastModified = metadata.getValue("file.lastModified", Long.class);
+    File oldFile = metadata.getAttribute("file", File.class);
+    long oldLength = metadata.getAttribute("file.length", Long.class);
+    long oldLastModified = metadata.getAttribute("file.lastModified", Long.class);
 
     if (file.equals(oldFile) && file.lastModified() == oldLastModified
         && file.length() == oldLength) {

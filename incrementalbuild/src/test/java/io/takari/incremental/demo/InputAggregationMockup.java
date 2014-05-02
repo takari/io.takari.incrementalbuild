@@ -28,7 +28,7 @@ public class InputAggregationMockup {
         // persist the extracted data in Input attribute for use during future builds
         // as long as the input does not change, the attribute value will be used without the need
         // to extract data from the input again
-        input.setValue(KEY_INCREMENTAL_DATA, data);
+        input.setAttribute(KEY_INCREMENTAL_DATA, data);
       }
     }
 
@@ -49,7 +49,7 @@ public class InputAggregationMockup {
     List<Serializable> aggreagateData = new ArrayList<Serializable>();
 
     for (BuildContext.InputMetadata<File> input : context.getRegisteredInputs()) {
-      Serializable data = input.getValue(KEY_INCREMENTAL_DATA, Serializable.class);
+      Serializable data = input.getAttribute(KEY_INCREMENTAL_DATA, Serializable.class);
       if (data != null) {
         switch (input.getStatus()) {
           case NEW:

@@ -58,7 +58,7 @@ public class DefaultOutputMetadata implements BuildContext.OutputMetadata<File> 
   }
 
   @Override
-  public <V extends Serializable> V getValue(String key, Class<V> clazz) {
+  public <V extends Serializable> V getAttribute(String key, Class<V> clazz) {
     return context.getResourceAttribute(file, key, true /* previous */, clazz);
   }
 }
