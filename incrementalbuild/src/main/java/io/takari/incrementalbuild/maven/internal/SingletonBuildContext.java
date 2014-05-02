@@ -3,6 +3,8 @@ package io.takari.incrementalbuild.maven.internal;
 import io.takari.incrementalbuild.BuildContext;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
 
 import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
@@ -43,13 +45,15 @@ public class SingletonBuildContext implements BuildContext {
   }
 
   @Override
-  public Iterable<? extends InputMetadata<File>> registerInputs(Iterable<File> inputFiles) {
-    return delegate.get().registerInputs(inputFiles);
+  public Iterable<? extends InputMetadata<File>> registerInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException {
+    return delegate.get().registerInputs(basedir, includes, excludes);
   }
 
   @Override
-  public Iterable<? extends Input<File>> registerAndProcessInputs(Iterable<File> inputFiles) {
-    return delegate.get().registerAndProcessInputs(inputFiles);
+  public Iterable<? extends Input<File>> registerAndProcessInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException {
+    return delegate.get().registerAndProcessInputs(basedir, includes, excludes);
   }
 
   @Override

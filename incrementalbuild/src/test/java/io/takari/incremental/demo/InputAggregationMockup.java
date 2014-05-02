@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class InputAggregationMockup {
@@ -18,11 +17,12 @@ public class InputAggregationMockup {
   /** @Injected */
   BuildContext context;
 
-  public void aggregate(Collection<File> fileSet) throws IOException {
-
+  public void aggregate(File basedir, List<String> includes, List<String> excludes)
+      throws IOException {
 
     // process all new/modified inputs and capture extracted data in BuildContext
-    for (BuildContext.Input<File> input : context.registerAndProcessInputs(fileSet)) {
+    for (BuildContext.Input<File> input : context.registerAndProcessInputs(basedir, includes,
+        excludes)) {
       Serializable data = extractDataSomehow(input); // this is application specific logic
       if (data != null) {
         // persist the extracted data in Input attribute for use during future builds

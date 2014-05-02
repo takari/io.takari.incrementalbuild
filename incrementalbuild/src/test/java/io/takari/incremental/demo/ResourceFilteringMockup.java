@@ -5,7 +5,7 @@ import io.takari.incrementalbuild.BuildContext;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
+import java.util.List;
 
 public class ResourceFilteringMockup {
 
@@ -15,12 +15,13 @@ public class ResourceFilteringMockup {
 
   // end of injected parameters
 
-  public void filter(Collection<File> fileSet) throws IOException {
+  public void filter(File basedir, List<String> includes, List<String> excludes) throws IOException {
 
     // all input files must be registered with BuildContext.
     // by tracking all input files incremental build library is able to determine "removed" inputs
     // and clean their associated outputs during subsequent builds
-    for (BuildContext.Input<File> input : context.registerAndProcessInputs(fileSet)) {
+    for (BuildContext.Input<File> input : context.registerAndProcessInputs(basedir, includes,
+        excludes)) {
 
       // input requires filtering if the input itself new/change or if the output is changed/deleted
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.Collection;
 
 
 
@@ -145,9 +146,25 @@ public interface BuildContext {
    */
   public InputMetadata<File> registerInput(File inputFile);
 
-  public Iterable<? extends InputMetadata<File>> registerInputs(Iterable<File> inputFiles);
+  /**
+   * Registers inputs identified by {@code basedir} and {@code includes}/{@code excludes} glob
+   * patterns.
+   * <p>
+   * When a file is found under {@code basedir}, it will be registered if it does not match
+   * {@code excludes} patterns and matches {@code includes} patterns. {@code null} or empty includes
+   * parameter will match all files. {@code excludes} match takes precedence over {@code includes},
+   * if a file matches one of excludes patterns it will not be registered regardless of includes
+   * patterns match.
+   * 
+   * @param basedir is the base directory to look for inputs, must not be {@code null}
+   * @param includes glob patterns of the files to register, can be {@code null}
+   * @param excludes glob patterns of the files to ignore, can be {@code null}
+   */
+  public Iterable<? extends InputMetadata<File>> registerInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException;
 
-  public Iterable<? extends Input<File>> registerAndProcessInputs(Iterable<File> inputFiles);
+  public Iterable<? extends Input<File>> registerAndProcessInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException;
 
   public Output<File> processOutput(File outputFile);
 

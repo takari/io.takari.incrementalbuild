@@ -9,15 +9,18 @@ import io.takari.incrementalbuild.BuildContext.ResourceStatus;
 import io.takari.incrementalbuild.BuildContext.Severity;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -433,10 +436,11 @@ public class DefaultBuildContextTest {
   public void testRegisterAndProcessInputs() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");
+    List<String> includes = Arrays.asList(inputFile.getName());
 
     DefaultBuildContext<?> context = newBuildContext();
     List<DefaultInput<File>> inputs =
-        toList(context.registerAndProcessInputs(Arrays.asList(inputFile)));
+        toList(context.registerAndProcessInputs(temp.getRoot(), includes, null));
     Assert.assertEquals(1, inputs.size());
     Assert.assertEquals(ResourceStatus.NEW, inputs.get(0).getStatus());
     inputs.get(0).associateOutput(outputFile);
@@ -444,7 +448,7 @@ public class DefaultBuildContextTest {
 
     // no change rebuild
     context = newBuildContext();
-    inputs = toList(context.registerAndProcessInputs(Arrays.asList(inputFile)));
+    inputs = toList(context.registerAndProcessInputs(temp.getRoot(), includes, null));
     Assert.assertEquals(0, inputs.size());
     context.commit();
   }
@@ -975,6 +979,50 @@ public class DefaultBuildContextTest {
     context = newBuildContext(Collections.<String, Serializable>singletonMap("test", "modified"));
     metadata = context.registerInput(inputFile);
     Assert.assertTrue(context.isProcessingRequired());
-
   }
+
+  @Test
+  public void testRegisterInputs() throws Exception {
+    temp.newFolder("folder");
+    File f1 = temp.newFile("input1.txt");
+    File f2 = temp.newFile("folder/input2.txt");
+    File f3 = temp.newFile("folder/input3.log");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    List<File> actual = toFileList(context.registerInputs(temp.getRoot(), null, null));
+    assertIncludedPaths(Arrays.asList(f1, f2, f3), actual);
+
+    context = newBuildContext();
+    actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("*.txt"), null));
+    assertIncludedPaths(Arrays.asList(f1, f2), actual);
+
+    context = newBuildContext();
+    actual =
+        toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("**"),
+            Arrays.asList("*.log")));
+    assertIncludedPaths(Arrays.asList(f1, f2), actual);
+  }
+
+  private List<File> toFileList(Iterable<DefaultInputMetadata<File>> inputs) {
+    List<File> files = new ArrayList<>();
+    for (DefaultInputMetadata<File> input : inputs) {
+      files.add(input.getResource());
+    }
+    return files;
+  }
+
+  private static void assertIncludedPaths(Collection<File> expected, Collection<File> actual)
+      throws IOException {
+    Assert.assertEquals(toString(new TreeSet<File>(expected)), toString(new TreeSet<File>(actual)));
+  }
+
+  private static String toString(Iterable<? extends File> files) throws IOException {
+    StringBuilder sb = new StringBuilder();
+    for (File file : files) {
+      sb.append(file.getCanonicalPath()).append('\n');
+    }
+    return sb.toString();
+  }
+
+
 }

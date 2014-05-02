@@ -5,6 +5,14 @@ import io.takari.incrementalbuild.BuildContext;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.DirectoryStream;
+import java.nio.file.DirectoryStream.Filter;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -156,9 +164,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   @Override
-  public Iterable<DefaultInput<File>> registerAndProcessInputs(Iterable<File> inputFiles) {
+  public Iterable<DefaultInput<File>> registerAndProcessInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException {
     List<DefaultInput<File>> inputs = new ArrayList<DefaultInput<File>>();
-    for (DefaultInputMetadata<File> metadata : registerInputs(inputFiles)) {
+    for (DefaultInputMetadata<File> metadata : registerInputs(basedir, includes, excludes)) {
       DefaultInput<File> input = getProcessedInput(metadata.getResource());
       if (input == null) {
         if (getInputStatus(metadata.getResource(), true) != ResourceStatus.UNMODIFIED) {
@@ -389,13 +398,73 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   @Override
-  public Iterable<DefaultInputMetadata<File>> registerInputs(Iterable<File> inputFiles) {
-    Map<File, DefaultInputMetadata<File>> result =
-        new LinkedHashMap<File, DefaultInputMetadata<File>>();
-    for (File inputFile : inputFiles) {
-      result.put(inputFile, registerInput(inputFile));
+  public Iterable<DefaultInputMetadata<File>> registerInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException {
+    final List<DefaultInputMetadata<File>> result = new ArrayList<>();
+    final Path basepath = basedir.toPath();
+    final Filter<Path> filter =
+        newPathFilter(toPathMatchers(basepath, includes), toPathMatchers(basepath, excludes));
+    Files.walkFileTree(basepath, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        if (filter == null || filter.accept(file)) {
+          // TODO use attrs to avoid extra IO
+          result.add(registerInput(file.toFile()));
+        }
+        return FileVisitResult.CONTINUE;
+      }
+    });
+    return result;
+  }
+
+  private static final List<PathMatcher> toPathMatchers(Path basedir, Collection<String> globs) {
+    if (globs == null || globs.isEmpty()) {
+      return null;
     }
-    return result.values();
+    ArrayList<PathMatcher> matchers = new ArrayList<>();
+    for (String glob : globs) {
+      StringBuilder gb = new StringBuilder("glob:");
+      if (!glob.startsWith("**")) {
+        gb.append("**/");
+      }
+      gb.append(glob);
+      matchers.add(basedir.getFileSystem().getPathMatcher(gb.toString()));
+    }
+    return matchers;
+  }
+
+  private DirectoryStream.Filter<Path> newPathFilter(final List<PathMatcher> includes,
+      final List<PathMatcher> excludes) {
+    if (includes == null && excludes == null) {
+      return null;
+    }
+    return new DirectoryStream.Filter<Path>() {
+      @Override
+      public boolean accept(Path entry) throws IOException {
+        // excludes, if specified, wins
+        if (excludes != null) {
+          for (PathMatcher matcher : excludes) {
+            if (matcher.matches(entry)) {
+              return false;
+            }
+          }
+        }
+
+        // includes, if specified, must explicitly match input
+        if (includes != null) {
+          for (PathMatcher matcher : includes) {
+            if (matcher.matches(entry)) {
+              return true;
+            }
+          }
+
+          return false;
+        }
+
+        // entry was not explicitly excluded and includes==null
+        return true;
+      }
+    };
   }
 
   @Override
