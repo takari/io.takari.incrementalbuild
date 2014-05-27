@@ -752,7 +752,8 @@ public class DefaultBuildContextTest {
 
       context = newBuildContext();
       Assert.assertFalse(((TestBuildContext) context).isEscalated());
-      Assert.assertNotNull(context.registerInput(inputFile).getAttribute("dummy", Serializable.class));
+      Assert.assertNotNull(context.registerInput(inputFile).getAttribute("dummy",
+          Serializable.class));
       // no commit
     } finally {
       Thread.currentThread().setContextClassLoader(origTCCL);
@@ -982,14 +983,21 @@ public class DefaultBuildContextTest {
   }
 
   @Test
-  public void testRegisterInputs() throws Exception {
+  public void testRegisterInputs_includes_excludes() throws Exception {
     temp.newFolder("folder");
     File f1 = temp.newFile("input1.txt");
     File f2 = temp.newFile("folder/input2.txt");
     File f3 = temp.newFile("folder/input3.log");
 
-    DefaultBuildContext<?> context = newBuildContext();
-    List<File> actual = toFileList(context.registerInputs(temp.getRoot(), null, null));
+    DefaultBuildContext<?> context;
+    List<File> actual;
+
+    context = newBuildContext();
+    actual = toFileList(context.registerInputs(temp.getRoot(), null, Arrays.asList("**")));
+    assertIncludedPaths(Collections.<File>emptyList(), actual);
+
+    context = newBuildContext();
+    actual = toFileList(context.registerInputs(temp.getRoot(), null, null));
     assertIncludedPaths(Arrays.asList(f1, f2, f3), actual);
 
     context = newBuildContext();

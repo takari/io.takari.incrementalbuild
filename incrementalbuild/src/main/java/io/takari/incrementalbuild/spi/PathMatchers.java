@@ -9,14 +9,22 @@ import java.util.Collection;
 // XXX rework using plexus MatchPatterns, it is significantly faster than java nio FS
 class PathMatchers {
 
-  private static PathMatcher fromStrings(FileSystem fs, Collection<String> globs) {
+  private static final PathMatcher MATCH_EVERYTHING = new PathMatcher() {
+    @Override
+    public boolean matches(Path path) {
+      return true;
+    }
+  };
+
+  private static PathMatcher fromStrings(FileSystem fs, Collection<String> globs,
+      PathMatcher everything) {
     if (globs == null || globs.isEmpty()) {
-      return null; // matches everything
+      return null; // default behaviour appropriate for includes/excludes pattern
     }
     final ArrayList<PathMatcher> matchers = new ArrayList<>();
     for (String glob : globs) {
       if ("*".equals(glob) || "**".equals(glob) || "**/*".equals(glob)) {
-        return null; // matches everything
+        return everything; // matches everything
       }
       StringBuilder gb = new StringBuilder("glob:");
       if (!glob.startsWith("**")) {
@@ -44,8 +52,8 @@ class PathMatchers {
   public static PathMatcher relativeMatcher(final Path basepath, Collection<String> includes,
       Collection<String> excludes) {
     final FileSystem fs = basepath.getFileSystem();
-    final PathMatcher includesMatcher = fromStrings(fs, includes);
-    final PathMatcher excludesMatcher = fromStrings(fs, excludes);
+    final PathMatcher includesMatcher = fromStrings(fs, includes, null);
+    final PathMatcher excludesMatcher = fromStrings(fs, excludes, MATCH_EVERYTHING);
     return new PathMatcher() {
       @Override
       public boolean matches(Path path) {
@@ -67,8 +75,9 @@ class PathMatchers {
    */
   public static PathMatcher absoluteMatcher(final Path basepath, Collection<String> includes,
       Collection<String> excludes) {
-    final PathMatcher includesMatcher = fromStrings(basepath.getFileSystem(), includes);
-    final PathMatcher excludesMatcher = fromStrings(basepath.getFileSystem(), excludes);
+    final PathMatcher includesMatcher = fromStrings(basepath.getFileSystem(), includes, null);
+    final PathMatcher excludesMatcher =
+        fromStrings(basepath.getFileSystem(), excludes, MATCH_EVERYTHING);
     return new PathMatcher() {
       @Override
       public boolean matches(Path path) {
