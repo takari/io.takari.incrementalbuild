@@ -17,7 +17,7 @@ import java.util.Collection;
 public interface BuildContext {
 
   public static enum Severity {
-    ERROR, WARNING
+    ERROR, WARNING, INFO
   }
 
   public static enum ResourceStatus {

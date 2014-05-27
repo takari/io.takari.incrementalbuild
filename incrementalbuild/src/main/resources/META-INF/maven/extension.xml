@@ -9,5 +9,6 @@
 
   <exportedArtifacts>
     <exportedArtifact>io.takari:incrementalbuild</exportedArtifact>
+    <exportedArtifact>io.takari:incrementalbuild-workspace</exportedArtifact>
   </exportedArtifacts>
 </extension>

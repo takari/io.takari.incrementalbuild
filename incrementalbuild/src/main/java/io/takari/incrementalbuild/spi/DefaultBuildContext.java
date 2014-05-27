@@ -1,6 +1,7 @@
 package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.workspace.MessageSink;
 import io.takari.incrementalbuild.workspace.Workspace;
 import io.takari.incrementalbuild.workspace.Workspace.FileVisitor;
 import io.takari.incrementalbuild.workspace.Workspace.Mode;
@@ -21,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,23 +56,28 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   /**
    * Outputs registered with this build context during this build.
    */
+  private final Set<File> uptodateOutputs = new HashSet<File>();
+
+  /**
+   * Outputs processed by this build context during this build.
+   */
   private final Map<File, DefaultOutput> processedOutputs = new HashMap<File, DefaultOutput>();
 
   private final Set<File> deletedInputs = new HashSet<File>();
 
   private final Set<File> deletedOutputs = new HashSet<File>();
 
-  /**
-   * Number of error messages
-   */
-  private final AtomicInteger errorCount = new AtomicInteger();
-
   private final Workspace workspace;
 
-  public DefaultBuildContext(Workspace workspace, File stateFile,
+  private final MessageSink messageSink;
+
+  public DefaultBuildContext(Workspace workspace, MessageSink messageSink, File stateFile,
       Map<String, Serializable> configuration) {
     // preconditions
     if (workspace == null) {
+      throw new NullPointerException();
+    }
+    if (messageSink == null) {
       throw new NullPointerException();
     }
     if (stateFile == null) {
@@ -85,6 +90,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     this.stateFile = stateFile;
     this.state = DefaultBuildContextState.withConfiguration(configuration);
     this.oldState = DefaultBuildContextState.loadFrom(stateFile);
+    this.messageSink = messageSink;
 
     final boolean configurationChanged = getConfigurationChanged();
     if (workspace.getMode() == Mode.ESCALATED) {
@@ -103,12 +109,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     if (escalated) {
       if (!stateFile.canRead()) {
-        log.info("Previous incremental build state does not exist, peforming full build");
+        log.info("Previous incremental build state does not exist, performing full build");
       } else {
-        log.info("Incremental build configuration change detected, peforming full build");
+        log.info("Incremental build configuration change detected, performing full build");
       }
     } else {
-      log.info("Peforming incremental build");
+      log.info("Performing incremental build");
     }
   }
 
@@ -175,6 +181,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (input == null) {
       input = new DefaultInput<T>(this, state, inputResource);
       processedInputs.put(inputResource, input);
+
+      messageSink.clearMessages(inputResource);
     }
 
     return input;
@@ -247,8 +255,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     List<DefaultOutputMetadata> deleted = new ArrayList<DefaultOutputMetadata>();
 
     oldOutputs: for (File outputFile : oldState.outputs.keySet()) {
-      // keep if output file was registered during this build
-      if (processedOutputs.containsKey(outputFile)) {
+      // keep if output file was processed or marked as up-to-date during this build
+      if (processedOutputs.containsKey(outputFile) || uptodateOutputs.contains(outputFile)) {
         continue oldOutputs;
       }
 
@@ -305,8 +313,21 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     values.add(value);
   }
 
+  private static <K, V> void putAll(Map<K, Collection<V>> multimap, K key, Collection<V> value) {
+    Collection<V> values = multimap.get(key);
+    if (values == null) {
+      values = new LinkedHashSet<V>();
+      multimap.put(key, values);
+    }
+    values.addAll(value);
+  }
+
   @Override
   public DefaultOutput processOutput(File outputFile) {
+    if (!uptodateOutputs.isEmpty()) {
+      throw new IllegalStateException();
+    }
+
     outputFile = normalize(outputFile);
 
     DefaultOutput output = processedOutputs.get(outputFile);
@@ -315,9 +336,27 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       processedOutputs.put(outputFile, output);
 
       workspace.processOutput(outputFile);
+      messageSink.clearMessages(output);
     }
 
     return output;
+  }
+
+  /**
+   * Marks all outputs processed during the previous build as up-to-date, in other words, the
+   * outputs and their associated metadata should be carried over to the next build as-is.
+   * <p>
+   * This is useful when this build context is used to track both inputs and outputs but not
+   * association between the two. Without input/output association information the build context is
+   * not able to determine what outputs are stale/orphaned and what outputs are still relevant.
+   */
+  public void markOutputsAsUptodate() {
+    if (!processedOutputs.isEmpty() || !deletedOutputs.isEmpty()
+        || !oldState.inputOutputs.isEmpty()) {
+      // haven't really thought about implications, just playing it safe for now
+      throw new IllegalStateException();
+    }
+    uptodateOutputs.addAll(oldState.outputs.keySet());
   }
 
   public DefaultInput<File> processIncludedInput(File inputFile) {
@@ -757,12 +796,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       Throwable cause) {
     put(state.resourceMessages, resource, new Message(line, column, message, severity, cause));
 
-    if (severity == Severity.ERROR) {
-      errorCount.incrementAndGet();
-    }
-
     // echo message
-    logMessage(resource, line, column, message, severity, cause);
+    messageSink.message(resource, line, column, message, toMessageSinkSeverity(severity), cause);
   }
 
   Collection<Message> getMessages(Object resource) {
@@ -777,13 +812,20 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     // carry over relevant parts of the old state
 
+    Map<Object, Collection<Message>> recordedMessages = new HashMap<>();
+
     for (Object inputResource : oldState.inputs.keySet()) {
-      if (!processedInputs.containsKey(inputResource) && isRegistered(inputResource)) {
+      if (!isRegistered(inputResource)) {
+        messageSink.clearMessages(inputResource);
+        continue;
+      }
+      if (!processedInputs.containsKey(inputResource)) {
         // copy associated outputs
         Collection<File> associatedOutputs = oldState.inputOutputs.get(inputResource);
         if (associatedOutputs != null) {
           for (File outputFile : associatedOutputs) {
             carryOverOutput(inputResource, outputFile);
+            carryOverMessages(outputFile, recordedMessages);
           }
         }
 
@@ -807,7 +849,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         }
 
         // copy messages
-        carryOverMessages(inputResource);
+        carryOverMessages(inputResource, recordedMessages);
 
         // copy attributes
         Map<String, Serializable> attributes = oldState.resourceAttributes.get(inputResource);
@@ -823,6 +865,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
 
+    // carry over up-to-date output files
+    for (File outputFile : oldState.outputs.keySet()) {
+      if (uptodateOutputs.contains(outputFile)) {
+        carryOverOutput(outputFile);
+        carryOverMessages(outputFile, recordedMessages);
+      }
+    }
+
     // timestamp processed output files
     for (File outputFile : processedOutputs.keySet()) {
       if (state.outputs.get(outputFile) == null) {
@@ -832,8 +882,32 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     state.storeTo(stateFile);
 
-    if (errorCount.get() > 0) {
-      throw newBuildFailureException(errorCount.get());
+    if (!recordedMessages.isEmpty()) {
+      MessageSink replayMessageSink = messageSink.replayMessageSink();
+      for (Map.Entry<Object, Collection<Message>> entry : recordedMessages.entrySet()) {
+        Object resource = entry.getKey();
+        for (Message message : entry.getValue()) {
+          replayMessageSink.message(resource, message.line, message.column, message.message,
+              toMessageSinkSeverity(message.severity), message.cause);
+        }
+      }
+    }
+
+    if (messageSink.getErrorCount() > 0) {
+      throw newBuildFailureException(messageSink.getErrorCount());
+    }
+  }
+
+  private MessageSink.Severity toMessageSinkSeverity(Severity severity) {
+    switch (severity) {
+      case ERROR:
+        return MessageSink.Severity.ERROR;
+      case WARNING:
+        return MessageSink.Severity.WARNING;
+      case INFO:
+        return MessageSink.Severity.INFO;
+      default:
+        throw new IllegalArgumentException();
     }
   }
 
@@ -848,21 +922,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return new FileState(file, lastModified, length);
   }
 
-  private void carryOverMessages(Object resource) {
+  private void carryOverMessages(Object resource, Map<Object, Collection<Message>> recordedMessages) {
     Collection<Message> messages = oldState.resourceMessages.get(resource);
     if (messages != null && !messages.isEmpty()) {
       state.resourceMessages.put(resource, new ArrayList<Message>(messages));
 
-      // XXX needs to replay all messages together, not per resource
-      // TODO don't use log here, need proper API to announce message replay
-      log.info("Replaying recorded messages...");
-      for (Message message : messages) {
-        logMessage(resource, message.line, message.column, message.message, message.severity,
-            message.cause);
-        if (message.severity == Severity.ERROR) {
-          errorCount.incrementAndGet();
-        }
-      }
+      putAll(recordedMessages, resource, messages);
     }
   }
 
@@ -873,9 +938,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     put(state.outputInputs, outputFile, inputResource);
   }
 
-  public void carryOverOutput(File outputFile) {
-    processedOutputs.put(outputFile, new DefaultOutput(this, state, outputFile));
-
+  protected void carryOverOutput(File outputFile) {
     state.outputs.put(outputFile, oldState.outputs.get(outputFile));
 
     Collection<QualifiedName> capabilities = oldState.outputCapabilities.get(outputFile);
@@ -887,8 +950,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (attributes != null) {
       state.resourceAttributes.put(outputFile, attributes);
     }
-
-    carryOverMessages(outputFile);
   }
 
   public boolean isProcessingRequired() {
@@ -917,15 +978,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
     return false;
-  }
-
-  protected void logMessage(Object inputResource, int line, int column, String message,
-      Severity severity, Throwable cause) {
-    if (severity == Severity.ERROR) {
-      log.error("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);
-    } else {
-      log.warn("{}:[{}:{}] {}", inputResource.toString(), line, column, message, cause);
-    }
   }
 
   // XXX not too happy with errorCount parameter

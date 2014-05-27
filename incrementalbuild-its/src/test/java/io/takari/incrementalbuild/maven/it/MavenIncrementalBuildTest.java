@@ -57,6 +57,7 @@ public class MavenIncrementalBuildTest {
     verifier.verifyErrorFreeLog();
 
     verifier = getVerifier(resources.getBasedir("message/project"));
+    verifier.setMavenDebug(true);
     try {
       verifier.executeGoal("compile");
       Assert.fail();

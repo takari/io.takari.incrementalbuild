@@ -1,6 +1,7 @@
 package io.takari.incrementalbuild.maven.internal;
 
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
+import io.takari.incrementalbuild.workspace.MessageSink;
 
 import java.io.IOException;
 
@@ -41,10 +42,12 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
       WeakMojoExecutionListener {
 
   @Inject
-  public MavenBuildContext(ProjectWorkspace workspace, MojoConfigurationDigester digester,
-      MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution)
-      throws IOException {
-    super(workspace, conventions.getExecutionStateLocation(project, execution), digester.digest());
+  public MavenBuildContext(ProjectWorkspace workspace, MessageSink messageSink,
+      MojoConfigurationDigester digester, MavenIncrementalConventions conventions,
+      MavenProject project, MojoExecution execution) throws IOException {
+
+    super(workspace, messageSink, conventions.getExecutionStateLocation(project, execution),
+        digester.digest());
   }
 
   @Override

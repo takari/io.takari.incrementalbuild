@@ -14,6 +14,7 @@ import javax.inject.Inject;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 
+// this is explicitly bound in IncrementalBuildRuntime.addGuiceModules
 class TestBuildContext extends MavenBuildContext {
 
   private final IncrementalBuildLog logger;
@@ -22,7 +23,7 @@ class TestBuildContext extends MavenBuildContext {
   public TestBuildContext(ProjectWorkspace workspace, MojoConfigurationDigester digester,
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution,
       IncrementalBuildLog logger) throws IOException {
-    super(workspace, digester, conventions, project, execution);
+    super(workspace, logger, digester, conventions, project, execution);
     this.logger = logger;
   }
 
@@ -40,22 +41,8 @@ class TestBuildContext extends MavenBuildContext {
   }
 
   @Override
-  public void carryOverOutput(File outputFile) {
+  protected void carryOverOutput(File outputFile) {
     logger.addCarryoverOutput(outputFile);
     super.carryOverOutput(outputFile);
-  }
-
-  @Override
-  protected void logMessage(Object inputResource, int line, int column, String message,
-      Severity severity, Throwable cause) {
-    if (!(inputResource instanceof File)) {
-      // XXX I am too lazy right now, need to fix this later
-      throw new IllegalArgumentException();
-    }
-    File file = (File) inputResource;
-    String msg = String.format("%s %s [%d:%d] %s", severity.name(), //
-        file.getName(), line, column, message);
-    logger.addMessage(file, msg);
-    super.logMessage(inputResource, line, column, message, severity, cause);
   }
 }

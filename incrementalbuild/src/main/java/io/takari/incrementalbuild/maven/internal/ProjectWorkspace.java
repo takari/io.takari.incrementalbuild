@@ -85,5 +85,4 @@ public class ProjectWorkspace implements Workspace {
   public void walk(File basedir, FileVisitor visitor) throws IOException {
     getWorkspace(basedir).walk(basedir, visitor);
   }
-
 }

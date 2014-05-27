@@ -612,7 +612,7 @@ public class DefaultBuildContextTest {
     Assert.assertEquals(1, outputs.size());
     Assert.assertEquals(outputFile, outputs.get(0).getResource());
     Assert.assertEquals("value", outputs.get(0).getAttribute("key", String.class));
-    context.carryOverOutput(outputs.get(0).getResource());
+    context.markOutputsAsUptodate();
     context.commit();
     Assert.assertTrue(outputFile.canRead());
 
