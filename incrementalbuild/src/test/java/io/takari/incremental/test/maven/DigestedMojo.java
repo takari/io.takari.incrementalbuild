@@ -48,6 +48,8 @@ public class DigestedMojo extends AbstractMojo {
 
   private Set<Artifact> dependencies;
 
+  private List<String> strings;
+
   @Override
   public void execute() throws MojoExecutionException, MojoFailureException {}
 

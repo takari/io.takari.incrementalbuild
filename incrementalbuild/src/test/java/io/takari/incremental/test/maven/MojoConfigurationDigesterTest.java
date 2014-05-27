@@ -151,4 +151,13 @@ public class MojoConfigurationDigesterTest {
     Map<String, Serializable> digest = digest(newParameter("dependencies", "${project.artifacts}"));
     Assert.assertNotNull(digest.get("mojo.parameter.dependencies"));
   }
+
+  @Test
+  public void testCollection() throws Exception {
+    Xpp3Dom strings = new Xpp3Dom("strings");
+    strings.addChild(newParameter("str", "value1"));
+    strings.addChild(newParameter("str", "value2"));
+    Map<String, Serializable> digest = digest(strings);
+    Assert.assertNotNull(digest.get("mojo.parameter.strings"));
+  }
 }

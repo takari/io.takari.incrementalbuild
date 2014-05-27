@@ -62,7 +62,10 @@ public class MojoConfigurationDigester {
         try {
           Field field = getField(execution.getMojoDescriptor().getImplementationClass(), name);
           if (field != null) {
-            String expression = child.getValue(null);
+            String expression = child.getValue();
+            if (expression == null) {
+              expression = getChildrenXml(child);
+            }
             if (expression == null) {
               expression = child.getAttribute("default-value");
             }
@@ -93,6 +96,36 @@ public class MojoConfigurationDigester {
       }
     }
     return result;
+  }
+
+  private String getChildrenXml(PlexusConfiguration node) {
+    PlexusConfiguration[] children = node.getChildren();
+    if (children == null || children.length == 0) {
+      return null;
+    }
+    StringBuilder sb = new StringBuilder();
+    for (PlexusConfiguration child : children) {
+      append(sb, child);
+    }
+    return sb.toString();
+  }
+
+  private void append(StringBuilder sb, PlexusConfiguration node) {
+    sb.append('<').append(node.getName());
+    for (final String a : node.getAttributeNames()) {
+      sb.append(' ').append(a).append("=\"").append(node.getAttribute(a)).append('"');
+    }
+    if (node.getChildCount() > 0) {
+      sb.append('>');
+      for (int i = 0, size = node.getChildCount(); i < size; i++) {
+        append(sb, node.getChild(i));
+      }
+      sb.append("</").append(node.getName()).append('>');
+    } else if (null != node.getValue()) {
+      sb.append('>').append(node.getValue()).append("</").append(node.getName()).append('>');
+    } else {
+      sb.append("/>");
+    }
   }
 
   private Field getField(Class<?> clazz, String name) {
