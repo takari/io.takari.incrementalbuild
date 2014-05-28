@@ -438,8 +438,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public ResourceStatus getOutputStatus(File outputFile) {
-    ResourceHolder<File> oldOutputState =
-        oldState != null ? oldState.outputs.get(outputFile) : null;
+    ResourceHolder<File> oldOutputState = oldState.outputs.get(outputFile);
 
     if (oldOutputState == null) {
       if (processedOutputs.containsKey(outputFile)) {
@@ -573,12 +572,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   private <T> void addRemovedInputs(Set<DefaultInputMetadata<T>> result, Class<T> clazz) {
-    if (oldState != null) {
-      for (Object inputResource : oldState.inputs.keySet()) {
-        if (!isRegistered(inputResource) && clazz.isInstance(inputResource)) {
-          // removed
-          result.add(new DefaultInputMetadata<T>(this, oldState, clazz.cast(inputResource)));
-        }
+    for (Object inputResource : oldState.inputs.keySet()) {
+      if (!isRegistered(inputResource) && clazz.isInstance(inputResource)) {
+        // removed
+        result.add(new DefaultInputMetadata<T>(this, oldState, clazz.cast(inputResource)));
       }
     }
   }
@@ -590,20 +587,18 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     for (DefaultOutput output : processedOutputs.values()) {
       result.add(output);
     }
-    if (oldState != null) {
-      for (File outputFile : oldState.outputs.keySet()) {
-        if (!processedOutputs.containsKey(outputFile)) {
-          Collection<Object> associatedInputs = oldState.outputInputs.get(outputFile);
-          if (associatedInputs != null) {
-            for (Object inputResource : associatedInputs) {
-              if (isRegistered(inputResource) && !processedInputs.containsKey(inputResource)) {
-                result.add(new DefaultOutputMetadata(this, oldState, outputFile));
-                break;
-              }
+    for (File outputFile : oldState.outputs.keySet()) {
+      if (!processedOutputs.containsKey(outputFile)) {
+        Collection<Object> associatedInputs = oldState.outputInputs.get(outputFile);
+        if (associatedInputs != null) {
+          for (Object inputResource : associatedInputs) {
+            if (isRegistered(inputResource) && !processedInputs.containsKey(inputResource)) {
+              result.add(new DefaultOutputMetadata(this, oldState, outputFile));
+              break;
             }
-          } else {
-            result.add(new DefaultOutputMetadata(this, oldState, outputFile));
           }
+        } else {
+          result.add(new DefaultOutputMetadata(this, oldState, outputFile));
         }
       }
     }
