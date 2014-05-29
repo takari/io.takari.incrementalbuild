@@ -6,11 +6,17 @@ import io.takari.incrementalbuild.spi.FilesystemWorkspace;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 // TODO may want to rename various BuildContext implementation classes
 public class StandaloneBuildContext extends DefaultBuildContext<Exception> {
+
+  private StandaloneBuildContext() {
+    super(new FilesystemWorkspace(), new DefaultMessageSink(), null, Collections
+        .<String, Serializable>emptyMap());
+  }
 
   public StandaloneBuildContext(File stateFile, String[] args) {
     super(new FilesystemWorkspace(), new DefaultMessageSink(), stateFile, toConfiguration(args));
@@ -27,5 +33,9 @@ public class StandaloneBuildContext extends DefaultBuildContext<Exception> {
   @Override
   protected Exception newBuildFailureException(int errorCount) {
     return new Exception(errorCount + " error(s) encountered, see previous message(s) for details");
+  }
+
+  public static StandaloneBuildContext transientBuildContext() {
+    return new StandaloneBuildContext();
   }
 }

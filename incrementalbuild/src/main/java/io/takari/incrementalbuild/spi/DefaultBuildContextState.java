@@ -234,6 +234,12 @@ public class DefaultBuildContextState implements Serializable {
   public static DefaultBuildContextState loadFrom(File stateFile) {
     // TODO verify stateFile location has not changed since last build
     // TODO wrap collections in corresponding immutable collections
+
+    if (stateFile == null) {
+      // transient build context
+      return DefaultBuildContextState.emptyState();
+    }
+
     try {
       ObjectInputStream is =
           new ObjectInputStream(new BufferedInputStream(new FileInputStream(stateFile))) {
@@ -298,7 +304,7 @@ public class DefaultBuildContextState implements Serializable {
       // this is a bug in our code, let it bubble up as build failure
       throw e;
     } catch (Exception e) {
-      // this is almost certainly caused incompatible state file, log and continue
+      // this is almost certainly caused by incompatible state file, log and continue
       log.debug("Could not load incremental build state {}", stateFile, e);
     }
     return DefaultBuildContextState.emptyState();

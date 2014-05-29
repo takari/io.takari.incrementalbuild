@@ -80,9 +80,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (messageSink == null) {
       throw new NullPointerException();
     }
-    if (stateFile == null) {
-      throw new NullPointerException();
-    }
     if (configuration == null) {
       throw new NullPointerException();
     }
@@ -107,7 +104,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       this.workspace = workspace;
     }
 
-    if (escalated) {
+    if (escalated && stateFile != null) {
       if (!stateFile.canRead()) {
         log.info("Previous incremental build state does not exist, performing full build");
       } else {
@@ -503,6 +500,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return resource;
   }
 
+  public Iterable<DefaultInputMetadata<File>> registerInputs(Iterable<File> inputs) {
+    List<DefaultInputMetadata<File>> result = new ArrayList<>();
+    for (File inputFile : inputs) {
+      result.add(registerInput(inputFile));
+    }
+    return result;
+  }
+
   @Override
   public Iterable<DefaultInputMetadata<File>> registerInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException {
@@ -875,7 +880,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
 
-    state.storeTo(stateFile);
+    if (stateFile != null) {
+      // transient context
+      state.storeTo(stateFile);
+    }
 
     if (!recordedMessages.isEmpty()) {
       MessageSink replayMessageSink = messageSink.replayMessageSink();
