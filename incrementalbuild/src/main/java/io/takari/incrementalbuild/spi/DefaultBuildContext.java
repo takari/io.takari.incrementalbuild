@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -188,20 +187,20 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   @Override
   public Iterable<DefaultInput<File>> registerAndProcessInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException {
+    basedir = normalize(basedir);
     final List<DefaultInput<File>> inputs = new ArrayList<DefaultInput<File>>();
-    final PathMatcher matcher = PathMatchers.relativeMatcher(basedir.toPath(), includes, excludes);
+    final FileMatcher matcher = FileMatcher.matcher(basedir, includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
       public void visit(File file, long lastModified, long length, Workspace.ResourceStatus status) {
-        if (matcher.matches(file.toPath())) {
-          file = normalize(file);
+        if (matcher.matches(file)) {
           switch (status) {
             case MODIFIED:
             case NEW: {
               DefaultInput<File> input = getProcessedInput(file);
               if (input == null) {
                 DefaultInputMetadata<File> metadata =
-                    registerNormalizedInput(normalize(file), lastModified, length);
+                    registerNormalizedInput(file, lastModified, length);
                 if (workspace.getMode() == Mode.DELTA
                     || getInputStatus(file, true) != ResourceStatus.UNMODIFIED) {
                   input = metadata.process();
@@ -511,16 +510,17 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   @Override
   public Iterable<DefaultInputMetadata<File>> registerInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException {
+    basedir = normalize(basedir);
     final List<DefaultInputMetadata<File>> result = new ArrayList<>();
-    final PathMatcher matcher = PathMatchers.relativeMatcher(basedir.toPath(), includes, excludes);
+    final FileMatcher matcher = FileMatcher.matcher(basedir, includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
       public void visit(File file, long lastModified, long length, Workspace.ResourceStatus status) {
-        if (matcher.matches(file.toPath())) {
+        if (matcher.matches(file)) {
           switch (status) {
             case MODIFIED:
             case NEW:
-              result.add(registerNormalizedInput(normalize(file), lastModified, length));
+              result.add(registerNormalizedInput(file, lastModified, length));
               break;
             case REMOVED:
               deletedInputs.add(file);
@@ -534,13 +534,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (workspace.getMode() == Mode.DELTA) {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
-      final PathMatcher absoluteMatcher =
-          PathMatchers.absoluteMatcher(basedir.toPath(), includes, excludes);
+      final FileMatcher absoluteMatcher = FileMatcher.matcher(basedir, includes, excludes);
       for (Object resource : oldState.inputs.keySet()) {
         if (resource instanceof File) {
           File file = (File) resource;
           if (!state.inputs.containsKey(file) && !deletedInputs.contains(file)
-              && absoluteMatcher.matches(file.toPath())) {
+              && absoluteMatcher.matches(file)) {
             // TODO carry-over FileState
             result.add(registerInput(file));
           }

@@ -989,26 +989,59 @@ public class DefaultBuildContextTest {
     File f2 = temp.newFile("folder/input2.txt");
     File f3 = temp.newFile("folder/input3.log");
 
-    DefaultBuildContext<?> context;
+    DefaultBuildContext<?> context = newBuildContext();
     List<File> actual;
 
-    context = newBuildContext();
     actual = toFileList(context.registerInputs(temp.getRoot(), null, Arrays.asList("**")));
     assertIncludedPaths(Collections.<File>emptyList(), actual);
 
-    context = newBuildContext();
     actual = toFileList(context.registerInputs(temp.getRoot(), null, null));
     assertIncludedPaths(Arrays.asList(f1, f2, f3), actual);
 
-    context = newBuildContext();
     actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("*.txt"), null));
     assertIncludedPaths(Arrays.asList(f1, f2), actual);
 
-    context = newBuildContext();
     actual =
         toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("**"),
             Arrays.asList("*.log")));
     assertIncludedPaths(Arrays.asList(f1, f2), actual);
+  }
+
+  @Test
+  public void testRegisterInputs_directoryMatching() throws Exception {
+    temp.newFolder("folder");
+    temp.newFolder("folder/subfolder");
+    File f1 = temp.newFile("input1.txt");
+    File f2 = temp.newFile("folder/input2.txt");
+    File f3 = temp.newFile("folder/subfolder/input3.txt");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    List<File> actual;
+
+    // from http://ant.apache.org/manual/dirtasks.html#patterns
+    // When ** is used as the name of a directory in the pattern, it matches zero or more
+    // directories.
+
+    actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("**/*.txt"), null));
+    assertIncludedPaths(Arrays.asList(f1, f2, f3), actual);
+
+    actual =
+        toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("folder/**/*.txt"), null));
+    assertIncludedPaths(Arrays.asList(f2, f3), actual);
+
+    actual =
+        toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("folder/*.txt"), null));
+    assertIncludedPaths(Arrays.asList(f2), actual);
+
+    // / is a shortcut for /**
+    actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("/"), null));
+    assertIncludedPaths(Arrays.asList(f1, f2, f3), actual);
+    actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("folder/"), null));
+    assertIncludedPaths(Arrays.asList(f2, f3), actual);
+
+    // leading / does not matter
+    actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("/folder/"), null));
+    assertIncludedPaths(Arrays.asList(f2, f3), actual);
   }
 
   private List<File> toFileList(Iterable<DefaultInputMetadata<File>> inputs) {

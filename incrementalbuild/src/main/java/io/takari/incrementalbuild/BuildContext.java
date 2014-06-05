@@ -143,7 +143,7 @@ public interface BuildContext {
   public InputMetadata<File> registerInput(File inputFile);
 
   /**
-   * Registers inputs identified by {@code basedir} and {@code includes}/{@code excludes} glob
+   * Registers inputs identified by {@code basedir} and {@code includes}/{@code excludes} ant
    * patterns.
    * <p>
    * When a file is found under {@code basedir}, it will be registered if it does not match
@@ -156,14 +156,15 @@ public interface BuildContext {
    * {@code excludes} incrementally.
    * 
    * @param basedir is the base directory to look for inputs, must not be {@code null}
-   * @param includes glob patterns of the files to register, can be {@code null}
-   * @param excludes glob patterns of the files to ignore, can be {@code null}
+   * @param includes patterns of the files to register, can be {@code null}
+   * @param excludes patterns of the files to ignore, can be {@code null}
+   * @see http://ant.apache.org/manual/dirtasks.html#patterns
    */
   public Iterable<? extends InputMetadata<File>> registerInputs(File basedir,
       Collection<String> includes, Collection<String> excludes) throws IOException;
 
   /**
-   * Registers inputs identified by {@code basedir} and {@code includes}/{@code excludes} glob
+   * Registers inputs identified by {@code basedir} and {@code includes}/{@code excludes} ant
    * patterns. Processes inputs that are new or modified since previous build.
    * 
    * @returns processed inputs
