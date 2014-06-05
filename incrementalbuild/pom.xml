@@ -9,12 +9,16 @@
   <artifactId>incrementalbuild</artifactId>
   <packaging>takari-jar</packaging>
 
+  <properties>
+    <incrementalbuild-workspace.version>0.5.0</incrementalbuild-workspace.version>
+  </properties>
+
   <dependencies>
 
     <dependency>
       <groupId>io.takari</groupId>
       <artifactId>incrementalbuild-workspace</artifactId>
-      <version>${project.version}</version>
+      <version>${incrementalbuild-workspace.version}</version>
     </dependency>
 
     <!-- lsf4j api is the only required external dependency -->

@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -46,12 +47,11 @@
 
   <modules>
     <!--
-      | TODO once workspace API has stabilized, deploy and version incrementalbuild-workspace separately
-      | changes to incrementalbuild-workspace will require update to io.takari.m2e.lifecycle and should
+      | changes to incrementalbuild-workspace require update to io.takari.m2e.lifecycle and should
       | be avoided if possible. 
-      | Don't forget to change incrementalbuild/pom.xml incrementalbuild-workspace version 
-     -->
+      | Don't forget to change incrementalbuild/pom.xml ${incrementalbuild-workspace.version} 
     <module>incrementalbuild-workspace</module>
+     -->
     <module>incrementalbuild</module>
     <module>incrementalbuild-watchdog</module>
     <module>incrementalbuild-its</module>
