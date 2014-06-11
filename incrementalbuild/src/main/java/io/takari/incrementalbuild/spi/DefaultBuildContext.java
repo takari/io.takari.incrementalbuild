@@ -355,6 +355,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     uptodateOutputs.addAll(oldState.outputs.keySet());
   }
 
+  public void markOutputAsUptodate(File outputFile) {
+    uptodateOutputs.add(outputFile);
+  }
+
   public DefaultInput<File> processIncludedInput(File inputFile) {
     inputFile = normalize(inputFile);
 
