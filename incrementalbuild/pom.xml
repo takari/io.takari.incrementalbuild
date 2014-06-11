@@ -10,7 +10,7 @@
   <packaging>takari-jar</packaging>
 
   <properties>
-    <incrementalbuild-workspace.version>0.5.0</incrementalbuild-workspace.version>
+    <incrementalbuild-workspace.version>0.6.0</incrementalbuild-workspace.version>
   </properties>
 
   <dependencies>
