@@ -86,6 +86,7 @@ public class IncrementalBuildRule extends MojoRule {
   public void assertDeletedOutputs(File basedir, String... paths) throws Exception {
     Set<File> expected = toFileSet(basedir, paths);
     Set<File> actual = new TreeSet<File>(getBuildContextLog().getDeletedOutputs());
+    actual.removeAll(getBuildContextLog().getRegisteredOutputs()); // ignore recreated
     Assert.assertEquals("deleted outputs", toString(expected), toString(actual, false));
   }
 
