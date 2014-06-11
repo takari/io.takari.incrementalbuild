@@ -79,6 +79,7 @@ public class MavenIncrementalBuildTest {
     verifier.getCliOptions().add("-Dapache-maven.version=" + mavenVersion);
     verifier.getCliOptions().add(
         "-Dincrementalbuild.version=" + getTestProperty("incrementalbuild.version"));
+    verifier.getCliOptions().add("-U");
     return verifier;
   }
 
