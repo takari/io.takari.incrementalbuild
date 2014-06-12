@@ -3,7 +3,6 @@ package io.takari.incrementalbuild.spi;
 import io.takari.incrementalbuild.workspace.Workspace;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
@@ -36,11 +35,7 @@ public class FilesystemWorkspace implements Workspace {
 
   @Override
   public OutputStream newOutputStream(File file) throws IOException {
-    File parent = file.getParentFile();
-    if (!parent.isDirectory() && !parent.mkdirs()) {
-      throw new IOException("Could not create directory " + parent);
-    }
-    return new FileOutputStream(file);
+    return new IncrementalFileOutputStream(file);
   }
 
   @Override
