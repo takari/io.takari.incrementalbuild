@@ -10,8 +10,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // this is explicitly bound in IncrementalBuildRuntime.addGuiceModules
 public class IncrementalBuildLog implements MessageSink {
+
+  private final Logger log = LoggerFactory.getLogger(getClass());
 
   private final List<File> registeredOutputs = new ArrayList<File>();
 
@@ -81,6 +86,18 @@ public class IncrementalBuildLog implements MessageSink {
 
     if (severity == MessageSink.Severity.ERROR) {
       errorCount++;
+    }
+
+    switch (severity) {
+      case ERROR:
+        log.error(msg);
+        break;
+      case WARNING:
+        log.warn(msg);
+        break;
+      case INFO:
+        log.info(msg);
+        break;
     }
   }
 
