@@ -76,9 +76,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     if (workspace == null) {
       throw new NullPointerException();
     }
-    if (messageSink == null) {
-      throw new NullPointerException();
-    }
     if (configuration == null) {
       throw new NullPointerException();
     }
@@ -178,7 +175,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       input = new DefaultInput<T>(this, state, inputResource);
       processedInputs.put(inputResource, input);
 
-      messageSink.clearMessages(inputResource);
+      clearMessages(inputResource);
     }
 
     return input;
@@ -332,7 +329,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       processedOutputs.put(outputFile, output);
 
       workspace.processOutput(outputFile);
-      messageSink.clearMessages(output);
+      clearMessages(output);
     }
 
     return output;
@@ -798,10 +795,24 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   public void addMessage(Object resource, int line, int column, String message, Severity severity,
       Throwable cause) {
     put(state.resourceMessages, resource, new Message(line, column, message, severity, cause));
-
-    // echo message
-    messageSink.message(resource, line, column, message, toMessageSinkSeverity(severity), cause);
+    log(resource, line, column, message, severity, cause);
   }
+
+  protected void log(Object resource, int line, int column, String message, Severity severity,
+      Throwable cause) {
+    switch (severity) {
+      case ERROR:
+        log.error("{}:[{}:{}] {}", resource.toString(), line, column, message, cause);
+        break;
+      case WARNING:
+        log.warn("{}:[{}:{}] {}", resource.toString(), line, column, message, cause);
+        break;
+      default:
+        log.info("{}:[{}:{}] {}", resource.toString(), line, column, message, cause);
+        break;
+    }
+  }
+
 
   Collection<Message> getMessages(Object resource) {
     if (processedInputs.containsKey(resource) || processedOutputs.containsKey(resource)) {
@@ -815,11 +826,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
     // carry over relevant parts of the old state
 
+    Map<Object, Collection<Message>> newMessages = new HashMap<>(state.resourceMessages);
     Map<Object, Collection<Message>> recordedMessages = new HashMap<>();
 
     for (Object inputResource : oldState.inputs.keySet()) {
       if (!isRegistered(inputResource)) {
-        messageSink.clearMessages(inputResource);
+        clearMessages(inputResource);
         continue;
       }
       if (!processedInputs.containsKey(inputResource)) {
@@ -889,18 +901,48 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     if (!recordedMessages.isEmpty()) {
-      MessageSink replayMessageSink = messageSink.replayMessageSink();
-      for (Map.Entry<Object, Collection<Message>> entry : recordedMessages.entrySet()) {
+      log.info("Replaying recorded messages...");
+      for (Map.Entry<Object, Collection<Message>> entry : state.resourceMessages.entrySet()) {
         Object resource = entry.getKey();
         for (Message message : entry.getValue()) {
-          replayMessageSink.message(resource, message.line, message.column, message.message,
-              toMessageSinkSeverity(message.severity), message.cause);
+          log(resource, message.line, message.column, message.message, message.severity,
+              message.cause);
         }
       }
     }
 
-    if (messageSink.getErrorCount() > 0) {
-      throw newBuildFailureException(messageSink.getErrorCount());
+    if (messageSink != null) {
+      // let message sink record all new messages
+      for (Map.Entry<Object, Collection<Message>> entry : newMessages.entrySet()) {
+        Object resource = entry.getKey();
+        for (Message message : entry.getValue()) {
+          messageSink.message(resource, message.line, message.column, message.message,
+              toMessageSinkSeverity(message.severity), message.cause);
+        }
+      }
+    } else {
+      // without messageSink, have to raise exception if there were errors
+      int errorCount = 0;
+      StringBuilder errors = new StringBuilder();
+      for (Map.Entry<Object, Collection<Message>> entry : state.resourceMessages.entrySet()) {
+        Object resource = entry.getKey();
+        for (Message message : entry.getValue()) {
+          if (message.severity == Severity.ERROR) {
+            errorCount++;
+            errors.append(String.format("%s:[%d:%d] %s\n", resource.toString(), message.line,
+                message.column, message.message));
+          }
+        }
+      }
+      if (errorCount > 0) {
+        throw newBuildFailureException(errorCount + " error(s) encountered:\n" + errors.toString());
+      }
+    }
+  }
+
+  private void clearMessages(Object resource) {
+    if (messageSink != null) {
+      messageSink.clearMessages(resource);
     }
   }
 
@@ -986,6 +1028,5 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return false;
   }
 
-  // XXX not too happy with errorCount parameter
-  protected abstract BuildFailureException newBuildFailureException(int errorCount);
+  protected abstract BuildFailureException newBuildFailureException(String message);
 }

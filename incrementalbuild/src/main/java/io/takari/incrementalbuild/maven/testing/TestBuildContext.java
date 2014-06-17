@@ -5,6 +5,7 @@ import io.takari.incrementalbuild.maven.internal.MavenIncrementalConventions;
 import io.takari.incrementalbuild.maven.internal.MojoConfigurationDigester;
 import io.takari.incrementalbuild.maven.internal.ProjectWorkspace;
 import io.takari.incrementalbuild.spi.DefaultOutput;
+import io.takari.incrementalbuild.workspace.MessageSink;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +24,7 @@ class TestBuildContext extends MavenBuildContext {
   public TestBuildContext(ProjectWorkspace workspace, MojoConfigurationDigester digester,
       MavenIncrementalConventions conventions, MavenProject project, MojoExecution execution,
       IncrementalBuildLog logger) throws IOException {
-    super(workspace, logger, digester, conventions, project, execution);
+    super(workspace, (MessageSink) null, digester, conventions, project, execution);
     this.logger = logger;
   }
 
@@ -44,5 +45,11 @@ class TestBuildContext extends MavenBuildContext {
   protected void carryOverOutput(File outputFile) {
     logger.addCarryoverOutput(outputFile);
     super.carryOverOutput(outputFile);
+  }
+
+  @Override
+  protected void log(Object resource, int line, int column, String message, Severity severity,
+      Throwable cause) {
+    logger.message(resource, line, column, message, severity, cause);
   }
 }

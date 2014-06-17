@@ -6,12 +6,9 @@ public interface MessageSink {
     ERROR, WARNING, INFO
   }
 
+  public void clearMessages(Object resource);
+
   public void message(Object resource, int line, int column, String message, Severity severity,
       Throwable cause);
 
-  public MessageSink replayMessageSink();
-
-  public int getErrorCount();
-
-  public void clearMessages(Object resource);
 }

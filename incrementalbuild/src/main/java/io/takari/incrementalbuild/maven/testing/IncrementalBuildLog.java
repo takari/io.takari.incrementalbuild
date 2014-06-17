@@ -1,6 +1,6 @@
 package io.takari.incrementalbuild.maven.testing;
 
-import io.takari.incrementalbuild.workspace.MessageSink;
+import io.takari.incrementalbuild.BuildContext.Severity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // this is explicitly bound in IncrementalBuildRuntime.addGuiceModules
-public class IncrementalBuildLog implements MessageSink {
+public class IncrementalBuildLog {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -25,8 +25,6 @@ public class IncrementalBuildLog implements MessageSink {
   private final List<File> carriedOverOutputs = new ArrayList<File>();
 
   private final Map<File, List<String>> inputMessages = new HashMap<File, List<String>>();
-
-  private int errorCount;
 
   public void addRegisterOutput(File outputFile) {
     registeredOutputs.add(outputFile);
@@ -62,10 +60,8 @@ public class IncrementalBuildLog implements MessageSink {
     deletedOutputs.clear();
     carriedOverOutputs.clear();
     inputMessages.clear();
-    errorCount = 0;
   }
 
-  @Override
   public void message(Object resource, int line, int column, String message, Severity severity,
       Throwable cause) {
 
@@ -84,10 +80,6 @@ public class IncrementalBuildLog implements MessageSink {
     }
     messages.add(msg);
 
-    if (severity == MessageSink.Severity.ERROR) {
-      errorCount++;
-    }
-
     switch (severity) {
       case ERROR:
         log.error(msg);
@@ -100,17 +92,4 @@ public class IncrementalBuildLog implements MessageSink {
         break;
     }
   }
-
-  @Override
-  public MessageSink replayMessageSink() {
-    return this;
-  }
-
-  @Override
-  public int getErrorCount() {
-    return errorCount;
-  }
-
-  @Override
-  public void clearMessages(Object resource) {}
 }

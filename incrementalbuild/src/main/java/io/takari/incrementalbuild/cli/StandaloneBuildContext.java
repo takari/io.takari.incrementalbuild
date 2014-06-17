@@ -1,7 +1,6 @@
 package io.takari.incrementalbuild.cli;
 
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
-import io.takari.incrementalbuild.spi.DefaultMessageSink;
 import io.takari.incrementalbuild.spi.FilesystemWorkspace;
 
 import java.io.File;
@@ -14,12 +13,12 @@ import java.util.Map;
 public class StandaloneBuildContext extends DefaultBuildContext<Exception> {
 
   private StandaloneBuildContext() {
-    super(new FilesystemWorkspace(), new DefaultMessageSink(), null, Collections
+    super(new FilesystemWorkspace(), null /* messageSink */, null, Collections
         .<String, Serializable>emptyMap());
   }
 
   public StandaloneBuildContext(File stateFile, String[] args) {
-    super(new FilesystemWorkspace(), new DefaultMessageSink(), stateFile, toConfiguration(args));
+    super(new FilesystemWorkspace(), null /* messageSink */, stateFile, toConfiguration(args));
   }
 
   private static Map<String, Serializable> toConfiguration(String[] args) {
@@ -31,8 +30,8 @@ public class StandaloneBuildContext extends DefaultBuildContext<Exception> {
   }
 
   @Override
-  protected Exception newBuildFailureException(int errorCount) {
-    return new Exception(errorCount + " error(s) encountered, see previous message(s) for details");
+  protected Exception newBuildFailureException(String message) {
+    return new Exception(message);
   }
 
   public static StandaloneBuildContext transientBuildContext() {

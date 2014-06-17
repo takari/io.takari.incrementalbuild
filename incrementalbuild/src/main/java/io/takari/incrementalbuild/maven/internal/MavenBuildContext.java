@@ -27,13 +27,14 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
       WeakMojoExecutionListener {
 
   @Inject
-  public MavenBuildContext(ProjectWorkspace workspace, MessageSink messageSink,
+  public MavenBuildContext(ProjectWorkspace workspace, @Nullable MessageSink messageSink,
       MojoConfigurationDigester digester, MavenIncrementalConventions conventions,
       MavenProject project, MojoExecution execution) throws IOException {
 
     super(workspace, messageSink, conventions.getExecutionStateLocation(project, execution),
         digester.digest());
   }
+
 
   @Override
   public void beforeMojoExecution(MojoExecutionEvent event) throws MojoExecutionException {}
@@ -51,8 +52,7 @@ public class MavenBuildContext extends DefaultBuildContext<MojoExecutionExceptio
   public void afterExecutionFailure(MojoExecutionEvent event) {}
 
   @Override
-  protected MojoExecutionException newBuildFailureException(int errorCount) {
-    return new MojoExecutionException(errorCount
-        + " error(s) encountered, see previous message(s) for details");
+  protected MojoExecutionException newBuildFailureException(String message) {
+    return new MojoExecutionException(message);
   }
 }

@@ -7,12 +7,12 @@ import java.util.Map;
 class TestBuildContext extends DefaultBuildContext<Exception> {
 
   public TestBuildContext(File stateFile, Map<String, Serializable> configuration) {
-    super(new FilesystemWorkspace(), new DefaultMessageSink(), stateFile, configuration);
+    super(new FilesystemWorkspace(), null /* messageSink */, stateFile, configuration);
   }
 
   @Override
-  protected Exception newBuildFailureException(int errorCount) {
-    return new Exception();
+  protected Exception newBuildFailureException(String message) {
+    return new Exception(message);
   }
 
   @Override
