@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.codehaus.plexus.util.MatchPatterns;
-
 class FileMatcher {
 
   private static interface Matcher {
@@ -64,7 +62,7 @@ class FileMatcher {
       }
       normalized.add(gb.toString());
     }
-    final MatchPatterns matcher = MatchPatterns.from(normalized);
+    final Plexus_MatchPatterns matcher = Plexus_MatchPatterns.from(normalized);
     return new Matcher() {
       @Override
       public boolean matches(String path) {
