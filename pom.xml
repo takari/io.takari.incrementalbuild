@@ -9,7 +9,7 @@
 
   <groupId>io.takari</groupId>
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>0.7.0</version>
+  <version>0.8.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
@@ -49,8 +49,8 @@
       | changes to incrementalbuild-workspace require update to io.takari.m2e.lifecycle and should
       | be avoided if possible. 
       | Don't forget to change incrementalbuild/pom.xml ${incrementalbuild-workspace.version} 
-     -->
     <module>incrementalbuild-workspace</module>
+     -->
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>
   </modules>
