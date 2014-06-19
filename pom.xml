@@ -46,9 +46,29 @@
 
   <modules>
     <!--
-      | changes to incrementalbuild-workspace require update to io.takari.m2e.lifecycle and should
-      | be avoided if possible. 
-      | Don't forget to change incrementalbuild/pom.xml ${incrementalbuild-workspace.version} 
+      | Changes to incrementalbuild-workspace require update to io.takari.m2e.lifecycle and should
+      | be avoided if possible. To emphasise this, incrementalbuild-workspace is not normally part
+      | of io.takari.incrementalbuild build and special steps are required to produce new builds 
+      | and release new versions.
+      |
+      | To start work on new incrementalbuild-workspace version
+      | - Uncomment incrementalbuild-workspace module below
+      | - Update <parent> version in incrementalbuild-workspace/pom.xml
+      | - Update incrementalbuild-workspace.version property in incrementalbuild/pom.xml
+      |
+      | To release incrementalbuild with new incrementalbuild-workspace version
+      | - mvn org.eclipse.tycho:tycho-versions-plugin:0.20.0:set-version -DnewVersion=<new-version>
+      | - Update incrementalbuild-workspace.version property in incrementalbuild/pom.xml
+      | - git commit -asm "prepare release io.takari.incrementalbuild-<new-version>"
+      | - git tag io.takari.incrementalbuild-<new-version>
+      | - mvn clean deploy -Ptakari-release
+      | - git-push-tags (when you are ready)
+      |
+      | To start next incrementalbuild release without new incrementalbuild-workspace
+      | - Comment out incrementalbuild-workspace module below
+      | - mvn org.eclipse.tycho:tycho-versions-plugin:0.20.0:set-version -DnewVersion=<next-version>
+      | - git commit -asm "prepare for next development iteration"
+      |
     <module>incrementalbuild-workspace</module>
      -->
     <module>incrementalbuild</module>
