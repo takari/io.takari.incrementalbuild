@@ -38,6 +38,11 @@ class ClasspathDigester {
     this.cache = getCache(session);
   }
 
+  /** for testing purposes */
+  ClasspathDigester(ConcurrentMap<String, byte[]> cache) {
+    this.cache = cache;
+  }
+
   @SuppressWarnings("unchecked")
   private static ConcurrentMap<String, byte[]> getCache(MavenSession session) {
     // this assumes that Aether repository session data does not change during reactor build
@@ -109,21 +114,23 @@ class ClasspathDigester {
     for (Artifact artifact : artifacts) {
       File file = artifact.getFile();
       String cacheKey = getArtifactKey(artifact);
-      byte[] hash = cache.get(cacheKey);
-      if (hash == null) {
+      byte[] cached = cache.get(cacheKey);
+      if (cached == null) {
+        byte[] hash;
         if (file.isFile()) {
           hash = new JarDigester(file).call();
         } else if (file.isDirectory()) {
           hash = new ClassDirectoryDigester(file).call();
         } else {
-          // does not exist
+          // does not exist, use token empty array to avoid rechecking
+          hash = new byte[0];
         }
-        byte[] existing = cache.putIfAbsent(cacheKey, hash);
-        if (existing == null) {
-          existing = hash;
+        cached = cache.putIfAbsent(cacheKey, hash);
+        if (cached == null) {
+          cached = hash;
         }
-        digester.update(existing);
       }
+      digester.update(cached);
     }
     return new BytesHash(digester.digest());
   }
