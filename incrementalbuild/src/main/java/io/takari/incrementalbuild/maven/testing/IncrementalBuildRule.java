@@ -8,12 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.maven.SessionScope;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.execution.MojoExecutionEvent;
-import org.apache.maven.execution.MojoExecutionListener;
-import org.apache.maven.execution.scope.internal.MojoExecutionScope;
-import org.apache.maven.plugin.Mojo;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.project.MavenProject;
@@ -25,46 +20,11 @@ public class IncrementalBuildRule extends MojoRule {
     super(new IncrementalBuildRuntime());
   }
 
+  @Override
   public void executeMojo(MavenSession session, MavenProject project, MojoExecution execution)
       throws Exception {
     getBuildContextLog().clear();
-
-    SessionScope sessionScope = lookup(SessionScope.class);
-    try {
-      sessionScope.enter();
-      sessionScope.seed(MavenSession.class, session);
-
-      MojoExecutionScope executionScope = lookup(MojoExecutionScope.class);
-      try {
-        executionScope.enter();
-
-        executionScope.seed(MavenProject.class, project);
-        executionScope.seed(MojoExecution.class, execution);
-
-        Mojo mojo = lookupConfiguredMojo(session, execution);
-        mojo.execute();
-
-        MojoExecutionEvent event = new MojoExecutionEvent(session, project, execution, mojo);
-        for (MojoExecutionListener listener : getContainer()
-            .lookupList(MojoExecutionListener.class)) {
-          listener.afterMojoExecutionSuccess(event);
-        }
-      } finally {
-        executionScope.exit();
-      }
-
-    } finally {
-      sessionScope.exit();
-    }
-  }
-
-  @Override
-  public void executeMojo(File basedir, String goal) throws Exception {
-    MavenProject project = readMavenProject(basedir);
-    MojoExecution execution = newMojoExecution(goal);
-    MavenSession session = newMavenSession(project);
-
-    executeMojo(session, project, execution);
+    super.executeMojo(session, project, execution);
   }
 
   public IncrementalBuildLog getBuildContextLog() throws Exception {
