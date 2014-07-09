@@ -1,6 +1,5 @@
 package io.takari.incrementalbuild.maven.testing;
 
-import io.takari.incrementalbuild.BuildContext;
 import io.takari.incrementalbuild.maven.internal.MavenBuildContext;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
 
@@ -39,7 +38,6 @@ class IncrementalBuildRuntime extends AbstractMojoTestCase {
 
         // instance bindings
         bind(TestBuildContext.class).in(executionScope);
-        bind(BuildContext.class).to(TestBuildContext.class).in(executionScope);
         bind(DefaultBuildContext.class).to(TestBuildContext.class).in(executionScope);
         bind(MavenBuildContext.class).to(TestBuildContext.class).in(executionScope);
         bind(IncrementalBuildLog.class).in(Singleton.class);
