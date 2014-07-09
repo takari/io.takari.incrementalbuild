@@ -472,7 +472,7 @@ public class DefaultBuildContextTest {
 
     //
     Files.append("test", outputFile, Charsets.UTF_8);
-    newBuildContext();
+    context = newBuildContext();
     metadata = context.registerInput(inputFile);
     outputs = toList(metadata.getAssociatedOutputs());
     Assert.assertEquals(1, outputs.size());
@@ -481,7 +481,7 @@ public class DefaultBuildContextTest {
 
     //
     Assert.assertTrue(outputFile.delete());
-    newBuildContext();
+    context = newBuildContext();
     metadata = context.registerInput(inputFile);
     outputs = toList(metadata.getAssociatedOutputs());
     Assert.assertEquals(1, outputs.size());
@@ -983,6 +983,36 @@ public class DefaultBuildContextTest {
   }
 
   @Test
+  public void testIsProcessingRequired_deletedInputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    context.registerInputs(temp.getRoot(), null, null);
+    context.commit();
+
+    Assert.assertTrue(inputFile.delete());
+    context = newBuildContext();
+    context.registerInputs(temp.getRoot(), null, null);
+    Assert.assertEquals(true, context.isProcessingRequired());
+  }
+
+  @Test
+  public void testIsProcessingRequired_deletedOutputs() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    context.registerInput(inputFile).process().associateOutput(outputFile);
+    context.commit();
+
+    context = newBuildContext();
+    context.registerInput(inputFile).process();
+    context.deleteStaleOutputs(true);
+    Assert.assertFalse(outputFile.canRead());
+    Assert.assertTrue(context.isProcessingRequired());
+  }
+
+  @Test
   public void testRegisterInputs_includes_excludes() throws Exception {
     temp.newFolder("folder");
     File f1 = temp.newFile("input1.txt");
@@ -1065,5 +1095,82 @@ public class DefaultBuildContextTest {
     return sb.toString();
   }
 
+  @Test
+  public void testClosedContext() throws Exception {
+    DefaultBuildContext<?> context = newBuildContext();
 
+    context.commit();
+    try {
+      context.registerInput(temp.newFile());
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      // expected
+    }
+    try {
+      context.processOutput(temp.newFile());
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      // expected
+    }
+
+    context = newBuildContext();
+    context.markOutputsAsUptodate();
+    try {
+      context.registerInput(temp.newFile());
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      // expected
+    }
+    try {
+      context.processOutput(temp.newFile());
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void testSkipExecution() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
+    input.associateOutput(outputFile);
+    context.commit();
+
+    // make a change
+    Files.append("test", inputFile, Charsets.UTF_8);
+
+    // skip execution
+    context = newBuildContext();
+    context.markSkipExecution();
+    context.commit();
+    Assert.assertTrue(outputFile.canRead());
+
+    //
+    context = newBuildContext();
+    DefaultInputMetadata<File> inputMetadata = context.registerInput(inputFile);
+    Assert.assertEquals(ResourceStatus.MODIFIED, inputMetadata.getStatus());
+    inputMetadata.process();
+    context.commit();
+    Assert.assertFalse(outputFile.canRead());
+  }
+
+  @Test
+  public void testSkipExecution_modifiedContext() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
+    input.associateOutput(outputFile);
+
+    try {
+      context.markSkipExecution();
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
 }

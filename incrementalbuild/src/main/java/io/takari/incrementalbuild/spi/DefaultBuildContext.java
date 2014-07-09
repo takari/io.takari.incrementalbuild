@@ -36,6 +36,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   protected final File stateFile;
 
+  private final Workspace workspace;
+
+  private final MessageSink messageSink;
+
   private final DefaultBuildContextState state;
 
   private final DefaultBuildContextState oldState;
@@ -45,6 +49,13 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
    * escalated, all input files are considered require processing.
    */
   private final boolean escalated;
+
+  /**
+   * Indicates that no further modifications to this build context are allowed. When context is
+   * closed, all register* and process* methods throw {@link IllegalStateException} and
+   * {@link #commit()} method does nothing.
+   */
+  private boolean closed;
 
   /**
    * Inputs selected for processing during this build.
@@ -65,10 +76,6 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private final Set<File> deletedInputs = new HashSet<File>();
 
   private final Set<File> deletedOutputs = new HashSet<File>();
-
-  private final Workspace workspace;
-
-  private final MessageSink messageSink;
 
   public DefaultBuildContext(Workspace workspace, MessageSink messageSink, File stateFile,
       Map<String, Serializable> configuration) {
@@ -156,6 +163,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   public boolean isEscalated() {
     return escalated;
+  }
+
+  private void assertOpen() {
+    if (closed) {
+      throw new IllegalStateException();
+    }
   }
 
   public <T> DefaultInput<T> processInput(DefaultInputMetadata<T> inputMetadata) {
@@ -317,9 +330,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   @Override
   public DefaultOutput processOutput(File outputFile) {
-    if (!uptodateOutputs.isEmpty()) {
-      throw new IllegalStateException();
-    }
+    assertOpen();
 
     outputFile = normalize(outputFile);
 
@@ -337,19 +348,33 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   /**
    * Marks all outputs processed during the previous build as up-to-date, in other words, the
-   * outputs and their associated metadata should be carried over to the next build as-is.
+   * outputs and their associated metadata are carried over to the next build as-is. This method is
+   * only allowed when {@link #isProcessingRequired()} returns {@code false}. No context
+   * modification operations (register* or process) are permitted after this call.
    * <p>
    * This is useful when this build context is used to track both inputs and outputs but not
    * association between the two. Without input/output association information the build context is
    * not able to determine what outputs are stale/orphaned and what outputs are still relevant.
    */
   public void markOutputsAsUptodate() {
-    if (!processedOutputs.isEmpty() || !deletedOutputs.isEmpty()
-        || !oldState.inputOutputs.isEmpty()) {
-      // haven't really thought about implications, just playing it safe for now
+    if (isProcessingRequired() || !oldState.inputOutputs.isEmpty()) {
       throw new IllegalStateException();
     }
-    uptodateOutputs.addAll(oldState.outputs.keySet());
+
+    closed = true;
+  }
+
+  /**
+   * Marks skipped build execution. All inputs, outputs and their associated metadata are carried
+   * over to the next build as-is. No context modification operations (register* or process) are
+   * permitted after this call.
+   */
+  public void markSkipExecution() {
+    if (isModified()) {
+      throw new IllegalStateException();
+    }
+
+    closed = true;
   }
 
   public void markOutputAsUptodate(File outputFile) {
@@ -481,6 +506,8 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private <T extends Serializable> T registerInput(Map<Object, ResourceHolder<?>> inputs,
       ResourceHolder<T> holder) {
+    assertOpen();
+
     T resource = holder.getResource();
 
     ResourceHolder<?> other = inputs.get(resource);
@@ -822,6 +849,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public void commit() throws BuildFailureException, IOException {
+    if (closed) {
+      return;
+    }
+    this.closed = true;
+
     deleteStaleOutputs(true);
 
     // carry over relevant parts of the old state
@@ -1001,7 +1033,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   }
 
   public boolean isProcessingRequired() {
-    if (escalated || !processedInputs.isEmpty() || !processedOutputs.isEmpty()) {
+    if (escalated || isModified()) {
       return true;
     }
     for (Object inputResource : state.inputs.keySet()) {
@@ -1026,6 +1058,11 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       }
     }
     return false;
+  }
+
+  private boolean isModified() {
+    return !processedInputs.isEmpty() || !processedOutputs.isEmpty() || !deletedOutputs.isEmpty()
+        || !deletedInputs.isEmpty();
   }
 
   protected abstract BuildFailureException newBuildFailureException(String message);
