@@ -840,6 +840,26 @@ public class DefaultBuildContextTest {
   }
 
   @Test
+  public void testInputMessages_safeguards() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    // initial message
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInputMetadata<File> metadata = context.registerInput(inputFile);
+    inputFile = metadata.getResource();
+    DefaultInput<File> input = metadata.process();
+    input.addMessage(0, 0, null, Severity.WARNING, null);
+    context.commit();
+
+    context = newBuildContext();
+    metadata = context.registerInput(inputFile);
+    List<Message> messages = toList(context.getMessages(inputFile));
+    Assert.assertEquals(1, messages.size());
+    Assert.assertEquals(null, messages.get(0).message);
+    context.commit();
+  }
+
+  @Test
   public void testOutputMessages() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");

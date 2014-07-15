@@ -821,6 +821,14 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   public void addMessage(Object resource, int line, int column, String message, Severity severity,
       Throwable cause) {
+    // this is likely called as part of builder error handling logic.
+    // to make IAE easier to troubleshoot, link cause to the exception thrown
+    if (resource == null) {
+      throw new IllegalArgumentException(cause);
+    }
+    if (severity == null) {
+      throw new IllegalArgumentException(cause);
+    }
     put(state.resourceMessages, resource, new Message(line, column, message, severity, cause));
     log(resource, line, column, message, severity, cause);
   }

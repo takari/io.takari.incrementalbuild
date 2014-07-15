@@ -33,8 +33,8 @@ class Message implements Serializable {
     int result = 31;
     result = result * 17 + line;
     result = result * 17 + column;
-    result = result * 17 + message.hashCode();
-    result = result * 17 + severity.hashCode();
+    result = result * 17 + (message != null ? message.hashCode() : 0);
+    result = result * 17 + (severity != null ? severity.hashCode() : 0);
     result = result * 17 + (cause != null ? cause.hashCode() : 0);
     return result;
   }
@@ -56,8 +56,11 @@ class Message implements Serializable {
 
     Message other = (Message) obj;
 
-    return line == other.line && column == other.column && message.equals(other.message)
-        && severity == other.severity
-        && (cause != null ? cause.equals(other.cause) : other.cause == null);
+    return line == other.line && column == other.column && eq(message, other.message)
+        && eq(severity, other.severity) && eq(cause, other.cause);
+  }
+
+  private static <T> boolean eq(T a, T b) {
+    return a != null ? a.equals(b) : b == null;
   }
 }
