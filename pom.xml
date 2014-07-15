@@ -41,7 +41,7 @@
     <slf4j.version>1.7.5</slf4j.version>
     <junit.version>4.11</junit.version>
     <guava.version>14.0.1</guava.version>
-    <plugintesting.version>3.2.0-SNAPSHOT</plugintesting.version>
+    <plugintesting.version>3.2.0</plugintesting.version>
   </properties>
 
   <modules>
