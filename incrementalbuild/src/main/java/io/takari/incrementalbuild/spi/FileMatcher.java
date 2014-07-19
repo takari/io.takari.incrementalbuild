@@ -60,7 +60,7 @@ class FileMatcher {
       if (glob.endsWith("/")) {
         gb.append("**");
       }
-      normalized.add(gb.toString());
+      normalized.add(gb.toString().replace('/', File.separatorChar));
     }
     final Plexus_MatchPatterns matcher = Plexus_MatchPatterns.from(normalized);
     return new Matcher() {
