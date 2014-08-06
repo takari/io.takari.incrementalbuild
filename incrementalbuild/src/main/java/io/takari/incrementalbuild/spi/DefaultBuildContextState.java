@@ -5,11 +5,11 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -131,39 +131,24 @@ public class DefaultBuildContextState implements Serializable {
     return sb.toString();
   }
 
-  public void storeTo(File stateFile) throws IOException {
-    final long start = System.currentTimeMillis();
-
-    File parent = stateFile.getParentFile();
-    if (!parent.isDirectory() && !parent.mkdirs()) {
-      throw new IOException("Could not create directory " + parent);
-    }
-
-    ObjectOutputStream os =
-        new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(stateFile)));
+  public void storeTo(OutputStream os) throws IOException {
+    ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(os));
     try {
-      writeMap(os, this.configuration);
-      writeMap(os, this.outputs);
-      writeMap(os, this.inputs);
-      writeMap(os, this.includedInputs);
+      writeMap(oos, this.configuration);
+      writeMap(oos, this.outputs);
+      writeMap(oos, this.inputs);
+      writeMap(oos, this.includedInputs);
 
-      writeMultimap(os, inputOutputs);
-      writeMultimap(os, inputIncludedInputs);
-      writeDoublemap(os, resourceAttributes);
-      writeMultimap(os, resourceMessages);
+      writeMultimap(oos, inputOutputs);
+      writeMultimap(oos, inputIncludedInputs);
+      writeDoublemap(oos, resourceAttributes);
+      writeMultimap(oos, resourceMessages);
 
-      writeCapabilityConsumers(os, requirementInputs);
-      writeCapabilityProviders(os, outputCapabilities);
+      writeCapabilityConsumers(oos, requirementInputs);
+      writeCapabilityProviders(oos, outputCapabilities);
     } finally {
-      try {
-        os.close();
-      } catch (IOException e) {
-        // ignore secondary exception
-      }
+      oos.flush();
     }
-
-    log.debug("Stored incremental build state {} ({} ms)", stateFile, System.currentTimeMillis()
-        - start);
   }
 
   private void writeCapabilityProviders(ObjectOutputStream oos,

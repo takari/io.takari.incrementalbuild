@@ -936,8 +936,12 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     if (stateFile != null) {
-      // transient context
-      state.storeTo(stateFile);
+      final long start = System.currentTimeMillis();
+      try (OutputStream os = workspace.newOutputStream(stateFile)) {
+        state.storeTo(os);
+      }
+      log.debug("Stored incremental build state {} ({} ms)", stateFile, System.currentTimeMillis()
+          - start);
     }
 
     if (!recordedMessages.isEmpty()) {
