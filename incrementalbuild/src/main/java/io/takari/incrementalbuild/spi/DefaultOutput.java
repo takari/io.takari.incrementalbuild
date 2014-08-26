@@ -29,10 +29,7 @@ public class DefaultOutput extends DefaultOutputMetadata implements BuildContext
 
   @Override
   public <I> void associateInput(InputMetadata<I> input) {
-    if (!(input instanceof DefaultInput<?>)) {
-      throw new IllegalArgumentException();
-    }
-    context.associate((DefaultInput<?>) input, this);
+    context.associate((DefaultInputMetadata<?>) input, this);
   }
 
   @Override

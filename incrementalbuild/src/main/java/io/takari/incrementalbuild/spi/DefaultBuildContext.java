@@ -463,10 +463,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     ResourceHolder<File> oldOutputState = oldState.outputs.get(outputFile);
 
     if (oldOutputState == null) {
-      if (processedOutputs.containsKey(outputFile)) {
-        return ResourceStatus.NEW;
-      }
-      throw new IllegalArgumentException("Output is not processed " + outputFile);
+      return ResourceStatus.NEW;
     }
 
     ResourceStatus status = getResourceStatus(oldOutputState);
@@ -637,6 +634,15 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return result;
   }
 
+  public DefaultOutputMetadata registerOutput(File outputFile) {
+    outputFile = normalize(outputFile);
+    DefaultOutputMetadata output = processedOutputs.get(outputFile);
+    if (output == null) {
+      output = new DefaultOutputMetadata(this, oldState, outputFile);
+    }
+    return output;
+  }
+
   private File normalize(File file) {
     if (file == null) {
       throw new IllegalArgumentException();
@@ -651,14 +657,21 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   // association management
 
-  public void associate(DefaultInput<?> input, DefaultOutput output) {
+  public void associate(DefaultInputMetadata<?> input, DefaultOutput output) {
     Object inputResource = input.getResource();
-    if (!processedInputs.containsKey(inputResource)) {
-      throw new IllegalStateException("Input is not processed " + inputResource);
-    }
     File outputFile = output.getResource();
+    if (!processedInputs.containsKey(inputResource)) {
+      if (!contains(oldState.inputOutputs.get(inputResource), outputFile)
+          || !contains(oldState.outputInputs.get(outputFile), inputResource)) {
+        throw new IllegalArgumentException();
+      }
+    }
     put(state.inputOutputs, inputResource, outputFile);
     put(state.outputInputs, outputFile, inputResource);
+  }
+
+  private static <T> boolean contains(Collection<T> collection, T member) {
+    return collection != null ? collection.contains(member) : false;
   }
 
   private boolean isAssociatedOutput(DefaultInput<?> input, File outputFile) {
@@ -879,8 +892,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
         Collection<File> associatedOutputs = oldState.inputOutputs.get(inputResource);
         if (associatedOutputs != null) {
           for (File outputFile : associatedOutputs) {
-            carryOverOutput(inputResource, outputFile);
-            carryOverMessages(outputFile, recordedMessages);
+            if (!processedOutputs.containsKey(outputFile)) {
+              carryOverOutput(inputResource, outputFile);
+              carryOverMessages(outputFile, recordedMessages);
+            }
           }
         }
 

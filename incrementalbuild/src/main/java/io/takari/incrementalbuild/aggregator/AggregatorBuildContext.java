@@ -59,9 +59,12 @@ public interface AggregatorBuildContext {
     public File getResource();
 
     /**
-     * Creates the aggregate
+     * Creates the aggregate if there are new, changed or removed inputs.
+     * 
+     * @returns {@code true} if the new output was created, {@code false} if the output was
+     *          up-to-date
      */
-    public void create(AggregateCreator creator) throws IOException;
+    public boolean createIfNecessary(AggregateCreator creator) throws IOException;
 
     /**
      * Adds inputs to the aggregate
