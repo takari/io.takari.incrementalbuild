@@ -23,26 +23,12 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-public class DefaultBuildContextTest {
-
-  @Rule
-  public final TemporaryFolder temp = new TemporaryFolder();
-
-  private DefaultBuildContext<?> newBuildContext() {
-    return newBuildContext(Collections.<String, Serializable>emptyMap());
-  }
-
-  private DefaultBuildContext<?> newBuildContext(Map<String, Serializable> config) {
-    File stateFile = new File(temp.getRoot(), "buildstate.ctx");
-    return new TestBuildContext(stateFile, config);
-  }
+public class DefaultBuildContextTest extends AbstractBuildContextTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testRegisterInput_inputFileDoesNotExist() throws Exception {
