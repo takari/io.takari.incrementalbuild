@@ -1,5 +1,6 @@
 package io.takari.incrementalbuild.aggregator;
 
+import io.takari.incrementalbuild.BuildContext.Input;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.BuildContext.Output;
 
@@ -43,6 +44,14 @@ public interface AggregatorBuildContext {
   }
 
   /**
+   * Aggregate input processor. Useful to glean information from input resource and store it in
+   * Input attributes.
+   */
+  public static interface InputProcessor {
+    public void process(Input<File> input) throws IOException;
+  }
+
+  /**
    * Represents aggregate output being created.
    */
   public static interface AggregateOutput {
@@ -57,8 +66,8 @@ public interface AggregatorBuildContext {
     /**
      * Adds inputs to the aggregate
      */
-    public void addInputs(File basedir, Collection<String> includes, Collection<String> excludes)
-        throws IOException;
+    public void addInputs(File basedir, Collection<String> includes, Collection<String> excludes,
+        InputProcessor... processors) throws IOException;
   }
 
   // TODO this will go away once #getRelativePath moves to InputMetadata

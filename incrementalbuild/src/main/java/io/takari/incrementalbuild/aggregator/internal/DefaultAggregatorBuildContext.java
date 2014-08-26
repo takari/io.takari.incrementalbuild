@@ -40,12 +40,20 @@ public class DefaultAggregatorBuildContext implements AggregatorBuildContext {
     }
 
     @Override
-    public void addInputs(File basedir, Collection<String> includes, Collection<String> excludes)
-        throws IOException {
+    public void addInputs(File basedir, Collection<String> includes, Collection<String> excludes,
+        InputProcessor... processors) throws IOException {
       basedir = basedir.getCanonicalFile(); // TODO move to DefaultBuildContext
-      for (InputMetadata<File> input : context.registerInputs(basedir, includes, excludes)) {
-        processingRequired = processingRequired || input.getStatus() != ResourceStatus.UNMODIFIED;
-        inputs.add(new DefaultAggregatorInput(basedir, input));
+      for (InputMetadata<File> inputMetadata : context.registerInputs(basedir, includes, excludes)) {
+        inputs.add(new DefaultAggregatorInput(basedir, inputMetadata));
+        if (inputMetadata.getStatus() != ResourceStatus.UNMODIFIED) {
+          processingRequired = true;
+          if (processors != null) {
+            Input<File> input = inputMetadata.process();
+            for (InputProcessor processor : processors) {
+              processor.process(input);
+            }
+          }
+        }
       }
     }
 
