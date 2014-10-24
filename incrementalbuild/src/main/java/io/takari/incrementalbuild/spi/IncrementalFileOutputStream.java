@@ -37,6 +37,10 @@ class IncrementalFileOutputStream extends OutputStream {
 
     modified = !file.exists();
 
+    if (file.exists() && !file.canWrite()) {
+      file.setWritable(true);
+    }
+
     raf = new RandomAccessFile(file, "rw");
     buffer = new byte[BUF_SIZE];
   }

@@ -1,13 +1,12 @@
 package io.takari.incrementalbuild.spi;
 
-import io.takari.incrementalbuild.spi.IncrementalFileOutputStream;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -175,4 +174,42 @@ public class IncrementalFileOutputStreamTest {
 
     Assert.assertArrayEquals(Arrays.copyOfRange(data, 30, 30 + 60), Files.asByteSource(file).read());
   }
+
+  @Test
+  public void testReadOnly_file() throws Exception {
+    File file = temp.newFile();
+    Assert.assertTrue(file.setReadOnly());
+    try (IncrementalFileOutputStream os = new IncrementalFileOutputStream(file)) {
+      os.write(10);
+    }
+    Assert.assertArrayEquals(new byte[] {10}, Files.asByteSource(file).read());
+  }
+
+  @Test
+  @Ignore("not currently supported")
+  public void testReadOnly_directory() throws Exception {
+    File dir = temp.newFolder();
+    dir.setReadOnly();
+
+    File file = new File(dir, "file.bin");
+    try (IncrementalFileOutputStream os = new IncrementalFileOutputStream(file)) {
+      os.write(10);
+    }
+    Assert.assertArrayEquals(new byte[10], Files.asByteSource(file).read());
+  }
+
+
+  @Test
+  @Ignore("not currently supported")
+  public void testReadOnly_subDirectory() throws Exception {
+    File dir = temp.newFolder();
+    dir.setReadOnly();
+
+    File file = new File(dir, "subdirectory/file.bin");
+    try (IncrementalFileOutputStream os = new IncrementalFileOutputStream(file)) {
+      os.write(10);
+    }
+    Assert.assertArrayEquals(new byte[10], Files.asByteSource(file).read());
+  }
+
 }
