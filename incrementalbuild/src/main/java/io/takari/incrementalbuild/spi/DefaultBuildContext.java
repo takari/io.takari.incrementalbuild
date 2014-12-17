@@ -301,7 +301,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
 
   private boolean isRegistered(Object inputResource) {
     if (workspace.getMode() == Mode.DELTA || workspace.getMode() == Mode.SUPPRESSED) {
-      return !deletedInputs.contains(inputResource);
+      return oldState.inputs.containsKey(inputResource) && !deletedInputs.contains(inputResource);
     }
     return state.inputs.containsKey(inputResource);
   }
@@ -582,16 +582,25 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   public <T> Iterable<DefaultInputMetadata<T>> getRegisteredInputs(Class<T> clazz) {
     Set<DefaultInputMetadata<T>> result = new LinkedHashSet<DefaultInputMetadata<T>>();
     for (Object inputResource : state.inputs.keySet()) {
-      if (clazz.isInstance(inputResource)) {
-        DefaultInputMetadata<T> input = getProcessedInput(clazz.cast(inputResource));
-        if (input == null) {
-          input = new DefaultInputMetadata<T>(this, state, clazz.cast(inputResource));
-        }
-        result.add(input);
+      addRegisteredInput(result, clazz, inputResource);
+    }
+    for (Object inputResource : oldState.inputs.keySet()) {
+      if (!state.inputs.containsKey(inputResource)) {
+        addRegisteredInput(result, clazz, inputResource);
       }
     }
-    addRemovedInputs(result, clazz);
     return result;
+  }
+
+  private <T> void addRegisteredInput(Set<DefaultInputMetadata<T>> result, Class<T> clazz,
+      Object inputResource) {
+    if (clazz.isInstance(inputResource)) {
+      DefaultInputMetadata<T> input = getProcessedInput(clazz.cast(inputResource));
+      if (input == null) {
+        input = new DefaultInputMetadata<T>(this, state, clazz.cast(inputResource));
+      }
+      result.add(input);
+    }
   }
 
   public <T> Set<DefaultInputMetadata<T>> getRemovedInputs(Class<T> clazz) {
@@ -886,6 +895,10 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
       if (!isRegistered(inputResource)) {
         clearMessages(inputResource);
         continue;
+      }
+      if (!state.inputs.containsKey(inputResource)) {
+        // this is possible with delta workspaces
+        state.inputs.put(inputResource, oldState.inputs.get(inputResource));
       }
       if (!processedInputs.containsKey(inputResource)) {
         // copy associated outputs

@@ -103,18 +103,6 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
     Assert.assertEquals(0, toList(context.deleteStaleOutputs(true)).size());
   }
 
-  private static <T> List<T> toList(Iterable<T> iterable) {
-    if (iterable == null) {
-      return null;
-    }
-
-    List<T> result = new ArrayList<T>();
-    for (T t : iterable) {
-      result.add(t);
-    }
-    return result;
-  }
-
   @Test
   public void testDeleteStaleOutputs_inputProcessingPending() throws Exception {
     File inputFile = temp.newFile("inputFile");
