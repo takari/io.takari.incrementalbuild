@@ -1,12 +1,16 @@
 package io.takari.incrementalbuild.spi;
 
+import static org.apache.maven.plugin.testing.resources.TestResources.touch;
 import static org.junit.Assert.assertEquals;
+import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.BuildContext.InputMetadata;
 import io.takari.incrementalbuild.workspace.Workspace;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
@@ -124,5 +128,60 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     assertEquals(0, toList(ctx.registerAndProcessInputs(basedir, null, null)).size());
     assertEquals(2, toList(ctx.getRegisteredInputs()).size());
     ctx.commit();
+  }
+
+  @Test
+  public void testResourceStatus() throws Exception {
+    File basedir = temp.newFolder("basedir");
+
+    DeltaWorkspace workspace;
+    DefaultBuildContext<?> ctx;
+
+    // initial build
+    newBuildContext().commit();
+
+    // new input
+    workspace = new DeltaWorkspace();
+    File a = temp.newFile("basedir/a").getCanonicalFile();
+    workspace.added.add(a);
+    ctx = newBuildContext(workspace);
+    InputMetadata<File> input = only(ctx.registerInputs(basedir, null, null));
+    assertEquals(BuildContext.ResourceStatus.NEW, input.getStatus());
+    input.process();
+    ctx.commit();
+
+    // no-change rebuild
+    workspace = new DeltaWorkspace();
+    workspace.added.add(a);
+    ctx = newBuildContext(workspace);
+    input = only(ctx.registerInputs(basedir, null, null));
+    assertEquals(BuildContext.ResourceStatus.UNMODIFIED, input.getStatus());
+    ctx.commit();
+
+    // modified input
+    workspace = new DeltaWorkspace();
+    touch(a);
+    workspace.modified.add(a);
+    ctx = newBuildContext(workspace);
+    input = only(ctx.registerInputs(basedir, null, null));
+    assertEquals(BuildContext.ResourceStatus.MODIFIED, input.getStatus());
+    input.process();
+    ctx.commit();
+
+    // removed input
+    workspace = new DeltaWorkspace();
+    a.delete();
+    workspace.removed.add(a);
+    ctx = newBuildContext(workspace);
+    assertEquals(0, toList(ctx.registerInputs(basedir, null, null)).size());
+    assertEquals(BuildContext.ResourceStatus.REMOVED, ctx.getInputStatus(a, true));
+    input.process();
+    ctx.commit();
+  }
+
+  private <T> T only(Iterable<T> values) {
+    List<T> list = toList(values);
+    assertEquals(1, list.size());
+    return list.get(0);
   }
 }

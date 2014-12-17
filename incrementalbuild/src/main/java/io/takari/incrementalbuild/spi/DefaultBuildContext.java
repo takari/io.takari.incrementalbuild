@@ -299,11 +299,21 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return deleted;
   }
 
+  /**
+   * Returns {@code true} if inputResource is considered part of inputs set of the current build,
+   * i.e. it was registered during this build.
+   * <p>
+   * For Workspace.Mode.DELTA this also includes inputResources that were registered in the previous
+   * build and were not explicitly deleted in this build.
+   */
   private boolean isRegistered(Object inputResource) {
+    if (state.inputs.containsKey(inputResource)) {
+      return true;
+    }
     if (workspace.getMode() == Mode.DELTA || workspace.getMode() == Mode.SUPPRESSED) {
       return oldState.inputs.containsKey(inputResource) && !deletedInputs.contains(inputResource);
     }
-    return state.inputs.containsKey(inputResource);
+    return false;
   }
 
   protected void deleteStaleOutput(File outputFile) throws IOException {
@@ -484,7 +494,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
   private DefaultInputMetadata<File> registerNormalizedInput(File inputFile, long lastModified,
       long length) {
 
-    if (isRegistered(inputFile)) {
+    if (state.inputs.containsKey(inputFile)) {
       // performance shortcut, avoids IO during new FileState
       return new DefaultInputMetadata<File>(this, oldState, inputFile);
     }
