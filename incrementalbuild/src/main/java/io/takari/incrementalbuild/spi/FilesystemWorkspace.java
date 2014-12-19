@@ -56,6 +56,9 @@ public class FilesystemWorkspace implements Workspace {
 
   @Override
   public void walk(File basedir, final FileVisitor visitor) throws IOException {
+    if (!basedir.isDirectory()) {
+      return;
+    }
     final Path basepath = basedir.toPath();
     Files.walkFileTree(basepath, new SimpleFileVisitor<Path>() {
       @Override

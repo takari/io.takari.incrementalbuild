@@ -1167,4 +1167,14 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
       // expected
     }
   }
+
+  @Test
+  public void testInputDirectoryDoesNotExist() throws Exception {
+    File basedir = new File(temp.getRoot(), "does-not-exist");
+    Assert.assertFalse(basedir.exists()); // sanity check
+
+    DefaultBuildContext<?> context = newBuildContext();
+    Assert.assertEquals(0, toList(context.registerInputs(basedir, null, null)).size());
+    Assert.assertEquals(0, toList(context.registerAndProcessInputs(basedir, null, null)).size());
+  }
 }
