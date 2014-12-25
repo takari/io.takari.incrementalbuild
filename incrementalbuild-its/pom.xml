@@ -30,6 +30,11 @@
       <artifactId>maven-plugin-testing-harness</artifactId>
       <version>${plugintesting.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>3.0.20</version>
+    </dependency>
   </dependencies>
 
   <build>
