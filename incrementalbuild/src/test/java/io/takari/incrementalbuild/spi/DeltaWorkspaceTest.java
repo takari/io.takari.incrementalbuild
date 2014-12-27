@@ -1,6 +1,6 @@
 package io.takari.incrementalbuild.spi;
 
-import static org.apache.maven.plugin.testing.resources.TestResources.touch;
+import static io.takari.maven.testing.TestResources.touch;
 import static org.junit.Assert.assertEquals;
 import io.takari.incrementalbuild.BuildContext;
 import io.takari.incrementalbuild.BuildContext.InputMetadata;

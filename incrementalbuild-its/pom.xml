@@ -16,19 +16,14 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.takari.maven.plugins</groupId>
+      <artifactId>takari-plugin-testing</artifactId>
+      <version>2.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.shared</groupId>
-      <artifactId>maven-verifier</artifactId>
-      <version>1.5</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.plugin-testing</groupId>
-      <artifactId>maven-plugin-testing-harness</artifactId>
-      <version>${plugintesting.version}</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
@@ -46,6 +41,20 @@
     </testResources>
     <plugins>
       <plugin>
+        <groupId>io.takari.maven.plugins</groupId>
+        <artifactId>takari-plugin-testing-plugin</artifactId>
+        <version>1.9.2</version>
+        <executions>
+          <execution>
+            <id>testProperties</id>
+            <goals>
+              <goal>testProperties</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <version>2.8</version>
@@ -57,11 +66,26 @@
               <goal>unpack</goal>
             </goals>
             <configuration>
+              <outputDirectory>${project.build.directory}/maven-installation</outputDirectory>
               <artifactItems>
                 <artifactItem>
                   <groupId>org.apache.maven</groupId>
                   <artifactId>apache-maven</artifactId>
-                  <version>${apache-maven.version}</version>
+                  <version>3.2.3</version>
+                  <classifier>bin</classifier>
+                  <type>tar.gz</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.maven</groupId>
+                  <artifactId>apache-maven</artifactId>
+                  <version>3.2.5</version>
+                  <classifier>bin</classifier>
+                  <type>tar.gz</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.maven</groupId>
+                  <artifactId>apache-maven</artifactId>
+                  <version>3.2.6-SNAPSHOT</version>
                   <classifier>bin</classifier>
                   <type>tar.gz</type>
                 </artifactItem>

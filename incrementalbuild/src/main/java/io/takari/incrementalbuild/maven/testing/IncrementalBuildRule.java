@@ -1,5 +1,9 @@
 package io.takari.incrementalbuild.maven.testing;
 
+import io.takari.incrementalbuild.maven.internal.MavenBuildContext;
+import io.takari.incrementalbuild.spi.DefaultBuildContext;
+import io.takari.maven.testing.TestMavenRuntime;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,16 +12,28 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.inject.Singleton;
+
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.plugin.MojoExecution;
-import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.project.MavenProject;
 import org.junit.Assert;
 
-public class IncrementalBuildRule extends MojoRule {
+import com.google.inject.AbstractModule;
+
+public class IncrementalBuildRule extends TestMavenRuntime {
 
   public IncrementalBuildRule() {
-    super(new IncrementalBuildRuntime());
+    super(new AbstractModule() {
+      @Override
+      protected void configure() {
+        bind(TestBuildContext.class).in(MojoExecutionScoped.class);
+        bind(DefaultBuildContext.class).to(TestBuildContext.class).in(MojoExecutionScoped.class);
+        bind(MavenBuildContext.class).to(TestBuildContext.class).in(MojoExecutionScoped.class);
+        bind(IncrementalBuildLog.class).in(Singleton.class);
+      }
+    });
   }
 
   @Override
