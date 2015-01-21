@@ -49,12 +49,15 @@ public class MojoConfigurationDigesterTest {
   }
 
   private Map<String, Serializable> digest(Xpp3Dom... parameters) throws Exception {
+    return digest(DigestedMojo.class, parameters);
+  }
 
+  private Map<String, Serializable> digest(Class<?> type, Xpp3Dom... parameters) throws Exception {
     PluginDescriptor plugin = new PluginDescriptor();
     plugin.setArtifacts(Collections.<Artifact>emptyList());
     MojoDescriptor mojo = new MojoDescriptor();
     mojo.setPluginDescriptor(plugin);
-    mojo.setImplementationClass(DigestedMojo.class);
+    mojo.setImplementationClass(type);
     MojoExecution execution = new MojoExecution(mojo);
 
     Xpp3Dom configuration = new Xpp3Dom("configuration");
@@ -158,5 +161,12 @@ public class MojoConfigurationDigesterTest {
     strings.addChild(newParameter("str", "value2"));
     Map<String, Serializable> digest = digest(strings);
     Assert.assertNotNull(digest.get("mojo.parameter.strings"));
+  }
+
+  @Test
+  public void testInheretedFields() throws Exception {
+    Map<String, Serializable> digest =
+        digest(ExtendedDigestedMojo.class, newParameter("string", "string"));
+    Assert.assertEquals("string", digest.get("mojo.parameter.string"));
   }
 }
