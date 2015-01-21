@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -42,7 +43,7 @@
     <junit.version>4.11</junit.version>
     <guava.version>18.0</guava.version>
     <eclipse-sisu.version>0.3.0.M1</eclipse-sisu.version>
-    <plugin-testing.version>2.0.0</plugin-testing.version>
+    <plugin-testing.version>2.1.0</plugin-testing.version>
   </properties>
 
   <modules>
@@ -76,4 +77,15 @@
     <module>incrementalbuild-its</module>
   </modules>
 
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.takari.maven.plugins</groupId>
+          <artifactId>takari-lifecycle-plugin</artifactId>
+          <version>1.10.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>
