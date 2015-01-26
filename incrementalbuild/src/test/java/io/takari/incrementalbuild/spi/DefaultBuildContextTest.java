@@ -193,6 +193,41 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
   }
 
   @Test
+  public void testDeleteStaleOutputs_explicitInput() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+    File outputFile = temp.newFile("outputFile");
+
+    DefaultBuildContext<?> context = newBuildContext();
+    DefaultInput<File> input = context.registerInput(inputFile).process();
+    input.associateOutput(outputFile);
+    context.commit();
+
+    // carry over, do not delete
+    context = newBuildContext();
+    DefaultInputMetadata<File> inputMetadata = context.registerInput(inputFile);
+    Assert.assertEquals(0, toList(context.deleteStaleOutputs(inputMetadata)).size());
+    Assert.assertTrue(outputFile.canRead());
+
+    // input didn't have any associated outputs, nothing to delete
+    inputMetadata = context.registerInput(temp.newFile("otherInputFile"));
+    Assert.assertEquals(0, toList(context.deleteStaleOutputs(inputMetadata)).size());
+    Assert.assertTrue(outputFile.canRead());
+
+    // still registered, do not delete
+    context = newBuildContext();
+    input = context.registerInput(inputFile).process();
+    input.associateOutput(outputFile);
+    Assert.assertEquals(0, toList(context.deleteStaleOutputs(input)).size());
+    Assert.assertTrue(outputFile.canRead());
+
+    // processed input, the output isn't re-associated, delete the output
+    context = newBuildContext();
+    input = context.registerInput(inputFile).process();
+    Assert.assertEquals(1, toList(context.deleteStaleOutputs(input)).size());
+    Assert.assertFalse(outputFile.canRead());
+  }
+
+  @Test
   public void testGetInputStatus() throws Exception {
     File inputFile = temp.newFile("inputFile");
 

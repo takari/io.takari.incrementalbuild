@@ -299,6 +299,36 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     return deleted;
   }
 
+  public Iterable<DefaultOutputMetadata> deleteStaleOutputs(DefaultInputMetadata<?> input)
+      throws IOException {
+    List<DefaultOutputMetadata> deleted = new ArrayList<DefaultOutputMetadata>();
+
+    Object inputResource = input.getResource();
+    boolean registered = isRegistered(inputResource);
+
+    if (registered && !processedInputs.containsKey(inputResource)) {
+      // input is registered and not processed, all associated outputs should be carried over
+      return deleted;
+    }
+
+    Collection<File> oldAssociatedOutputs = oldState.inputOutputs.get(inputResource);
+
+    if (oldAssociatedOutputs == null || oldAssociatedOutputs.isEmpty()) {
+      // input didn't have associated outputs in the previous build, nothing to delete
+      return deleted;
+    }
+
+    Collection<File> associatedOutputs = state.inputOutputs.get(inputResource);
+    for (File oldOutputFile : oldAssociatedOutputs) {
+      if (associatedOutputs == null || !associatedOutputs.contains(oldOutputFile)) {
+        deleteStaleOutput(oldOutputFile);
+        deleted.add(new DefaultOutputMetadata(this, oldState, oldOutputFile));
+      }
+    }
+
+    return deleted;
+  }
+
   /**
    * Returns {@code true} if inputResource is considered part of inputs set of the current build,
    * i.e. it was registered during this build.
