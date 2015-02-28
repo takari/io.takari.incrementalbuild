@@ -63,6 +63,7 @@
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-guice</artifactId>
       <version>3.2.3</version>
+      <classifier>no_aop</classifier>
       <optional>true</optional>
     </dependency>
     <dependency>
