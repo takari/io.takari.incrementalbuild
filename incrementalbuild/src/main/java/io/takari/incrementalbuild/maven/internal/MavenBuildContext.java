@@ -1,58 +1,61 @@
 package io.takari.incrementalbuild.maven.internal;
 
+import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.Resource;
+import io.takari.incrementalbuild.ResourceMetadata;
+import io.takari.incrementalbuild.spi.BuildContextEnvironment;
 import io.takari.incrementalbuild.spi.DefaultBuildContext;
-import io.takari.incrementalbuild.workspace.MessageSink;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
 import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 
-import org.apache.maven.execution.MojoExecutionEvent;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
-import org.apache.maven.execution.scope.WeakMojoExecutionListener;
-import org.apache.maven.plugin.MojoExecution;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.project.MavenProject;
 
-/**
- * Maven specific BuildContext implementation that provides
- */
 @Named
-@Typed({DefaultBuildContext.class, MavenBuildContext.class})
-@MojoExecutionScoped
-public class MavenBuildContext extends DefaultBuildContext<MojoExecutionException>
-    implements
-      WeakMojoExecutionListener {
+public class MavenBuildContext implements BuildContext {
 
-  @Inject
-  public MavenBuildContext(ProjectWorkspace workspace, @Nullable MessageSink messageSink,
-      MojoConfigurationDigester digester, MavenIncrementalConventions conventions,
-      MavenProject project, MojoExecution execution) throws IOException {
-
-    super(workspace, messageSink, conventions.getExecutionStateLocation(project, execution),
-        digester.digest());
-  }
-
-
-  @Override
-  public void beforeMojoExecution(MojoExecutionEvent event) throws MojoExecutionException {}
-
-  @Override
-  public void afterMojoExecutionSuccess(MojoExecutionEvent event) throws MojoExecutionException {
-    try {
-      commit();
-    } catch (IOException e) {
-      throw new MojoExecutionException("Could not maintain incremental build state", e);
+  @Named
+  @Typed(MojoExecutionScopedBuildContext.class)
+  @MojoExecutionScoped
+  public static class MojoExecutionScopedBuildContext extends DefaultBuildContext {
+    @Inject
+    public MojoExecutionScopedBuildContext(BuildContextEnvironment configuration) {
+      super(configuration);
     }
   }
 
-  @Override
-  public void afterExecutionFailure(MojoExecutionEvent event) {}
+  private final Provider<MojoExecutionScopedBuildContext> provider;
+
+  @Inject
+  public MavenBuildContext(Provider<MojoExecutionScopedBuildContext> delegate) {
+    this.provider = delegate;
+  }
 
   @Override
-  protected MojoExecutionException newBuildFailureException(String message) {
-    return new MojoExecutionException(message);
+  public ResourceMetadata<File> registerInput(File inputFile) {
+    return provider.get().registerInput(inputFile);
+  }
+
+  @Override
+  public Iterable<? extends ResourceMetadata<File>> registerInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException {
+    return provider.get().registerInputs(basedir, includes, excludes);
+  }
+
+  @Override
+  public Iterable<? extends Resource<File>> registerAndProcessInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException {
+    return provider.get().registerAndProcessInputs(basedir, includes, excludes);
+  }
+
+  @Override
+  public void markSkipExecution() {
+    provider.get().markSkipExecution();
   }
 }

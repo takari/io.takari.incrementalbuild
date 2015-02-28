@@ -1,4 +1,4 @@
-package io.takari.incrementalbuild.maven.internal;
+package io.takari.incrementalbuild.maven.internal.digest;
 
 import io.takari.incrementalbuild.Incremental;
 import io.takari.incrementalbuild.Incremental.Configuration;

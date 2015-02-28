@@ -1,12 +1,7 @@
 package io.takari.incrementalbuild.aggregator;
 
-import io.takari.incrementalbuild.BuildContext.Input;
-import io.takari.incrementalbuild.BuildContext.InputMetadata;
-import io.takari.incrementalbuild.BuildContext.Output;
-
 import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
+import java.io.Serializable;
 
 /**
  * Convenience interface to create aggregate outputs
@@ -32,59 +27,8 @@ import java.util.Collection;
  */
 public interface AggregatorBuildContext {
 
-  /**
-   * Aggregation function. Only called when new output needs to be generated.
-   */
-  public static interface AggregateCreator {
+  public AggregateOutput registerOutput(File outputFile, InputAggregator aggregator);
 
-    /**
-     * Creates aggregate output given the inputs.
-     */
-    public void create(Output<File> output, Iterable<AggregateInput> inputs) throws IOException;
-  }
-
-  /**
-   * Aggregate input processor. Useful to glean information from input resource and store it in
-   * Input attributes.
-   */
-  public static interface InputProcessor {
-    public void process(Input<File> input) throws IOException;
-  }
-
-  /**
-   * Represents aggregate output being created.
-   */
-  public static interface AggregateOutput {
-
-    public File getResource();
-
-    /**
-     * Creates the aggregate if there are new, changed or removed inputs.
-     * 
-     * @returns {@code true} if the new output was created, {@code false} if the output was
-     *          up-to-date
-     */
-    public boolean createIfNecessary(AggregateCreator creator) throws IOException;
-
-    /**
-     * Adds inputs to the aggregate
-     */
-    public void addInputs(File basedir, Collection<String> includes, Collection<String> excludes,
-        InputProcessor... processors) throws IOException;
-  }
-
-  // TODO this will go away once #getRelativePath moves to InputMetadata
-  public static interface AggregateInput extends InputMetadata<File> {
-
-    /**
-     * When input was registered using glob matching, returns base directory of the match.
-     */
-    public File getBasedir();
-  }
-
-  /**
-   * Registers aggregate output with the build context.
-   */
-  public AggregateOutput registerOutput(File output);
-
+  public <T extends Serializable> AggregateOutput registerOutput(File outputFile,
+      MetadataAggregator<T> aggregator);
 }

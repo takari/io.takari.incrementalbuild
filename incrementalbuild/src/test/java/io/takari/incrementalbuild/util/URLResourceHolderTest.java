@@ -1,6 +1,6 @@
 package io.takari.incrementalbuild.util;
 
-import io.takari.incrementalbuild.BuildContext.ResourceStatus;
+import io.takari.incrementalbuild.ResourceStatus;
 
 import java.io.File;
 

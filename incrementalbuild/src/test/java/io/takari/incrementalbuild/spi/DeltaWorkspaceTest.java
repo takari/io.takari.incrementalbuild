@@ -2,8 +2,8 @@ package io.takari.incrementalbuild.spi;
 
 import static io.takari.maven.testing.TestResources.touch;
 import static org.junit.Assert.assertEquals;
-import io.takari.incrementalbuild.BuildContext;
-import io.takari.incrementalbuild.BuildContext.InputMetadata;
+import io.takari.incrementalbuild.ResourceMetadata;
+import io.takari.incrementalbuild.ResourceStatus;
 import io.takari.incrementalbuild.workspace.Workspace;
 
 import java.io.File;
@@ -86,7 +86,7 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
   @Test
   public void testGetRegisteredInputs() throws Exception {
     DeltaWorkspace workspace;
-    DefaultBuildContext<?> ctx;
+    TestBuildContext ctx;
 
     // initial build
     ctx = newBuildContext();
@@ -135,7 +135,7 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     File basedir = temp.newFolder("basedir");
 
     DeltaWorkspace workspace;
-    DefaultBuildContext<?> ctx;
+    TestBuildContext ctx;
 
     // initial build
     newBuildContext().commit();
@@ -145,8 +145,8 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     File a = temp.newFile("basedir/a").getCanonicalFile();
     workspace.added.add(a);
     ctx = newBuildContext(workspace);
-    InputMetadata<File> input = only(ctx.registerInputs(basedir, null, null));
-    assertEquals(BuildContext.ResourceStatus.NEW, input.getStatus());
+    ResourceMetadata<File> input = only(ctx.registerInputs(basedir, null, null));
+    assertEquals(ResourceStatus.NEW, input.getStatus());
     input.process();
     ctx.commit();
 
@@ -155,7 +155,7 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     workspace.added.add(a);
     ctx = newBuildContext(workspace);
     input = only(ctx.registerInputs(basedir, null, null));
-    assertEquals(BuildContext.ResourceStatus.UNMODIFIED, input.getStatus());
+    assertEquals(ResourceStatus.UNMODIFIED, input.getStatus());
     ctx.commit();
 
     // modified input
@@ -164,7 +164,7 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     workspace.modified.add(a);
     ctx = newBuildContext(workspace);
     input = only(ctx.registerInputs(basedir, null, null));
-    assertEquals(BuildContext.ResourceStatus.MODIFIED, input.getStatus());
+    assertEquals(ResourceStatus.MODIFIED, input.getStatus());
     input.process();
     ctx.commit();
 
@@ -174,7 +174,7 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     workspace.removed.add(a);
     ctx = newBuildContext(workspace);
     assertEquals(0, toList(ctx.registerInputs(basedir, null, null)).size());
-    assertEquals(BuildContext.ResourceStatus.REMOVED, ctx.getInputStatus(a, true));
+    assertEquals(ResourceStatus.REMOVED, ctx.getResourceStatus(a));
     input.process();
     ctx.commit();
   }

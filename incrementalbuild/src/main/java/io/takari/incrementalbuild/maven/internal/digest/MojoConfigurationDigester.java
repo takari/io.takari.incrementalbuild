@@ -1,6 +1,6 @@
-package io.takari.incrementalbuild.maven.internal;
+package io.takari.incrementalbuild.maven.internal.digest;
 
-import io.takari.incrementalbuild.maven.internal.Digesters.UnsupportedParameterTypeException;
+import io.takari.incrementalbuild.maven.internal.digest.Digesters.UnsupportedParameterTypeException;
 
 import java.io.IOException;
 import java.io.Serializable;

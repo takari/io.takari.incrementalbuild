@@ -1,8 +1,6 @@
 package io.takari.incrementalbuild.spi;
 
-import io.takari.incrementalbuild.BuildContext;
-import io.takari.incrementalbuild.BuildContext.Output;
-import io.takari.incrementalbuild.spi.DefaultBuildContext;
+import io.takari.incrementalbuild.Output;
 
 import java.io.File;
 import java.io.Serializable;
@@ -18,7 +16,7 @@ public class DefaultOutputTest {
   @Rule
   public final TemporaryFolder temp = new TemporaryFolder();
 
-  private DefaultBuildContext<?> newBuildContext() {
+  private TestBuildContext newBuildContext() {
     File stateFile = new File(temp.getRoot(), "buildstate.ctx");
     return new TestBuildContext(stateFile, Collections.<String, Serializable>emptyMap());
   }
@@ -27,7 +25,7 @@ public class DefaultOutputTest {
   public void testOutputStream_createParentDirectories() throws Exception {
     File outputFile = new File(temp.getRoot(), "sub/dir/outputFile");
 
-    BuildContext context = newBuildContext();
+    TestBuildContext context = newBuildContext();
     Output<File> output = context.processOutput(outputFile);
     output.newOutputStream().close();
 

@@ -1,6 +1,7 @@
 package test.plugin;
 
 import io.takari.incrementalbuild.BuildContext;
+import io.takari.incrementalbuild.Resource;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,7 +30,7 @@ public class CopyFileMojo extends AbstractMojo {
   private File output;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
-    BuildContext.Input<File> input = context.registerInput(this.input).process();
+    Resource<File> input = context.registerInput(this.input).process();
     try {
       InputStream is = new FileInputStream(input.getResource());
       try {

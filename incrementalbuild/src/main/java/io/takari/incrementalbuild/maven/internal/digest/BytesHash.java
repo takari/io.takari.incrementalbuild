@@ -1,4 +1,4 @@
-package io.takari.incrementalbuild.maven.internal;
+package io.takari.incrementalbuild.maven.internal.digest;
 
 import java.io.Serializable;
 import java.util.Arrays;

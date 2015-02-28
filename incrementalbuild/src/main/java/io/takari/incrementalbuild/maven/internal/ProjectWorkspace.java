@@ -39,7 +39,7 @@ public class ProjectWorkspace implements Workspace {
     this.filesystem = filesystem;
   }
 
-  private Workspace getWorkspace(File file) {
+  protected Workspace getWorkspace(File file) {
     if (file.toPath().normalize().startsWith(basedir)) {
       return workspace;
     }

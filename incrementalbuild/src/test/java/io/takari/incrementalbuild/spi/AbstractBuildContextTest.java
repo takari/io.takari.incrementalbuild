@@ -16,15 +16,15 @@ public abstract class AbstractBuildContextTest {
   @Rule
   public final TemporaryFolder temp = new TemporaryFolder();
 
-  protected DefaultBuildContext<?> newBuildContext() {
+  protected TestBuildContext newBuildContext() {
     return newBuildContext(Collections.<String, Serializable>emptyMap());
   }
 
-  protected DefaultBuildContext<?> newBuildContext(Map<String, Serializable> config) {
+  protected TestBuildContext newBuildContext(Map<String, Serializable> config) {
     return new TestBuildContext(new File(temp.getRoot(), "buildstate.ctx"), config);
   }
 
-  protected DefaultBuildContext<?> newBuildContext(Workspace workspace) {
+  protected TestBuildContext newBuildContext(Workspace workspace) {
     return new TestBuildContext(workspace, new File(temp.getRoot(), "buildstate.ctx"),
         Collections.<String, Serializable>emptyMap());
   }

@@ -1,5 +1,6 @@
 package io.takari.incrementalbuild.maven.internal;
 
+import io.takari.incrementalbuild.maven.internal.digest.MojoConfigurationDigester;
 import io.takari.incrementalbuild.maven.testing.IncrementalBuildRule;
 import io.takari.maven.testing.TestResources;
 

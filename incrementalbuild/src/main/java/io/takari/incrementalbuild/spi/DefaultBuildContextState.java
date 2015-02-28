@@ -1,5 +1,6 @@
 package io.takari.incrementalbuild.spi;
 
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -15,7 +16,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,52 +34,33 @@ public class DefaultBuildContextState implements Serializable {
 
   final Map<String, Serializable> configuration;
 
-  final Map<File, ResourceHolder<File>> outputs;
+  private final Set<File> outputs;
 
-  final Map<Object, ResourceHolder<?>> inputs;
+  private final Map<Object, ResourceHolder<?>> resources;
 
-  final Map<Object, ResourceHolder<?>> includedInputs;
+  private final Map<Object, Collection<File>> resourceOutputs;
 
-  final Map<Object, Collection<File>> inputOutputs;
+  // pure in-memory performance optimization, always reflects contents of resourceOutputs
+  private final Map<File, Collection<Object>> outputInputs;
 
-  final Map<File, Collection<Object>> outputInputs;
+  private final Map<Object, Map<String, Serializable>> resourceAttributes;
 
-  final Map<Object, Collection<Object>> inputIncludedInputs;
-
-  final Map<QualifiedName, Collection<Object>> requirementInputs;
-
-  final Map<Object, Collection<QualifiedName>> inputRequirements;
-
-  final Map<File, Collection<QualifiedName>> outputCapabilities;
-
-  final Map<Object, Map<String, Serializable>> resourceAttributes;
-
-  final Map<Object, Collection<Message>> resourceMessages;
+  private final Map<Object, Collection<Message>> resourceMessages;
 
   private DefaultBuildContextState(Map<String, Serializable> configuration //
       , Map<Object, ResourceHolder<?>> inputs //
-      , Map<File, ResourceHolder<File>> outputs //
-      , Map<Object, ResourceHolder<?>> includedInputs //
-      , Map<Object, Collection<File>> inputOutputs //
+      , Set<File> outputs //
+      , Map<Object, Collection<File>> resourceOutputs //
       , Map<File, Collection<Object>> outputInputs //
-      , Map<Object, Collection<Object>> inputIncludedInputs //
-      , Map<QualifiedName, Collection<Object>> requirementInputs //
-      , Map<Object, Collection<QualifiedName>> inputRequirements //
-      , Map<File, Collection<QualifiedName>> outputCapabilities //
       , Map<Object, Map<String, Serializable>> resourceAttributes //
-      , Map<Object, Collection<Message>> messages) {
+      , Map<Object, Collection<Message>> resourceMessages) {
     this.configuration = configuration;
-    this.inputs = inputs;
+    this.resources = inputs;
     this.outputs = outputs;
-    this.includedInputs = includedInputs;
-    this.inputOutputs = inputOutputs;
+    this.resourceOutputs = resourceOutputs;
     this.outputInputs = outputInputs;
-    this.inputIncludedInputs = inputIncludedInputs;
-    this.requirementInputs = requirementInputs;
-    this.inputRequirements = inputRequirements;
-    this.outputCapabilities = outputCapabilities;
     this.resourceAttributes = resourceAttributes;
-    this.resourceMessages = messages;
+    this.resourceMessages = resourceMessages;
   }
 
   public static DefaultBuildContextState withConfiguration(Map<String, Serializable> configuration) {
@@ -83,14 +69,9 @@ public class DefaultBuildContextState implements Serializable {
     copy.put("incremental", Boolean.TRUE);
     return new DefaultBuildContextState(Collections.<String, Serializable>unmodifiableMap(copy) // configuration
         , new HashMap<Object, ResourceHolder<?>>() // inputs
-        , new HashMap<File, ResourceHolder<File>>() // outputs
-        , new HashMap<Object, ResourceHolder<?>>() // includedInputs
+        , new HashSet<File>() // outputs
         , new HashMap<Object, Collection<File>>() // inputOutputs
         , new HashMap<File, Collection<Object>>() // outputInputs
-        , new HashMap<Object, Collection<Object>>() // inputIncludedInputs
-        , new HashMap<QualifiedName, Collection<Object>>() // requirementInputs
-        , new HashMap<Object, Collection<QualifiedName>>() // inputRequirements
-        , new HashMap<File, Collection<QualifiedName>>() // outputCapabilities
         , new HashMap<Object, Map<String, Serializable>>() // resourceAttributes
         , new HashMap<Object, Collection<Message>>() // messages
     );
@@ -99,14 +80,9 @@ public class DefaultBuildContextState implements Serializable {
   public static DefaultBuildContextState emptyState() {
     return new DefaultBuildContextState(Collections.<String, Serializable>emptyMap() // configuration
         , Collections.<Object, ResourceHolder<?>>emptyMap() // inputs //
-        , Collections.<File, ResourceHolder<File>>emptyMap() // outputs //
-        , Collections.<Object, ResourceHolder<?>>emptyMap() // includedInputs //
+        , Collections.<File>emptySet() // outputs //
         , Collections.<Object, Collection<File>>emptyMap() // inputOutputs //
         , Collections.<File, Collection<Object>>emptyMap() // outputInputs //
-        , Collections.<Object, Collection<Object>>emptyMap() // inputIncludedInputs //
-        , Collections.<QualifiedName, Collection<Object>>emptyMap() // requirementInputs //
-        , Collections.<Object, Collection<QualifiedName>>emptyMap() // inputRequirements //
-        , Collections.<File, Collection<QualifiedName>>emptyMap() // outputCapabilities //
         , Collections.<Object, Map<String, Serializable>>emptyMap() // resourceAttributes //
         , Collections.<Object, Collection<Message>>emptyMap() // messages
     );
@@ -116,15 +92,10 @@ public class DefaultBuildContextState implements Serializable {
     StringBuilder sb = new StringBuilder();
 
     sb.append(configuration.size()).append(' ');
-    sb.append(inputs.size()).append(' ');
-    sb.append(includedInputs.size()).append(' ');
+    sb.append(resources.size()).append(' ');
     sb.append(outputs.size()).append(' ');
-    sb.append(inputOutputs.size()).append(' ');
+    sb.append(resourceOutputs.size()).append(' ');
     sb.append(outputInputs.size()).append(' ');
-    sb.append(inputIncludedInputs.size()).append(' ');
-    sb.append(requirementInputs.size()).append(' ');
-    sb.append(inputRequirements.size()).append(' ');
-    sb.append(outputCapabilities.size()).append(' ');
     sb.append(resourceAttributes.size()).append(' ');
     sb.append(resourceMessages.size()).append(' ');
 
@@ -135,47 +106,16 @@ public class DefaultBuildContextState implements Serializable {
     ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(os));
     try {
       writeMap(oos, this.configuration);
-      writeMap(oos, this.outputs);
-      writeMap(oos, this.inputs);
-      writeMap(oos, this.includedInputs);
+      writeCollection(oos, this.outputs);
+      writeMap(oos, this.resources);
 
-      writeMultimap(oos, inputOutputs);
-      writeMultimap(oos, inputIncludedInputs);
+      writeMultimap(oos, resourceOutputs);
       writeDoublemap(oos, resourceAttributes);
       writeMultimap(oos, resourceMessages);
 
-      writeCapabilityConsumers(oos, requirementInputs);
-      writeCapabilityProviders(oos, outputCapabilities);
     } finally {
       oos.flush();
     }
-  }
-
-  private void writeCapabilityProviders(ObjectOutputStream oos,
-      Map<File, Collection<QualifiedName>> providers) throws IOException {
-    oos.writeInt(providers.size());
-    for (Map.Entry<File, Collection<QualifiedName>> entry : providers.entrySet()) {
-      oos.writeObject(entry.getKey());
-      Collection<QualifiedName> qnames = entry.getValue();
-      oos.writeInt(qnames.size());
-      for (QualifiedName qname : qnames) {
-        writeQualifiedName(oos, qname);
-      }
-    }
-  }
-
-  private void writeCapabilityConsumers(ObjectOutputStream oos,
-      Map<QualifiedName, Collection<Object>> consumers) throws IOException {
-    oos.writeInt(consumers.size());
-    for (Map.Entry<QualifiedName, Collection<Object>> entry : consumers.entrySet()) {
-      writeQualifiedName(oos, entry.getKey());
-      writeCollection(oos, entry.getValue());
-    }
-  }
-
-  private void writeQualifiedName(ObjectOutputStream oos, QualifiedName qname) throws IOException {
-    oos.writeObject(qname.getQualifier());
-    oos.writeObject(qname.getLocalName());
   }
 
   private static void writeMap(ObjectOutputStream oos, Map<?, ?> map) throws IOException {
@@ -245,31 +185,19 @@ public class DefaultBuildContextState implements Serializable {
         final long start = System.currentTimeMillis();
 
         Map<String, Serializable> configuration = readMap(is);
-        Map<File, ResourceHolder<File>> outputs = readMap(is);
-        Map<Object, ResourceHolder<?>> inputs = readMap(is);
-        Map<Object, ResourceHolder<?>> includedInputs = readMap(is);
+        Set<File> outputs = readSet(is);
+        Map<Object, ResourceHolder<?>> resources = readMap(is);
 
-        Map<Object, Collection<File>> inputOutputs = readMultimap(is);
-        Map<File, Collection<Object>> outputInputs = invertMultimap(inputOutputs);
-        Map<Object, Collection<Object>> inputIncludedInputs = readMultimap(is);
+        Map<Object, Collection<File>> resourceOutputs = readMultimap(is);
+        Map<File, Collection<Object>> outputInputs = invertMultimap(resourceOutputs);
         Map<Object, Map<String, Serializable>> resourceAttributes = readDoublemap(is);
         Map<Object, Collection<Message>> messages = readMultimap(is);
 
-        Map<QualifiedName, Collection<Object>> requirementInputs = readCapabilityConsumers(is);
-        Map<Object, Collection<QualifiedName>> inputRequirements =
-            invertMultimap(requirementInputs);
-        Map<File, Collection<QualifiedName>> outputCapabilities = readCapabilityProviders(is);
-
         DefaultBuildContextState state = new DefaultBuildContextState(configuration //
-            , inputs //
+            , resources //
             , outputs //
-            , includedInputs //
-            , inputOutputs //
+            , resourceOutputs //
             , outputInputs //
-            , inputIncludedInputs //
-            , requirementInputs //
-            , inputRequirements //
-            , outputCapabilities //
             , resourceAttributes //
             , messages //
             );
@@ -295,43 +223,6 @@ public class DefaultBuildContextState implements Serializable {
     return DefaultBuildContextState.emptyState();
   }
 
-
-  private static Map<File, Collection<QualifiedName>> readCapabilityProviders(ObjectInputStream ois)
-      throws ClassNotFoundException, IOException {
-    Map<File, Collection<QualifiedName>> providers = new HashMap<File, Collection<QualifiedName>>();
-    int size = ois.readInt();
-    for (int i = 0; i < size; i++) {
-      File key = (File) ois.readObject();
-      int vsize = ois.readInt();
-      Collection<QualifiedName> value = new ArrayList<QualifiedName>();
-      for (int j = 0; j < vsize; j++) {
-        value.add(readQualifiedName(ois));
-      }
-      providers.put(key, value);
-    }
-    return providers;
-  }
-
-  private static Map<QualifiedName, Collection<Object>> readCapabilityConsumers(
-      ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    Map<QualifiedName, Collection<Object>> result =
-        new HashMap<QualifiedName, Collection<Object>>();
-    int size = ois.readInt();
-    for (int i = 0; i < size; i++) {
-      QualifiedName qname = readQualifiedName(ois);
-      Collection<Object> consumers = readCollection(ois);
-      result.put(qname, consumers);
-    }
-    return result;
-  }
-
-  private static QualifiedName readQualifiedName(ObjectInputStream ois)
-      throws ClassNotFoundException, IOException {
-    String qualified = (String) ois.readObject();
-    String name = (String) ois.readObject();
-    return new QualifiedName(qualified, name);
-  }
-
   @SuppressWarnings("unchecked")
   private static <K, V> Map<K, V> readMap(ObjectInputStream ois) throws IOException,
       ClassNotFoundException {
@@ -342,7 +233,7 @@ public class DefaultBuildContextState implements Serializable {
       V value = (V) ois.readObject();
       map.put(key, value);
     }
-    return map;
+    return Collections.unmodifiableMap(map);
   }
 
   @SuppressWarnings("unchecked")
@@ -355,7 +246,7 @@ public class DefaultBuildContextState implements Serializable {
       Collection<V> value = readCollection(ois);
       mmap.put(key, value);
     }
-    return mmap;
+    return Collections.unmodifiableMap(mmap);
   }
 
   @SuppressWarnings("unchecked")
@@ -369,7 +260,15 @@ public class DefaultBuildContextState implements Serializable {
     for (int i = 0; i < size; i++) {
       collection.add((V) ois.readObject());
     }
-    return collection;
+    return Collections.unmodifiableCollection(collection);
+  }
+
+  private static <V> Set<V> readSet(ObjectInputStream ois) throws IOException,
+      ClassNotFoundException {
+    Collection<V> collection = readCollection(ois);
+    return collection != null
+        ? Collections.<V>unmodifiableSet(new HashSet<V>(collection))
+        : Collections.<V>emptySet();
   }
 
   @SuppressWarnings("unchecked")
@@ -382,7 +281,7 @@ public class DefaultBuildContextState implements Serializable {
       Map<VK, VV> value = readMap(ois);
       dmap.put(key, value);
     }
-    return dmap;
+    return Collections.unmodifiableMap(dmap);
   }
 
   private static <K, V> Map<V, Collection<K>> invertMultimap(Map<K, Collection<V>> mmap) {
@@ -397,6 +296,162 @@ public class DefaultBuildContextState implements Serializable {
         keys.add(entry.getKey());
       }
     }
-    return inverted;
+    return Collections.unmodifiableMap(inverted);
   }
+
+  //
+  // getters and settings
+  //
+
+  // resources
+
+  public void putResource(Object resource, ResourceHolder<?> holder) {
+    resources.put(resource, holder);
+  }
+
+  public ResourceHolder<?> getResource(Object resource) {
+    return resources.get(resource);
+  }
+
+  public boolean isResource(Object resource) {
+    return resources.containsKey(resource);
+  }
+
+  public ResourceHolder<?> removeResource(Object resource) {
+    return resources.remove(resource);
+  }
+
+  public Map<Object, ResourceHolder<?>> getResources() {
+    return Collections.unmodifiableMap(resources);
+  }
+
+  // outputInputs
+
+  public Collection<Object> getOutputInputs(File outputFile) {
+    return outputInputs.get(outputFile);
+  }
+
+  // outputs
+
+  public Collection<File> getOutputs() {
+    return Collections.unmodifiableCollection(outputs);
+  }
+
+  public boolean isOutput(Object outputFile) {
+    return outputs.contains(outputFile);
+  }
+
+  public boolean addOutput(File output) {
+    return outputs.add(output);
+  }
+
+  public boolean removeOutput(File output) {
+    return outputs.remove(output);
+  }
+
+  // resourceOutputs
+
+  public boolean putResourceOutput(Object resource, File output) {
+    put(outputInputs, output, resource);
+    return put(resourceOutputs, resource, output);
+  }
+
+  public Collection<File> getResourceOutputs(Object resource) {
+    return resourceOutputs.get(resource);
+  }
+
+  public Collection<File> setResourceOutputs(Object resource, Collection<File> outputs) {
+    if (outputs == null || outputs.isEmpty()) {
+      return resourceOutputs.remove(resource);
+    }
+    return resourceOutputs.put(resource, outputs);
+  }
+
+  public Collection<File> removeResourceOutputs(Object resource) {
+    Collection<File> outputs = resourceOutputs.remove(resource);
+    removeOutputInputs(outputs, resource);
+    return outputs;
+  }
+
+  private void removeOutputInputs(Collection<File> outputs, Object resource) {
+    if (outputs == null) {
+      return;
+    }
+    for (File output : outputs) {
+      Collection<Object> inputs = outputInputs.get(output);
+      if (inputs == null || !inputs.remove(resource)) {
+        throw new IllegalStateException();
+      }
+      if (inputs != null && inputs.isEmpty()) {
+        outputInputs.remove(output);
+      }
+    }
+  }
+
+  // resourceAttributes
+
+  public Map<String, Serializable> removeResourceAttributes(Object resource) {
+    return resourceAttributes.remove(resource);
+  }
+
+  public Map<String, Serializable> getResourceAttributes(Object resource) {
+    return resourceAttributes.get(resource);
+  }
+
+  public Serializable putResourceAttribute(Object resource, String key, Serializable value) {
+    Map<String, Serializable> attributes = resourceAttributes.get(resource);
+    if (attributes == null) {
+      attributes = new LinkedHashMap<String, Serializable>();
+      resourceAttributes.put(resource, attributes);
+    }
+    return attributes.put(key, value);
+  }
+
+  public Serializable getResourceAttribute(Object resource, String key) {
+    Map<String, Serializable> attributes = resourceAttributes.get(resource);
+    return attributes != null ? attributes.get(key) : null;
+  }
+
+  public Map<String, Serializable> setResourceAttributes(Object resource,
+      Map<String, Serializable> attributes) {
+    if (attributes == null || attributes.isEmpty()) {
+      return resourceAttributes.remove(resource);
+    }
+    return resourceAttributes.put(resource, attributes);
+  }
+
+  // resourceMessages
+
+  public Collection<Message> removeResourceMessages(Object resource) {
+    return resourceMessages.remove(resource);
+  }
+
+  public Collection<Message> getResourceMessages(Object resource) {
+    return resourceMessages.get(resource);
+  }
+
+  public Collection<Message> setResourceMessages(Object resource, Collection<Message> messages) {
+    if (messages == null || messages.isEmpty()) {
+      return resourceMessages.remove(resource);
+    }
+    return resourceMessages.put(resource, messages);
+  }
+
+  public boolean addResourceMessage(Object resource, Message message) {
+    return put(resourceMessages, resource, message);
+  }
+
+  public Map<Object, Collection<Message>> getResourceMessages() {
+    return Collections.unmodifiableMap(resourceMessages);
+  }
+
+  private static <K, V> boolean put(Map<K, Collection<V>> multimap, K key, V value) {
+    Collection<V> values = multimap.get(key);
+    if (values == null) {
+      values = new LinkedHashSet<V>();
+      multimap.put(key, values);
+    }
+    return values.add(value);
+  }
+
 }

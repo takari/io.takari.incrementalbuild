@@ -3,6 +3,9 @@ package io.takari.incrementalbuild.spi;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.util.HashMap;
 
 import org.junit.Assert;
 import org.junit.Rule;
@@ -15,6 +18,23 @@ import com.google.common.io.Files;
 public class DefaultBuildContextStateTest {
   @Rule
   public final TemporaryFolder temp = new TemporaryFolder();
+
+  @Test
+  public void testRoundtrip() throws Exception {
+    File file = temp.newFile();
+    DefaultBuildContextState state =
+        DefaultBuildContextState.withConfiguration(new HashMap<String, Serializable>());
+    state.putResource(file, new FileState(file, file.lastModified(), file.length()));
+
+    File stateFile = temp.newFile();
+    try (OutputStream os = new FileOutputStream(stateFile)) {
+      state.storeTo(os);
+    }
+
+    state = DefaultBuildContextState.loadFrom(stateFile);
+
+    Assert.assertNotNull(state.getResource(file));
+  }
 
   @Test
   public void testStateDoesNotExist() throws Exception {
