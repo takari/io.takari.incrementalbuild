@@ -38,12 +38,12 @@
   </developers>
 
   <properties>
-    <apache-maven.version>3.2.5</apache-maven.version>
+    <apache-maven.version>3.3.1</apache-maven.version>
     <slf4j.version>1.7.5</slf4j.version>
     <junit.version>4.11</junit.version>
     <guava.version>18.0</guava.version>
-    <eclipse-sisu.version>0.3.0.M1</eclipse-sisu.version>
-    <plugin-testing.version>2.2.0-SNAPSHOT</plugin-testing.version>
+    <eclipse-sisu.version>0.3.0</eclipse-sisu.version>
+    <plugin-testing.version>2.2.0</plugin-testing.version>
   </properties>
 
   <modules>
