@@ -2,8 +2,8 @@ package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.Output;
 import io.takari.incrementalbuild.aggregator.InputAggregator;
-import io.takari.incrementalbuild.aggregator.internal.DefaultAggregateMetadata;
 import io.takari.incrementalbuild.aggregator.internal.DefaultAggregatorBuildContext;
+import io.takari.incrementalbuild.aggregator.internal.DefaultInputSet;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -49,9 +49,9 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     // initial build
     FileIndexer indexer = new FileIndexer();
     DefaultAggregatorBuildContext actx = newContext();
-    DefaultAggregateMetadata output = actx.registerOutput(outputFile, indexer);
-    output.registerInputs(basedir, null, null);
-    output.aggregateIfNecessary();
+    DefaultInputSet output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
     actx.commit(null);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(1, indexer.outputs.size());
@@ -60,9 +60,9 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     // no-change rebuild
     indexer = new FileIndexer();
     actx = newContext();
-    output = actx.registerOutput(outputFile, indexer);
-    output.registerInputs(basedir, null, null);
-    output.aggregateIfNecessary();
+    output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
     actx.commit(null);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(0, indexer.outputs.size());
@@ -71,9 +71,9 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     indexer = new FileIndexer();
     actx = newContext();
 
-    output = actx.registerOutput(outputFile, indexer);
-    output.registerInputs(basedir, null, null);
-    output.aggregateIfNecessary();
+    output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
     actx.commit(null);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(0, indexer.outputs.size());
@@ -83,9 +83,9 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     b.createNewFile();
     indexer = new FileIndexer();
     actx = newContext();
-    output = actx.registerOutput(outputFile, indexer);
-    output.registerInputs(basedir, null, null);
-    output.aggregateIfNecessary();
+    output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
     actx.commit(null);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(1, indexer.outputs.size());
@@ -94,9 +94,9 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     a.delete();
     indexer = new FileIndexer();
     actx = newContext();
-    output = actx.registerOutput(outputFile, indexer);
-    output.registerInputs(basedir, null, null);
-    output.aggregateIfNecessary();
+    output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
     actx.commit(null);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(1, indexer.outputs.size());
@@ -104,9 +104,9 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     // no-change rebuild
     indexer = new FileIndexer();
     actx = newContext();
-    output = actx.registerOutput(outputFile, indexer);
-    output.registerInputs(basedir, null, null);
-    output.aggregateIfNecessary();
+    output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
     actx.commit(null);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(0, indexer.outputs.size());
@@ -125,9 +125,9 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
 
     FileIndexer indexer = new FileIndexer();
     DefaultAggregatorBuildContext actx = newContext();
-    DefaultAggregateMetadata output = actx.registerOutput(outputFile, indexer);
-    output.registerInputs(basedir, null, null);
-    output.aggregateIfNecessary();
+    DefaultInputSet output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
     actx.commit(null);
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(1, indexer.outputs.size());

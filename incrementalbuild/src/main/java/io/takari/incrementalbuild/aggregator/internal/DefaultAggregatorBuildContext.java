@@ -1,9 +1,7 @@
 package io.takari.incrementalbuild.aggregator.internal;
 
 
-import io.takari.incrementalbuild.ResourceMetadata;
 import io.takari.incrementalbuild.ResourceStatus;
-import io.takari.incrementalbuild.aggregator.AggregateOutput;
 import io.takari.incrementalbuild.aggregator.AggregatorBuildContext;
 import io.takari.incrementalbuild.aggregator.InputAggregator;
 import io.takari.incrementalbuild.aggregator.MetadataAggregator;
@@ -13,16 +11,15 @@ import io.takari.incrementalbuild.spi.BuildContextFinalizer;
 import io.takari.incrementalbuild.spi.DefaultBuildContextState;
 import io.takari.incrementalbuild.spi.DefaultOutput;
 import io.takari.incrementalbuild.spi.DefaultResource;
+import io.takari.incrementalbuild.spi.DefaultResourceMetadata;
 import io.takari.incrementalbuild.workspace.Workspace;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -40,8 +37,8 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
   }
 
   @Override
-  public DefaultAggregateMetadata registerOutput(File outputFile, InputAggregator aggregator) {
-    return new DefaultAggregateMetadata(this, registerOutput(outputFile), aggregator);
+  public DefaultInputSet newInputSet() {
+    return new DefaultInputSet(this);
   }
 
   private File registerOutput(File outputFile) {
@@ -54,60 +51,55 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
     return outputFile;
   }
 
-  @Override
-  public <T extends Serializable> AggregateOutput registerOutput(File outputFile,
-      MetadataAggregator<T> aggregator) {
-    return new DefaultAggregateMetadata(this, registerOutput(outputFile), aggregator);
-  }
-
-  public Collection<File> associateInputs(File outputFile, File basedir,
-      Collection<String> includes, Collection<String> excludes,
+  private Map<String, Serializable> glean(Collection<File> inputs,
       MetadataAggregator<? extends Serializable> gleaner) throws IOException {
-    basedir = normalize(basedir);
+    String attributeKey = attributeKey(gleaner);
 
-    List<File> inputs = new ArrayList<>();
-
-    for (ResourceMetadata<File> inputMetadata : registerInputs(basedir, includes, excludes)) {
-      File resource = inputMetadata.getResource();
-      if (isProcessedResource(resource)) {
-        // don't know all implications, will deal when/if anyone asks for it
-        throw new IllegalStateException("Input already processed " + resource);
-      }
-      inputs.add(resource);
-      if (gleaner != null) {
-        processResource(resource);
-        if (getResourceStatus(resource) != ResourceStatus.UNMODIFIED) {
-          Map<String, ? extends Serializable> metadata = gleaner.glean(resource);
-          if (metadata != null) {
-            for (Map.Entry<String, ? extends Serializable> entry : metadata.entrySet()) {
-              state.putResourceAttribute(resource, entry.getKey(), entry.getValue());
-            }
-          }
-        } else {
-          state.setResourceAttributes(resource, oldState.getResourceAttributes(resource));
+    Map<String, Serializable> metadata = new HashMap<>();
+    for (File inputFile : inputs) {
+      if (getResourceStatus(inputFile) != ResourceStatus.UNMODIFIED) {
+        markProcessedResource(inputFile);
+        Map<String, ? extends Serializable> gleaned = gleaner.glean(inputFile);
+        if (gleaned != null) {
+          metadata.putAll(gleaned);
+          state.putResourceAttribute(inputFile, attributeKey, new HashMap<>(gleaned));
         }
+      } else {
+        Serializable persisted = oldState.getResourceAttribute(inputFile, attributeKey);
+        state.putResourceAttribute(inputFile, attributeKey, persisted);
+        putAll(metadata, persisted);
       }
-      state.putResourceOutput(resource, outputFile);
     }
 
-    return inputs;
+    return metadata;
   }
 
-  public boolean aggregateIfNecessary(File outputFile, InputAggregator creator) throws IOException {
+  private String attributeKey(MetadataAggregator<?> gleaner) {
+    return gleaner.getClass().getName(); // TODO maybe add a prefix
+  }
+
+  private void associate(Iterable<File> inputs, File outputFile) {
+    for (File inputFile : inputs) {
+      state.putResourceOutput(inputFile, outputFile);
+    }
+  }
+
+  public boolean aggregateIfNecessary(Collection<File> inputs, File outputFile,
+      InputAggregator creator) throws IOException {
+    outputFile = registerOutput(outputFile);
+    associate(inputs, outputFile);
     boolean processingRequired = isEscalated();
     if (!processingRequired) {
-      processingRequired = isProcessingRequired(outputFile);
+      processingRequired = isProcessingRequired(inputs, outputFile);
     }
     if (processingRequired) {
       markProcessedResource(outputFile);
       workspace.processOutput(outputFile);
       DefaultOutput output = newOutput(outputFile);
-      List<File> inputs = new ArrayList<>();
-      for (Object inputFile : getOutputInputs(state, outputFile)) {
+      for (File inputFile : inputs) {
         if (!isProcessedResource(inputFile)) {
           markProcessedResource(inputFile);
         }
-        inputs.add((File) inputFile);
       }
       creator.aggregate(output, inputs);
     } else {
@@ -117,8 +109,7 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
   }
 
   // re-create output if any its inputs were added, changed or deleted since previous build
-  private boolean isProcessingRequired(File outputFile) {
-    Collection<Object> inputs = getOutputInputs(state, outputFile);
+  private boolean isProcessingRequired(Collection<File> inputs, File outputFile) {
     for (Object input : inputs) {
       if (getResourceStatus(input) != ResourceStatus.UNMODIFIED) {
         return true;
@@ -140,18 +131,16 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
     // or, rather, there is no obviously wrong combination
   }
 
-  public boolean aggregateIfNecessary(File outputFile, MetadataAggregator<?> aggregator)
-      throws IOException {
-    Map<String, Serializable> metadata = new HashMap<>();
-    for (Object input : getOutputInputs(state, outputFile)) {
-      putAll(metadata, getState(input).getResourceAttributes(input));
-    }
-
+  public boolean aggregateIfNecessary(Collection<File> inputs, File outputFile,
+      MetadataAggregator<?> aggregator) throws IOException {
+    outputFile = registerOutput(outputFile);
+    associate(inputs, outputFile);
+    Map<String, Serializable> metadata = glean(inputs, aggregator);
     boolean processingRequired = isEscalated();
     if (!processingRequired) {
       HashMap<String, Serializable> oldMetadata = new HashMap<>();
       for (Object input : getOutputInputs(oldState, outputFile)) {
-        putAll(oldMetadata, oldState.getResourceAttributes(input));
+        putAll(oldMetadata, oldState.getResourceAttribute(input, attributeKey(aggregator)));
       }
       processingRequired = !Objects.equals(metadata, oldMetadata);
     }
@@ -172,9 +161,10 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
     aggregator.aggregate(output, (Map) metadata);
   }
 
-  private <K, V> void putAll(Map<K, V> target, Map<K, V> source) {
+  @SuppressWarnings("unchecked")
+  private <K, V> void putAll(Map<K, V> target, Serializable source) {
     if (source != null) {
-      target.putAll(source);
+      target.putAll((Map<K, V>) source);
     }
   }
 
@@ -197,5 +187,11 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
   private Collection<Object> getOutputInputs(DefaultBuildContextState state, File outputFile) {
     Collection<Object> inputs = state.getOutputInputs(outputFile);
     return inputs != null && !inputs.isEmpty() ? inputs : Collections.emptyList();
+  }
+
+  @Override
+  public Collection<DefaultResourceMetadata<File>> registerInputs(File basedir,
+      Collection<String> includes, Collection<String> excludes) throws IOException {
+    return super.registerInputs(basedir, includes, excludes);
   }
 }

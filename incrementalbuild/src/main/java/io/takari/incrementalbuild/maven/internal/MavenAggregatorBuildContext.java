@@ -1,14 +1,9 @@
 package io.takari.incrementalbuild.maven.internal;
 
-import io.takari.incrementalbuild.aggregator.AggregateOutput;
 import io.takari.incrementalbuild.aggregator.AggregatorBuildContext;
-import io.takari.incrementalbuild.aggregator.InputAggregator;
-import io.takari.incrementalbuild.aggregator.MetadataAggregator;
+import io.takari.incrementalbuild.aggregator.InputSet;
 import io.takari.incrementalbuild.aggregator.internal.DefaultAggregatorBuildContext;
 import io.takari.incrementalbuild.spi.BuildContextEnvironment;
-
-import java.io.File;
-import java.io.Serializable;
 
 import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
@@ -39,13 +34,8 @@ public class MavenAggregatorBuildContext implements AggregatorBuildContext {
   }
 
   @Override
-  public AggregateOutput registerOutput(File outputFile, InputAggregator aggregator) {
-    return provider.get().registerOutput(outputFile, aggregator);
+  public InputSet newInputSet() {
+    return provider.get().newInputSet();
   }
 
-  @Override
-  public <T extends Serializable> AggregateOutput registerOutput(File outputFile,
-      MetadataAggregator<T> aggregator) {
-    return provider.get().registerOutput(outputFile, aggregator);
-  }
 }

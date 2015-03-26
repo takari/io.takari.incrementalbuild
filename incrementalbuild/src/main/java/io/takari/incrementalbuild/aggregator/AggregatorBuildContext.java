@@ -1,7 +1,5 @@
 package io.takari.incrementalbuild.aggregator;
 
-import java.io.File;
-import java.io.Serializable;
 
 /**
  * Convenience interface to create aggregate outputs
@@ -27,8 +25,6 @@ import java.io.Serializable;
  */
 public interface AggregatorBuildContext {
 
-  public AggregateOutput registerOutput(File outputFile, InputAggregator aggregator);
+  public InputSet newInputSet();
 
-  public <T extends Serializable> AggregateOutput registerOutput(File outputFile,
-      MetadataAggregator<T> aggregator);
 }
