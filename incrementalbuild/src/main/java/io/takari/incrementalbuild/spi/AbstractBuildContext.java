@@ -473,7 +473,7 @@ public abstract class AbstractBuildContext {
     for (Map.Entry<Object, ResourceHolder<?>> entry : state.getResources().entrySet()) {
       Object resource = entry.getKey();
       ResourceHolder<?> holder = entry.getValue();
-      if (!state.isOutput(resource) && getResourceStatus(holder) != ResourceStatus.UNMODIFIED) {
+      if (!state.isOutput(resource) && holder.getStatus() != ResourceStatus.UNMODIFIED) {
         throw new IllegalStateException("Unexpected input change " + resource);
       }
     }

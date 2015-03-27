@@ -32,8 +32,17 @@ class FileState implements ResourceHolder<File> {
 
   @Override
   public ResourceStatus getStatus() {
-    // TODO slightly cleaner approach is to move #getStatus() to a separate optional interface
-    throw new UnsupportedOperationException();
+    if (!isPresent(file)) {
+      return ResourceStatus.REMOVED;
+    }
+    if (length == file.length() && lastModified == file.lastModified()) {
+      return ResourceStatus.UNMODIFIED;
+    }
+    return ResourceStatus.MODIFIED;
+  }
+
+  private boolean isPresent(File file) {
+    return file != null && file.isFile() && file.canRead();
   }
 
   @Override
