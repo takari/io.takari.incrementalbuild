@@ -60,13 +60,16 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
 
     @Override
     public ResourceStatus getResourceStatus(File file, long lastModified, long length) {
-      if (file == null || !file.isFile() || !file.canRead()) {
+      if (added.contains(file)) {
+        return ResourceStatus.NEW;
+      }
+      if (modified.contains(file)) {
+        return ResourceStatus.MODIFIED;
+      }
+      if (removed.contains(file)) {
         return ResourceStatus.REMOVED;
       }
-      if (length == file.length() && lastModified == file.lastModified()) {
-        return ResourceStatus.UNMODIFIED;
-      }
-      return ResourceStatus.MODIFIED;
+      return ResourceStatus.UNMODIFIED;
     }
 
     @Override
@@ -152,7 +155,6 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
 
     // no-change rebuild
     workspace = new DeltaWorkspace();
-    workspace.added.add(a);
     ctx = newBuildContext(workspace);
     input = only(ctx.registerInputs(basedir, null, null));
     assertEquals(BuildContext.ResourceStatus.UNMODIFIED, input.getStatus());

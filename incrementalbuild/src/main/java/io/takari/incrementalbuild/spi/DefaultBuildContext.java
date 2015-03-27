@@ -953,7 +953,7 @@ public abstract class DefaultBuildContext<BuildFailureException extends Exceptio
     }
 
     for (ResourceHolder<?> resource : state.inputs.values()) {
-      if (getResourceStatus(resource) != ResourceStatus.UNMODIFIED) {
+      if (resource.getStatus() != ResourceStatus.UNMODIFIED) {
         throw new IllegalStateException("Unexpected input change " + resource.getResource());
       }
     }
