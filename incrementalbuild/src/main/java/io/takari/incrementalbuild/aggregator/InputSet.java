@@ -9,6 +9,7 @@ import java.util.Collection;
  * Represents input set being aggregated.
  */
 public interface InputSet {
+  public File addInput(File inputFile) throws IOException;
 
   public Iterable<File> addInputs(File basedir, Collection<String> includes,
       Collection<String> excludes) throws IOException;

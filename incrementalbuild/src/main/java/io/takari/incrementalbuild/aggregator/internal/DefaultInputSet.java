@@ -1,16 +1,16 @@
 package io.takari.incrementalbuild.aggregator.internal;
 
-import io.takari.incrementalbuild.ResourceMetadata;
-import io.takari.incrementalbuild.aggregator.InputAggregator;
-import io.takari.incrementalbuild.aggregator.InputSet;
-import io.takari.incrementalbuild.aggregator.MetadataAggregator;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import io.takari.incrementalbuild.ResourceMetadata;
+import io.takari.incrementalbuild.aggregator.InputAggregator;
+import io.takari.incrementalbuild.aggregator.InputSet;
+import io.takari.incrementalbuild.aggregator.MetadataAggregator;
 
 public class DefaultInputSet implements InputSet {
 
@@ -23,10 +23,18 @@ public class DefaultInputSet implements InputSet {
   }
 
   @Override
+  public File addInput(File inputFile) throws IOException {
+    inputFile = context.registerInput(inputFile).getResource();
+    inputs.add(inputFile);
+    return inputFile;
+  }
+
+  @Override
   public Iterable<File> addInputs(File basedir, Collection<String> includes,
       Collection<String> excludes) throws IOException {
     Set<File> inputs = new LinkedHashSet<>();
-    for (ResourceMetadata<File> inputMetadata : context.registerInputs(basedir, includes, excludes)) {
+    for (ResourceMetadata<File> inputMetadata : context.registerInputs(basedir, includes,
+        excludes)) {
       this.inputs.add(inputMetadata.getResource());
       inputs.add(inputMetadata.getResource());
     }

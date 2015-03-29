@@ -1,6 +1,15 @@
 package io.takari.incrementalbuild.aggregator.internal;
 
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 import io.takari.incrementalbuild.ResourceStatus;
 import io.takari.incrementalbuild.aggregator.AggregatorBuildContext;
 import io.takari.incrementalbuild.aggregator.InputAggregator;
@@ -13,15 +22,6 @@ import io.takari.incrementalbuild.spi.DefaultOutput;
 import io.takari.incrementalbuild.spi.DefaultResource;
 import io.takari.incrementalbuild.spi.DefaultResourceMetadata;
 import io.takari.incrementalbuild.workspace.Workspace;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 public class DefaultAggregatorBuildContext extends AbstractBuildContext
     implements
@@ -49,6 +49,11 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
     }
     registerNormalizedOutput(outputFile);
     return outputFile;
+  }
+
+  @Override
+  public DefaultResourceMetadata<File> registerInput(File inputFile) {
+    return super.registerInput(inputFile);
   }
 
   private Map<String, Serializable> glean(Collection<File> inputs,
