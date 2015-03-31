@@ -1,12 +1,5 @@
 package io.takari.incrementalbuild.spi;
 
-import io.takari.incrementalbuild.MessageSeverity;
-import io.takari.incrementalbuild.ResourceMetadata;
-import io.takari.incrementalbuild.ResourceStatus;
-import io.takari.incrementalbuild.workspace.Workspace;
-import io.takari.incrementalbuild.workspace.Workspace.FileVisitor;
-import io.takari.incrementalbuild.workspace.Workspace.Mode;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,6 +17,13 @@ import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.takari.incrementalbuild.MessageSeverity;
+import io.takari.incrementalbuild.ResourceMetadata;
+import io.takari.incrementalbuild.ResourceStatus;
+import io.takari.incrementalbuild.workspace.Workspace;
+import io.takari.incrementalbuild.workspace.Workspace.FileVisitor;
+import io.takari.incrementalbuild.workspace.Workspace.Mode;
 
 /**
  * Tracks build input and output resources and associations among them.
@@ -164,7 +164,8 @@ public abstract class AbstractBuildContext {
     final FileMatcher matcher = FileMatcher.matcher(basedir, includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
-      public void visit(File file, long lastModified, long length, Workspace.ResourceStatus status) {
+      public void visit(File file, long lastModified, long length,
+          Workspace.ResourceStatus status) {
         if (matcher.matches(file)) {
           switch (status) {
             case MODIFIED:
@@ -183,14 +184,14 @@ public abstract class AbstractBuildContext {
     if (workspace.getMode() == Mode.DELTA) {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
-      final FileMatcher absoluteMatcher = FileMatcher.matcher(basedir, includes, excludes);
+      final FileMatcher absoluteMatcher = FileMatcher.absoluteMatcher(basedir, includes, excludes);
       for (ResourceHolder<?> holder : oldState.getResources().values()) {
         if (holder instanceof FileState) {
           FileState fileState = (FileState) holder;
           if (!state.isResource(fileState.file) && !deletedResources.contains(fileState.file)
               && absoluteMatcher.matches(fileState.file)) {
-            result.add(registerNormalizedInput(fileState.file, fileState.lastModified,
-                fileState.length));
+            result.add(
+                registerNormalizedInput(fileState.file, fileState.lastModified, fileState.length));
           }
         }
       }
@@ -205,7 +206,8 @@ public abstract class AbstractBuildContext {
     final FileMatcher matcher = FileMatcher.matcher(basedir, includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
-      public void visit(File file, long lastModified, long length, Workspace.ResourceStatus status) {
+      public void visit(File file, long lastModified, long length,
+          Workspace.ResourceStatus status) {
         if (matcher.matches(file)) {
           switch (status) {
             case MODIFIED:
@@ -229,7 +231,7 @@ public abstract class AbstractBuildContext {
     if (workspace.getMode() == Mode.DELTA) {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
-      final FileMatcher absoluteMatcher = FileMatcher.matcher(basedir, includes, excludes);
+      final FileMatcher absoluteMatcher = FileMatcher.absoluteMatcher(basedir, includes, excludes);
       for (ResourceHolder<?> holder : oldState.getResources().values()) {
         if (holder instanceof FileState) {
           FileState fileState = (FileState) holder;
@@ -335,7 +337,8 @@ public abstract class AbstractBuildContext {
   private ResourceStatus getResourceStatus(ResourceHolder<?> holder) {
     if (holder instanceof FileState) {
       FileState fileState = (FileState) holder;
-      switch (workspace.getResourceStatus(fileState.file, fileState.lastModified, fileState.length)) {
+      switch (workspace.getResourceStatus(fileState.file, fileState.lastModified,
+          fileState.length)) {
         case NEW:
           return ResourceStatus.NEW;
         case MODIFIED:
@@ -491,8 +494,8 @@ public abstract class AbstractBuildContext {
       try (OutputStream os = workspace.newOutputStream(stateFile)) {
         state.storeTo(os);
       }
-      log.debug("Stored incremental build state {} ({} ms)", stateFile, System.currentTimeMillis()
-          - start);
+      log.debug("Stored incremental build state {} ({} ms)", stateFile,
+          System.currentTimeMillis() - start);
     }
 
     // new messages are logged as soon as they are reported during the build
@@ -616,12 +619,16 @@ public abstract class AbstractBuildContext {
     state.addOutput(outputFile);
   }
 
-  /** @noreference this is public for for test purposes only */
+  /**
+   * @noreference this is public for for test purposes only
+   */
   public DefaultBuildContextState getOldState() {
     return oldState;
   }
 
-  /** @noreference this is public for for test purposes only */
+  /**
+   * @noreference this is public for for test purposes only
+   */
   public DefaultBuildContextState getState() {
     return state;
   }

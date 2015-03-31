@@ -17,16 +17,21 @@ class FileMatcher {
     }
   };
 
+  private final String basedir;
   private final Matcher includesMatcher;
   private final Matcher excludesMatcher;
 
-  private FileMatcher(Matcher includesMatcher, Matcher excludesMatcher) {
+  private FileMatcher(String basedir, Matcher includesMatcher, Matcher excludesMatcher) {
+    this.basedir = basedir;
     this.includesMatcher = includesMatcher;
     this.excludesMatcher = excludesMatcher;
   }
 
   public boolean matches(File file) {
     final String path = file.getAbsolutePath();
+    if (basedir != null && !path.startsWith(basedir)) {
+      return false;
+    }
     if (excludesMatcher != null && excludesMatcher.matches(path)) {
       return false;
     }
@@ -36,7 +41,8 @@ class FileMatcher {
     return true;
   }
 
-  private static Matcher fromStrings(String basepath, Collection<String> globs, Matcher everything) {
+  private static Matcher fromStrings(String basepath, Collection<String> globs,
+      Matcher everything) {
     if (globs == null || globs.isEmpty()) {
       return null; // default behaviour appropriate for includes/excludes pattern
     }
@@ -76,7 +82,16 @@ class FileMatcher {
     final String basepath = basedir.getAbsolutePath();
     final Matcher includesMatcher = fromStrings(basepath, includes, null);
     final Matcher excludesMatcher = fromStrings(basepath, excludes, MATCH_EVERYTHING);
-    return new FileMatcher(includesMatcher, excludesMatcher);
+    return new FileMatcher(null, includesMatcher, excludesMatcher);
+  }
+
+  public static FileMatcher absoluteMatcher(final File basedir, Collection<String> includes,
+      Collection<String> excludes) {
+    final String basepath = basedir.getAbsolutePath();
+    final Matcher includesMatcher = fromStrings(basepath, includes, null);
+    final Matcher excludesMatcher = fromStrings(basepath, excludes, MATCH_EVERYTHING);
+    return new FileMatcher(basepath.endsWith("/") ? basepath : basedir + "/", includesMatcher,
+        excludesMatcher);
   }
 
 }

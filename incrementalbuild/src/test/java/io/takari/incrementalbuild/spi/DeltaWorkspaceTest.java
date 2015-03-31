@@ -2,18 +2,21 @@ package io.takari.incrementalbuild.spi;
 
 import static io.takari.maven.testing.TestResources.touch;
 import static org.junit.Assert.assertEquals;
-import io.takari.incrementalbuild.ResourceMetadata;
-import io.takari.incrementalbuild.ResourceStatus;
-import io.takari.incrementalbuild.workspace.Workspace;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.Assert;
 import org.junit.Test;
+
+import io.takari.incrementalbuild.ResourceMetadata;
+import io.takari.incrementalbuild.ResourceStatus;
+import io.takari.incrementalbuild.workspace.Workspace;
 
 public class DeltaWorkspaceTest extends AbstractBuildContextTest {
 
@@ -180,6 +183,40 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     assertEquals(ResourceStatus.REMOVED, ctx.getResourceStatus(a));
     input.process();
     ctx.commit();
+  }
+
+  @Test
+  public void testCarryOverAndCleanup() throws Exception {
+    File basedir = temp.newFolder("basedir").getCanonicalFile();
+    File inputdir = temp.newFolder("basedir/inputdir").getCanonicalFile();
+    File outputdir = temp.newFolder("basedir/outputdir").getCanonicalFile();
+    File file = temp.newFile("basedir/inputdir/file.txt").getCanonicalFile();
+
+    DeltaWorkspace workspace;
+    TestBuildContext ctx;
+    Collection<DefaultResource<File>> inputs;
+
+    // initial build
+    ctx = newBuildContext();
+    inputs = ctx.registerAndProcessInputs(inputdir, null, null);
+    Assert.assertEquals(1, inputs.size());
+    inputs.iterator().next().associateOutput(temp.newFile("basedir/outputdir/file.out"));
+    ctx.commit();
+
+    // no-change rebuild
+    workspace = new DeltaWorkspace();
+    ctx = newBuildContext(workspace);
+    ctx.registerAndProcessInputs(inputdir, null, null);
+    ctx.commit();
+    Assert.assertTrue(new File(outputdir, "file.out").exists());
+
+    // "delete" input
+    workspace = new DeltaWorkspace();
+    workspace.removed.add(file);
+    ctx = newBuildContext(workspace);
+    ctx.registerAndProcessInputs(inputdir, null, null);
+    ctx.commit();
+    Assert.assertFalse(new File(outputdir, "file.out").exists());
   }
 
   private <T> T only(Iterable<T> values) {
