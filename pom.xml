@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>takari</artifactId>
-    <version>15</version>
+    <version>16</version>
   </parent>
 
   <groupId>io.takari</groupId>
@@ -75,19 +75,4 @@
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>
   </modules>
-
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>io.takari.maven.plugins</groupId>
-          <artifactId>takari-lifecycle-plugin</artifactId>
-          <version>1.10.3</version>
-          <configuration>
-            <proc>none</proc>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
 </project>
