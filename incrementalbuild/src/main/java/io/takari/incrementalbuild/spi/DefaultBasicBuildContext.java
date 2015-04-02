@@ -1,15 +1,23 @@
 package io.takari.incrementalbuild.spi;
 
-import io.takari.incrementalbuild.BasicBuildContext;
-import io.takari.incrementalbuild.ResourceStatus;
-
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.Map;
+
+import io.takari.incrementalbuild.BasicBuildContext;
+import io.takari.incrementalbuild.ResourceStatus;
+import io.takari.incrementalbuild.workspace.Workspace;
 
 public class DefaultBasicBuildContext extends AbstractBuildContext implements BasicBuildContext {
 
   public DefaultBasicBuildContext(BuildContextEnvironment configuration) {
     super(configuration);
+  }
+
+  public DefaultBasicBuildContext(Workspace workspace, File stateFile,
+      Map<String, Serializable> configuration, BuildContextFinalizer finalizer) {
+    super(workspace, stateFile, configuration, finalizer);
   }
 
   @Override
@@ -27,6 +35,9 @@ public class DefaultBasicBuildContext extends AbstractBuildContext implements Ba
         state.putResource(resource, oldState.getResource(resource));
         state.setResourceMessages(resource, oldState.getResourceMessages(resource));
         state.setResourceAttributes(resource, oldState.getResourceAttributes(resource));
+        if (oldState.isOutput(resource)) {
+          state.addOutput((File) resource);
+        }
       }
     }
   }
