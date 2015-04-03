@@ -71,6 +71,11 @@ public class DefaultBasicBuildContext extends AbstractBuildContext implements Ba
   }
 
   @Override
+  protected <T> DefaultResource<T> processResource(DefaultResourceMetadata<T> metadata) {
+    throw new UnsupportedOperationException("BasicBuildContext does not support input processing");
+  }
+
+  @Override
   protected void assertAssociation(DefaultResource<?> resource, DefaultOutput output) {
     // this context does not track input/output association, so lets make it clear to the users
     throw new UnsupportedOperationException();
