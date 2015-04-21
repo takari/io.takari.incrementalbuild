@@ -43,7 +43,7 @@ public class FilesystemWorkspace implements Workspace {
     if (!isPresent(file)) {
       return ResourceStatus.REMOVED;
     }
-    if (length == file.length() && lastModified == file.lastModified()) {
+    if (length == file.length() && lastModified / 1000 == file.lastModified() / 1000) {
       return ResourceStatus.UNMODIFIED;
     }
     return ResourceStatus.MODIFIED;
