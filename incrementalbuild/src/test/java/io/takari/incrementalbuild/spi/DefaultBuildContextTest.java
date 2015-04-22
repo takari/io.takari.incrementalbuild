@@ -421,7 +421,7 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
   @Test
   public void testRegisterInputs_directoryMatching() throws Exception {
     temp.newFolder("folder");
-    temp.newFolder("folder/subfolder");
+    temp.newFolder("folder", "subfolder");
     File f1 = temp.newFile("input1.txt");
     File f2 = temp.newFile("folder/input2.txt");
     File f3 = temp.newFile("folder/subfolder/input3.txt");

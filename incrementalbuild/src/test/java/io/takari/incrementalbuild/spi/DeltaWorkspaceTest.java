@@ -188,8 +188,8 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
   @Test
   public void testCarryOverAndCleanup() throws Exception {
     File basedir = temp.newFolder("basedir").getCanonicalFile();
-    File inputdir = temp.newFolder("basedir/inputdir").getCanonicalFile();
-    File outputdir = temp.newFolder("basedir/outputdir").getCanonicalFile();
+    File inputdir = temp.newFolder("basedir", "inputdir").getCanonicalFile();
+    File outputdir = temp.newFolder("basedir", "outputdir").getCanonicalFile();
     File file = temp.newFile("basedir/inputdir/file.txt").getCanonicalFile();
 
     DeltaWorkspace workspace;
