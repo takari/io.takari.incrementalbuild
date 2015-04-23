@@ -88,7 +88,7 @@ public abstract class AbstractBuildContext {
     } else if (workspace.getMode() == Mode.SUPPRESSED) {
       this.escalated = false;
       this.workspace = workspace;
-    } else if (configurationChanged) {
+    } else if (configurationChanged || !isPresent(oldState.getOutputs())) {
       this.escalated = true;
       this.workspace = workspace.escalate();
     } else {
@@ -109,6 +109,20 @@ public abstract class AbstractBuildContext {
     if (finalizer != null) {
       finalizer.registerContext(this);
     }
+  }
+
+  private boolean isPresent(Collection<File> outputs) {
+    // in some scenarios, notable classpath change caused by changes to pom.xml,
+    // jdt builder deletes all files from target/classes directory during incremental workspace
+    // build. this behaviour is not communicated to m2e (or any other workspace builder) and thus
+    // m2e does not recreate deleted outputs
+    // this workaround escalates the build if any of the old outputs were deleted
+    for (File output : outputs) {
+      if (!output.exists() || !output.isFile()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private boolean getConfigurationChanged() {
@@ -327,11 +341,13 @@ public abstract class AbstractBuildContext {
       return ResourceStatus.NEW;
     }
 
-    if (escalated) {
-      return ResourceStatus.MODIFIED;
+    ResourceStatus status = getResourceStatus(oldResourceState);
+
+    if (status == ResourceStatus.UNMODIFIED && escalated) {
+      status = ResourceStatus.MODIFIED;
     }
 
-    return getResourceStatus(oldResourceState);
+    return status;
   }
 
   private ResourceStatus getResourceStatus(ResourceHolder<?> holder) {

@@ -3,8 +3,6 @@ package io.takari.incrementalbuild.spi;
 import static io.takari.incrementalbuild.ResourceStatus.MODIFIED;
 import static io.takari.incrementalbuild.ResourceStatus.NEW;
 import static io.takari.incrementalbuild.ResourceStatus.UNMODIFIED;
-import io.takari.incrementalbuild.ResourceMetadata;
-import io.takari.incrementalbuild.ResourceStatus;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +23,9 @@ import org.junit.Test;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+
+import io.takari.incrementalbuild.ResourceMetadata;
+import io.takari.incrementalbuild.ResourceStatus;
 
 public class DefaultBuildContextTest extends AbstractBuildContextTest {
 
@@ -357,8 +358,8 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
 
       context = newBuildContext();
       Assert.assertFalse(((TestBuildContext) context).isEscalated());
-      Assert.assertNotNull(context.getAttribute(context.registerInput(inputFile), "dummy",
-          Serializable.class));
+      Assert.assertNotNull(
+          context.getAttribute(context.registerInput(inputFile), "dummy", Serializable.class));
       // no commit
     } finally {
       Thread.currentThread().setContextClassLoader(origTCCL);
@@ -412,9 +413,8 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
     actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("*.txt"), null));
     assertIncludedPaths(Arrays.asList(f1, f2), actual);
 
-    actual =
-        toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("**"),
-            Arrays.asList("*.log")));
+    actual = toFileList(
+        context.registerInputs(temp.getRoot(), Arrays.asList("**"), Arrays.asList("*.log")));
     assertIncludedPaths(Arrays.asList(f1, f2), actual);
   }
 
@@ -548,5 +548,17 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
     TestBuildContext context = newBuildContext();
     Assert.assertEquals(0, toList(context.registerInputs(basedir, null, null)).size());
     Assert.assertEquals(0, toList(context.registerAndProcessInputs(basedir, null, null)).size());
+  }
+
+  @Test
+  public void testDeletedOutput() throws Exception {
+    TestBuildContext context = newBuildContext();
+    File outputFile = temp.newFile("output_without_inputs");
+    context.processOutput(outputFile);
+    context.commit();
+
+    Assert.assertTrue(outputFile.delete());
+    context = newBuildContext();
+    Assert.assertTrue(context.isEscalated());
   }
 }
