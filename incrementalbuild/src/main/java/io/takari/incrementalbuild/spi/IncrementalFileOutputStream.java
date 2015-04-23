@@ -24,6 +24,8 @@ class IncrementalFileOutputStream extends OutputStream {
 
   private boolean modified;
 
+  private boolean isClosed = false;
+
   public IncrementalFileOutputStream(File file) throws IOException {
     if (file == null) {
       throw new IllegalArgumentException("output file not specified");
@@ -47,12 +49,15 @@ class IncrementalFileOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    long pos = raf.getFilePointer();
-    if (pos < raf.length()) {
-      modified = true;
-      raf.setLength(pos);
+    if (!isClosed) {
+      long pos = raf.getFilePointer();
+      if (pos < raf.length()) {
+        modified = true;
+        raf.setLength(pos);
+      }
+      raf.close();
+      isClosed = true;
     }
-    raf.close();
   }
 
   @Override
