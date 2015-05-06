@@ -549,13 +549,13 @@ public abstract class AbstractBuildContext {
       MessageSeverity severity, Throwable cause) {
     switch (severity) {
       case ERROR:
-        log.error("{}:[{}:{}] {}", resource.toString(), line, column, message, cause);
+        log.error("{}:[{},{}] {}", resource.toString(), line, column, message, cause);
         break;
       case WARNING:
-        log.warn("{}:[{}:{}] {}", resource.toString(), line, column, message, cause);
+        log.warn("{}:[{},{}] {}", resource.toString(), line, column, message, cause);
         break;
       default:
-        log.info("{}:[{}:{}] {}", resource.toString(), line, column, message, cause);
+        log.info("{}:[{},{}] {}", resource.toString(), line, column, message, cause);
         break;
     }
   }
