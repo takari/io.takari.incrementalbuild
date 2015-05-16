@@ -1,7 +1,5 @@
 package io.takari.incrementalbuild.spi;
 
-import io.takari.incrementalbuild.MessageSeverity;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -9,11 +7,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import io.takari.incrementalbuild.MessageSeverity;
 
 public class ResourceMessagesTest {
   @Rule
@@ -21,8 +22,8 @@ public class ResourceMessagesTest {
 
   private class TestBuildContext extends DefaultBuildContext {
     protected TestBuildContext() throws IOException {
-      super(new FilesystemWorkspace(), new File(temp.getRoot(), "buildstate.ctx"), Collections
-          .<String, Serializable>emptyMap(), null);
+      super(new FilesystemWorkspace(), new File(temp.getRoot(), "buildstate.ctx"),
+          Collections.<String, Serializable>emptyMap(), null);
     }
 
     public void commit() throws IOException {
@@ -111,4 +112,34 @@ public class ResourceMessagesTest {
     context.commit();
   }
 
+  @Test
+  public void testExcludedInputMessageCleanup() throws Exception {
+    File inputFile = temp.newFile("inputFile");
+
+    // initial message
+    TestBuildContext context = newBuildContext();
+    DefaultResourceMetadata<File> metadata = context.registerInput(inputFile);
+    inputFile = metadata.getResource();
+    DefaultResource<File> input = metadata.process();
+    input.addMessage(0, 0, "message", MessageSeverity.WARNING, null);
+    context.commit();
+
+    // input is removed from input set, make sure input messages are cleaned up
+    final List<Object> cleared = new ArrayList<>();
+    newBuildContext().commit(new MessageSinkAdaptor() {
+      @Override
+      public void record(Map<Object, Collection<Message>> allMessages,
+          Map<Object, Collection<Message>> newMessages) {
+        Assert.assertTrue(allMessages.isEmpty());
+      }
+
+      @Override
+      public void clear(Object resource) {
+        cleared.add(resource);
+      }
+    });
+
+    Assert.assertEquals(1, cleared.size());
+    Assert.assertEquals(inputFile, cleared.get(0));
+  }
 }

@@ -538,6 +538,11 @@ public abstract class AbstractBuildContext {
       for (Object resource : processedResources) {
         messager.clear(resource);
       }
+      for (Object resource : oldState.getResources().keySet()) {
+        if (!state.isResource(resource)) {
+          messager.clear(resource);
+        }
+      }
       messager.record(allMessages, newMessages);
     }
 
