@@ -90,8 +90,8 @@ class FileMatcher {
     final String basepath = basedir.getAbsolutePath();
     final Matcher includesMatcher = fromStrings(basepath, includes, null);
     final Matcher excludesMatcher = fromStrings(basepath, excludes, MATCH_EVERYTHING);
-    return new FileMatcher(basepath.endsWith("/") ? basepath : basedir + "/", includesMatcher,
-        excludesMatcher);
+    return new FileMatcher(basepath.endsWith(File.separator) ? basepath : basedir + File.separator,
+        includesMatcher, excludesMatcher);
   }
 
 }
