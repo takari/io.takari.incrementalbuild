@@ -7,7 +7,7 @@
     <version>0.20.5-SNAPSHOT</version>
   </parent>
   <artifactId>incrementalbuild-its</artifactId>
-  <packaging>takari-jar</packaging>
+  <packaging>takari-maven-component</packaging>
 
   <dependencies>
     <dependency>
@@ -45,21 +45,6 @@
         <filtering>true</filtering>
       </testResource>
     </testResources>
-    <plugins>
-      <plugin>
-        <groupId>io.takari.maven.plugins</groupId>
-        <artifactId>takari-lifecycle-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>testProperties</id>
-            <goals>
-              <goal>testProperties</goal>
-            </goals>
-            <phase>generate-test-resources</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
