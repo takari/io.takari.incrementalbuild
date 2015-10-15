@@ -23,6 +23,9 @@ public class CopyFileMojo extends AbstractMojo {
   @Component
   private BuildContext context;
 
+  @Parameter(property = "copyfile.skip")
+  private boolean skip;
+
   @Parameter
   private File input;
 
@@ -30,6 +33,10 @@ public class CopyFileMojo extends AbstractMojo {
   private File output;
 
   public void execute() throws MojoExecutionException, MojoFailureException {
+    if (skip) {
+      return;
+    }
+
     Resource<File> input = context.registerInput(this.input).process();
     try {
       InputStream is = new FileInputStream(input.getResource());
