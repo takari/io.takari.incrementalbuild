@@ -84,7 +84,7 @@ public class DefaultBuildContext extends AbstractBuildContext implements BuildCo
     for (File output : uptodateOldOutputs) {
       if (state.isResource(output)) {
         // can't carry-over registered resources
-        throw new IllegalStateException();
+        throw new IllegalStateException("Can't carry over " + output);
       }
 
       state.putResource(output, oldState.getResource(output));
