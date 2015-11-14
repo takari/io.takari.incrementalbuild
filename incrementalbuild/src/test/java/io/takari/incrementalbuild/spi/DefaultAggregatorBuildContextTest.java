@@ -90,8 +90,29 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     Assert.assertTrue(outputFile.canRead());
     Assert.assertEquals(1, indexer.outputs.size());
 
-    // removed output
+    // removed input
     a.delete();
+    indexer = new FileIndexer();
+    actx = newContext();
+    output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
+    actx.commit(null);
+    Assert.assertTrue(outputFile.canRead());
+    Assert.assertEquals(1, indexer.outputs.size());
+
+    // no-change rebuild
+    indexer = new FileIndexer();
+    actx = newContext();
+    output = actx.newInputSet();
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
+    actx.commit(null);
+    Assert.assertTrue(outputFile.canRead());
+    Assert.assertEquals(0, indexer.outputs.size());
+
+    // removed output
+    outputFile.delete();
     indexer = new FileIndexer();
     actx = newContext();
     output = actx.newInputSet();
