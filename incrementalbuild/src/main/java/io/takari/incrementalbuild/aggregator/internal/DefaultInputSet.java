@@ -17,9 +17,11 @@ public class DefaultInputSet implements InputSet {
   private final DefaultAggregatorBuildContext context;
 
   private final Set<File> inputs = new LinkedHashSet<>();
+  private final boolean createOutputIfEmpty;
 
-  DefaultInputSet(DefaultAggregatorBuildContext context) {
+  DefaultInputSet(DefaultAggregatorBuildContext context, boolean createOutputIfEmpty) {
     this.context = context;
+    this.createOutputIfEmpty = createOutputIfEmpty;
   }
 
   @Override
@@ -44,12 +46,18 @@ public class DefaultInputSet implements InputSet {
   @Override
   public boolean aggregateIfNecessary(File outputFile, InputAggregator aggregator)
       throws IOException {
+    if (inputs.isEmpty() && !createOutputIfEmpty) {
+      return false;
+    }
     return context.aggregateIfNecessary(inputs, outputFile, aggregator);
   }
 
   @Override
   public <T extends Serializable> boolean aggregateIfNecessary(File outputFile,
       MetadataAggregator<T> aggregator) throws IOException {
+    if (inputs.isEmpty() && !createOutputIfEmpty) {
+      return false;
+    }
     return context.aggregateIfNecessary(inputs, outputFile, aggregator);
   }
 
