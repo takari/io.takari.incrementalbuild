@@ -55,6 +55,16 @@ public class FilesystemWorkspace implements Workspace {
   }
 
   @Override
+  public boolean isRegularFile(File file) {
+    return Files.isRegularFile(file.toPath());
+  }
+
+  @Override
+  public boolean isDirectory(File file) {
+    return Files.isDirectory(file.toPath());
+  }
+
+  @Override
   public void walk(File basedir, final FileVisitor visitor) throws IOException {
     if (!basedir.isDirectory()) {
       return;

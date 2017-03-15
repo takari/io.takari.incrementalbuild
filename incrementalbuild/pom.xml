@@ -10,7 +10,7 @@
   <packaging>takari-maven-component</packaging>
 
   <properties>
-    <incrementalbuild-workspace.version>0.7.0</incrementalbuild-workspace.version>
+    <incrementalbuild-workspace.version>0.20.5-SNAPSHOT</incrementalbuild-workspace.version>
   </properties>
 
   <dependencies>

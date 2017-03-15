@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +45,16 @@ public class DeltaWorkspaceTest extends AbstractBuildContextTest {
     @Override
     public boolean isPresent(File file) {
       return file.exists();
+    }
+
+    @Override
+    public boolean isRegularFile(File file) {
+      return Files.isRegularFile(file.toPath());
+    }
+
+    @Override
+    public boolean isDirectory(File file) {
+      return Files.isDirectory(file.toPath());
     }
 
     @Override

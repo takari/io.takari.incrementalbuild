@@ -1,7 +1,5 @@
 package io.takari.incrementalbuild.maven.internal;
 
-import io.takari.incrementalbuild.workspace.Workspace;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -12,6 +10,8 @@ import javax.inject.Inject;
 
 import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.project.MavenProject;
+
+import io.takari.incrementalbuild.workspace.Workspace;
 
 /**
  * Eclipse Workspace implementation is scoped to a project and does not "see" resources outside
@@ -32,7 +32,8 @@ public class ProjectWorkspace implements Workspace {
   private final Path basedir;
 
   @Inject
-  public ProjectWorkspace(MavenProject project, Workspace workspace, FilesystemWorkspace filesystem) {
+  public ProjectWorkspace(MavenProject project, Workspace workspace,
+      FilesystemWorkspace filesystem) {
     this.project = project;
     this.basedir = project.getBasedir().toPath().normalize();
     this.workspace = workspace;
@@ -59,6 +60,16 @@ public class ProjectWorkspace implements Workspace {
   @Override
   public boolean isPresent(File file) {
     return getWorkspace(file).isPresent(file);
+  }
+
+  @Override
+  public boolean isRegularFile(File file) {
+    return getWorkspace(file).isRegularFile(file);
+  }
+
+  @Override
+  public boolean isDirectory(File file) {
+    return getWorkspace(file).isDirectory(file);
   }
 
   @Override

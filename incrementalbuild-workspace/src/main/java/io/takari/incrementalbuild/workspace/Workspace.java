@@ -27,6 +27,10 @@ public interface Workspace {
   public Workspace escalate();
 
   public boolean isPresent(File file);
+  
+  public boolean isRegularFile(File file);
+  
+  public boolean isDirectory(File file);
 
   public void deleteFile(File file) throws IOException;
 
