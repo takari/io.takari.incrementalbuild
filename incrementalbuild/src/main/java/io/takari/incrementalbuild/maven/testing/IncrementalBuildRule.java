@@ -38,10 +38,10 @@ public class IncrementalBuildRule extends TestMavenRuntime {
 
         // context finalizer
         bind(TestBuildContextFinalizer.class).in(MojoExecutionScoped.class);
-        bind(BuildContextFinalizer.class).to(TestBuildContextFinalizer.class).in(
-            MojoExecutionScoped.class);
-        bind(MavenBuildContextFinalizer.class).to(TestBuildContextFinalizer.class).in(
-            MojoExecutionScoped.class);
+        bind(BuildContextFinalizer.class).to(TestBuildContextFinalizer.class)
+            .in(MojoExecutionScoped.class);
+        bind(MavenBuildContextFinalizer.class).to(TestBuildContextFinalizer.class)
+            .in(MojoExecutionScoped.class);
 
       }
     });

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension>
+ <!-- 
+   | list of exported classname prefixes.
+   -->
+ <exportedPackages>
+   <exportedPackage>io.takari.builder.*</exportedPackage>
+   <exportedPackage>io.takari.builder.enforcer.*</exportedPackage>
+   <exportedPackage>io.takari.builder.testing.*</exportedPackage>
+   <exportedPackage>io.takari.builder.internal.maven.AbstractIncrementalMojo</exportedPackage>
+
+   <!-- TODO proper API to preserve context by exec plugin   -->
+   <exportedPackage>io.takari.builder.enforcer.internal.EnforcerConfig</exportedPackage>
+   <exportedPackage>io.takari.builder.enforcer.modularity.maven.ProjectBasedirEnforcer</exportedPackage>
+ </exportedPackages>
+
+ <!-- 
+   | exported artifacts in groupId:artifactId format 
+   -->
+ <exportedArtifacts>
+   <exportedArtifact>io.takari.builder:takari-builder</exportedArtifact>
+   <exportedArtifact>io.takari.builder:takari-builder-enforcer</exportedArtifact>
+   <exportedArtifact>io.takari.builder:takari-builder-security-manager</exportedArtifact>
+ </exportedArtifacts>
+</extension>

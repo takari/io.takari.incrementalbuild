@@ -45,7 +45,8 @@ class TestBuildContextFinalizer extends MavenBuildContextFinalizer {
         }
 
         // messages
-        for (Map.Entry<Object, Collection<Message>> entry : state.getResourceMessages().entrySet()) {
+        for (Map.Entry<Object, Collection<Message>> entry : state.getResourceMessages()
+            .entrySet()) {
           for (Message message : entry.getValue()) {
             log.message(entry.getKey(), message.line, message.column, message.message,
                 toMessageSinkSeverity(message.severity), message.cause);

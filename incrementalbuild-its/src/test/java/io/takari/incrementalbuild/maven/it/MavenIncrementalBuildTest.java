@@ -15,7 +15,7 @@ import io.takari.maven.testing.executor.MavenVersions;
 import io.takari.maven.testing.executor.junit.MavenJUnitTestRunner;
 
 @RunWith(MavenJUnitTestRunner.class)
-@MavenVersions({"3.2.3", "3.2.5", "3.3.1", "3.3.9"})
+@MavenVersions({"3.2.5", "3.3.1", "3.3.9"})
 public class MavenIncrementalBuildTest {
 
   @Rule
@@ -56,11 +56,15 @@ public class MavenIncrementalBuildTest {
     verifier.forProject(new File(basedir, "plugin")).execute("install").assertErrorFreeLog();
 
     //
-    verifier.forProject(new File(basedir, "project")).execute("compile").assertErrorFreeLog();
+    verifier.forProject(new File(basedir, "project")) //
+        .withCliOption("-X") //
+        .execute("compile").assertErrorFreeLog();
     TestResources.assertFilesPresent(basedir, "project/target/output.txt");
 
     // build extension should be optional
-    verifier.forProject(new File(basedir, "project-noextension")).execute("compile")
+    verifier.forProject(new File(basedir, "project-noextension")) //
+        .withCliOption("-X") //
+        .execute("compile") //
         .assertErrorFreeLog();
     TestResources.assertFilesPresent(basedir, "project-noextension/target/output.txt");
   }

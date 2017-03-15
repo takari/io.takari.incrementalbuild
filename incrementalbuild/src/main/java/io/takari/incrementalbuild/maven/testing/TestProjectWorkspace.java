@@ -1,9 +1,5 @@
 package io.takari.incrementalbuild.maven.testing;
 
-import io.takari.incrementalbuild.maven.internal.FilesystemWorkspace;
-import io.takari.incrementalbuild.maven.internal.ProjectWorkspace;
-import io.takari.incrementalbuild.workspace.Workspace;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,6 +7,10 @@ import java.io.OutputStream;
 import javax.inject.Inject;
 
 import org.apache.maven.project.MavenProject;
+
+import io.takari.incrementalbuild.maven.internal.FilesystemWorkspace;
+import io.takari.incrementalbuild.maven.internal.ProjectWorkspace;
+import io.takari.incrementalbuild.workspace.Workspace;
 
 //this is explicitly bound in IncrementalBuildRuntime.addGuiceModules
 class TestProjectWorkspace extends ProjectWorkspace implements Workspace {
@@ -38,6 +38,16 @@ class TestProjectWorkspace extends ProjectWorkspace implements Workspace {
     @Override
     public boolean isPresent(File file) {
       return workspace.isPresent(file);
+    }
+
+    @Override
+    public boolean isRegularFile(File file) {
+      return workspace.isRegularFile(file);
+    }
+
+    @Override
+    public boolean isDirectory(File file) {
+      return workspace.isDirectory(file);
     }
 
     @Override

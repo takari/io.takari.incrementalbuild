@@ -9,85 +9,73 @@
   <artifactId>incrementalbuild</artifactId>
   <packaging>takari-maven-component</packaging>
 
-  <properties>
-    <incrementalbuild-workspace.version>0.7.0</incrementalbuild-workspace.version>
-  </properties>
-
   <dependencies>
 
     <dependency>
       <groupId>io.takari</groupId>
       <artifactId>incrementalbuild-workspace</artifactId>
-      <version>${incrementalbuild-workspace.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.takari.builder</groupId>
+      <artifactId>takari-builder-common</artifactId>
     </dependency>
 
     <!-- lsf4j api is the only required external dependency -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
 
     <!-- all maven dependencies must be optional(!) -->
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-core</artifactId>
-      <version>${apache-maven.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
-      <version>${apache-maven.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-model</artifactId>
-      <version>${apache-maven.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
-      <version>${apache-maven.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.sisu</groupId>
       <artifactId>org.eclipse.sisu.plexus</artifactId>
-      <version>${eclipse-sisu.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-guice</artifactId>
-      <version>3.2.3</version>
       <classifier>no_aop</classifier>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-api</artifactId>
-      <version>1.0.0.v20140518</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>javax.enterprise</groupId>
       <artifactId>cdi-api</artifactId>
-      <version>1.0</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-utils</artifactId>
-      <version>3.0.20</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>javax.inject</groupId>
       <artifactId>javax.inject</artifactId>
-      <version>1</version>
       <optional>true</optional>
     </dependency>
 
@@ -95,13 +83,13 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
+      <scope>compile</scope>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.takari.maven.plugins</groupId>
       <artifactId>takari-plugin-testing</artifactId>
-      <version>${plugin-testing.version}</version>
+      <scope>compile</scope>
       <optional>true</optional>
     </dependency>
 
@@ -109,19 +97,16 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>${slf4j.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-compat</artifactId>
-      <version>${apache-maven.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

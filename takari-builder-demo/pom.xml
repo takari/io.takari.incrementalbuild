@@ -1,0 +1,100 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.takari</groupId>
+    <artifactId>io.takari.incrementalbuild</artifactId>
+    <version>0.20.5-SNAPSHOT</version>
+  </parent>
+
+  <groupId>io.takari.builder.demo</groupId>
+  <artifactId>takari-builder-demo</artifactId>
+  <packaging>takari-maven-plugin</packaging>
+
+  <dependencies>
+    
+    <!-- 
+      | takari-builder/takari-builder-apt version is managed in parent pom to ensure
+      | demo project is tested with the latest takari-builder version. builder projects
+      | will need to declare dependency version explicitly. 
+      -->
+    <dependency>
+      <groupId>io.takari.builder</groupId>
+      <artifactId>takari-builder</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.takari.builder</groupId>
+      <artifactId>takari-builder-apt</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- test dependencies, only junit is required in most cases -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- maven plugin integration test dependencies, not necessary in most cases -->
+    <dependency>
+      <groupId>io.takari.maven.plugins</groupId>
+      <artifactId>takari-plugin-testing</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.takari.maven.plugins</groupId>
+      <artifactId>takari-plugin-integration-testing</artifactId>
+      <type>pom</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-compat</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+  <pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>io.takari.maven.plugins</groupId>
+        <artifactId>takari-lifecycle-plugin</artifactId>
+        <configuration>
+          <proc>procEX</proc>
+          <transitiveDependencyReference>ignore</transitiveDependencyReference>
+          <privatePackageReference>ignore</privatePackageReference>
+        </configuration>
+
+        <!-- 
+           | don't package/deploy artifacts of the demo project
+           | this section is not applicable to and MUST NOT be included in builder projects
+           -->
+        <executions>
+          <execution>
+            <id>default-jar</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-install</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-deploy</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </pluginManagement>
+    
+  </build>
+
+</project>

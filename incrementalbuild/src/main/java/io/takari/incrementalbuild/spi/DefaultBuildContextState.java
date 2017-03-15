@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 
 public class DefaultBuildContextState implements Serializable {
 
-  private static final transient Logger log = LoggerFactory
-      .getLogger(DefaultBuildContextState.class);
+  private static final transient Logger log =
+      LoggerFactory.getLogger(DefaultBuildContextState.class);
 
   private static final long serialVersionUID = 6195150574931820441L;
 
@@ -63,7 +63,8 @@ public class DefaultBuildContextState implements Serializable {
     this.resourceMessages = resourceMessages;
   }
 
-  public static DefaultBuildContextState withConfiguration(Map<String, Serializable> configuration) {
+  public static DefaultBuildContextState withConfiguration(
+      Map<String, Serializable> configuration) {
     HashMap<String, Serializable> copy = new HashMap<String, Serializable>(configuration);
     // configuration marker used to distinguish between empty and new state
     copy.put("incremental", Boolean.TRUE);
@@ -169,8 +170,8 @@ public class DefaultBuildContextState implements Serializable {
       ObjectInputStream is =
           new ObjectInputStream(new BufferedInputStream(new FileInputStream(stateFile))) {
             @Override
-            protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException,
-                ClassNotFoundException {
+            protected Class<?> resolveClass(ObjectStreamClass desc)
+                throws IOException, ClassNotFoundException {
               // TODO does it matter if TCCL or super is called first?
               try {
                 ClassLoader tccl = Thread.currentThread().getContextClassLoader();
@@ -200,7 +201,7 @@ public class DefaultBuildContextState implements Serializable {
             , outputInputs //
             , resourceAttributes //
             , messages //
-            );
+        );
         log.debug("Loaded incremental build state {} ({} ms)", stateFile,
             System.currentTimeMillis() - start);
         return state;
@@ -224,8 +225,8 @@ public class DefaultBuildContextState implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  private static <K, V> Map<K, V> readMap(ObjectInputStream ois) throws IOException,
-      ClassNotFoundException {
+  private static <K, V> Map<K, V> readMap(ObjectInputStream ois)
+      throws IOException, ClassNotFoundException {
     Map<K, V> map = new HashMap<K, V>();
     int size = ois.readInt();
     for (int i = 0; i < size; i++) {
@@ -250,8 +251,8 @@ public class DefaultBuildContextState implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  private static <V> Collection<V> readCollection(ObjectInputStream ois) throws IOException,
-      ClassNotFoundException {
+  private static <V> Collection<V> readCollection(ObjectInputStream ois)
+      throws IOException, ClassNotFoundException {
     int size = ois.readInt();
     if (size == 0) {
       return null;
@@ -263,8 +264,8 @@ public class DefaultBuildContextState implements Serializable {
     return Collections.unmodifiableCollection(collection);
   }
 
-  private static <V> Set<V> readSet(ObjectInputStream ois) throws IOException,
-      ClassNotFoundException {
+  private static <V> Set<V> readSet(ObjectInputStream ois)
+      throws IOException, ClassNotFoundException {
     Collection<V> collection = readCollection(ois);
     return collection != null
         ? Collections.<V>unmodifiableSet(new HashSet<V>(collection))

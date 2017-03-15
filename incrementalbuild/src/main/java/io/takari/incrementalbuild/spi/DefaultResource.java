@@ -11,7 +11,8 @@ import java.io.File;
  */
 public class DefaultResource<T> extends DefaultResourceMetadata<T> implements Resource<T> {
 
-  protected DefaultResource(AbstractBuildContext context, DefaultBuildContextState state, T resource) {
+  protected DefaultResource(AbstractBuildContext context, DefaultBuildContextState state,
+      T resource) {
     super(context, state, resource);
   }
 

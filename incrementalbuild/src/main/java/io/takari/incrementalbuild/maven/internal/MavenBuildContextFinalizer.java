@@ -1,12 +1,5 @@
 package io.takari.incrementalbuild.maven.internal;
 
-import io.takari.incrementalbuild.MessageSeverity;
-import io.takari.incrementalbuild.spi.AbstractBuildContext;
-import io.takari.incrementalbuild.spi.BuildContextFinalizer;
-import io.takari.incrementalbuild.spi.Message;
-import io.takari.incrementalbuild.spi.MessageSinkAdaptor;
-import io.takari.incrementalbuild.workspace.MessageSink;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,10 +15,21 @@ import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.execution.scope.WeakMojoExecutionListener;
 import org.apache.maven.plugin.MojoExecutionException;
 
+import io.takari.builder.internal.annotations.Nullable;
+import io.takari.incrementalbuild.MessageSeverity;
+import io.takari.incrementalbuild.spi.AbstractBuildContext;
+import io.takari.incrementalbuild.spi.BuildContextFinalizer;
+import io.takari.incrementalbuild.spi.Message;
+import io.takari.incrementalbuild.spi.MessageSinkAdaptor;
+import io.takari.incrementalbuild.workspace.MessageSink;
+
 
 @Named
 @MojoExecutionScoped
-public class MavenBuildContextFinalizer implements WeakMojoExecutionListener, BuildContextFinalizer {
+public class MavenBuildContextFinalizer
+    implements
+      WeakMojoExecutionListener,
+      BuildContextFinalizer {
 
   @Inject
   @Nullable
