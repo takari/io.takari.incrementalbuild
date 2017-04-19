@@ -23,6 +23,10 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.eclipse.aether.SessionData;
 
+import io.takari.builder.internal.digest.BytesHash;
+import io.takari.builder.internal.digest.SHA1Digester;
+
+
 /**
  * Specialized digester for Maven plugin classpath dependencies. Uses class file contents and immune
  * to file timestamp changes caused by rebuilds of the same sources.

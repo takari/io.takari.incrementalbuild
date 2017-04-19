@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.takari.builder</groupId>
+  <artifactId>multimodule-apt-it</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <properties>
+    <it-project.version>0.1.0-SNAPSHOT</it-project.version>
+    <it-phase>package</it-phase>
+  </properties>
+
+  <modules>
+    <module>m1</module>
+    <module>m2</module>
+  </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.takari.maven.plugins</groupId>
+        <artifactId>takari-lifecycle-plugin</artifactId>
+        <version>1.12.1</version>
+        <configuration>
+          <proc>only</proc>
+          <source>1.8</source>
+          <sourcepath>reactorDependencies</sourcepath>
+        </configuration>
+        <extensions>true</extensions>
+      </plugin>
+      <plugin>
+        <groupId>io.takari.builder</groupId>
+        <artifactId>takari-builder-enforcer</artifactId>
+        <version>${it-project.version}</version>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

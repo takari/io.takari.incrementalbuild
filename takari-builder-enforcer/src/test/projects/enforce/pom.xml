@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.takari.builder</groupId>
+  <artifactId>enforce</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+
+  <profiles>  
+    <profile>
+      <id>enforcer-disabled</id>
+      <activation>
+        <property>
+          <name>enforcerDisabled</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <modularity.enforcer.disabled>TRUE</modularity.enforcer.disabled>
+      </properties>
+    </profile>
+  </profiles>  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.takari.builder</groupId>
+        <artifactId>takari-builder-enforcer</artifactId>
+        <version>${it-project.version}</version>
+        <extensions>true</extensions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.0.2</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}</outputDirectory>
+              <resources>          
+                <resource>
+                  <directory>${project.basedir}/files</directory>
+                </resource>
+              </resources>              
+            </configuration>            
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <repositories>
+    <repository>
+        <id>MavenCentral</id>
+        <name>Maven repository</name>
+        <url>http://repo1.maven.org/maven2</url>
+        <releases>
+            <enabled>true</enabled>
+        </releases>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+        <id>apache.snapshots</id>
+        <name>Apache Snapshot Repository</name>
+        <url>http://people.apache.org/repo/m2-snapshot-repository</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+    </pluginRepository>
+  </pluginRepositories>
+  
+
+</project>

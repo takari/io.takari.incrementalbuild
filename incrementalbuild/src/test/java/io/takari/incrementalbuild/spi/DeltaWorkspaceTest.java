@@ -15,6 +15,7 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
+import io.takari.builder.internal.workspace.IncrementalFileOutputStream;
 import io.takari.incrementalbuild.ResourceMetadata;
 import io.takari.incrementalbuild.ResourceStatus;
 import io.takari.incrementalbuild.workspace.Workspace;
