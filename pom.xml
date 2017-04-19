@@ -10,7 +10,7 @@
 
   <groupId>io.takari</groupId>
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>0.20.4-sfdc-1-SNAPSHOT</version>
+  <version>0.20.4-sfdc-1</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
@@ -50,6 +50,7 @@
     <classworlds.version>2.5.2</classworlds.version>
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
+    <incrementalbuild-workspace.version>0.20.4-sfdc-1</incrementalbuild-workspace.version>
   </properties>
 
   <modules>
@@ -66,7 +67,7 @@
       |
       | To release incrementalbuild with new incrementalbuild-workspace version
       | - mvn org.eclipse.tycho:tycho-versions-plugin:0.20.0:set-version -DnewVersion=<new-version>
-      | - Update incrementalbuild-workspace.version property in incrementalbuild/pom.xml
+      | - Update incrementalbuild-workspace.version property in this pom.xml
       | - git commit -asm "prepare release io.takari.incrementalbuild-<new-version>"
       | - git tag io.takari.incrementalbuild-<new-version>
       | - mvn clean deploy -Ptakari-release
@@ -158,7 +159,7 @@
       <dependency>
         <groupId>io.takari</groupId>
         <artifactId>incrementalbuild-workspace</artifactId>
-        <version>${project.version}</version>
+        <version>${incrementalbuild-workspace.version}</version>
       </dependency>
       <dependency>
         <groupId>io.takari.builder</groupId>
@@ -286,6 +287,13 @@
     <url>https://git.soma.salesforce.com/modularization-team/takari-incr3</url>
     <tag>HEAD</tag>
   </scm>
+  
+  <distributionManagement>
+    <repository>
+      <id>nexus</id>
+      <url>https://nexus.soma.salesforce.com/nexus/content/repositories/releases/</url>
+    </repository>
+  </distributionManagement>
   
   <build>
     <pluginManagement>
