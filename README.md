@@ -6,5 +6,5 @@ Click [here](DOCUMENTATION.md) for our user documentation.
 
 ## Release Instructions
 
-    mvn release:prepare release:perform
+see [pom.xml](pom.xml)
 
