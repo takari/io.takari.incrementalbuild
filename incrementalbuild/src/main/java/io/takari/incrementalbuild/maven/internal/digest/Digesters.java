@@ -1,8 +1,5 @@
 package io.takari.incrementalbuild.maven.internal.digest;
 
-import io.takari.incrementalbuild.Incremental;
-import io.takari.incrementalbuild.Incremental.Configuration;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -24,6 +21,11 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.project.MavenProject;
+
+import io.takari.builder.internal.digest.BytesHash;
+import io.takari.builder.internal.digest.SHA1Digester;
+import io.takari.incrementalbuild.Incremental;
+import io.takari.incrementalbuild.Incremental.Configuration;
 
 class Digesters {
 

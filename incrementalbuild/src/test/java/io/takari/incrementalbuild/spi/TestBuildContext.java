@@ -50,15 +50,15 @@ class TestBuildContext extends DefaultBuildContext {
     return super.getAssociatedOutputs(getState(resource), resource);
   }
 
-  public <T extends Serializable> Serializable setAttribute(DefaultResource<?> resource,
-      String key, T value) {
+  public <T extends Serializable> Serializable setAttribute(DefaultResource<?> resource, String key,
+      T value) {
     return super.setResourceAttribute(resource.getResource(), key, value);
   }
 
   public <V extends Serializable> V getAttribute(DefaultResourceMetadata<?> resource, String key,
       Class<V> clazz) {
-    return super.getResourceAttribute(getState(resource.getResource()), resource.getResource(),
-        key, clazz);
+    return super.getResourceAttribute(getState(resource.getResource()), resource.getResource(), key,
+        clazz);
   }
 
 }

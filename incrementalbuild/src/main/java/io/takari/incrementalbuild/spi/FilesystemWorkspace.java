@@ -3,19 +3,17 @@ package io.takari.incrementalbuild.spi;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 
 import io.takari.incrementalbuild.workspace.Workspace;
 
 public class FilesystemWorkspace implements Workspace {
 
+  private final io.takari.builder.internal.workspace.FilesystemWorkspace delegate =
+      new io.takari.builder.internal.workspace.FilesystemWorkspace();
+
   @Override
   public Mode getMode() {
-    return Mode.NORMAL;
+    return delegate.getMode();
   }
 
   @Override
@@ -24,66 +22,43 @@ public class FilesystemWorkspace implements Workspace {
   }
 
   @Override
-  public void deleteFile(File file) throws IOException {
-    if (file.exists() && !file.delete()) {
-      throw new IOException("Could not delete file " + file);
-    }
-  }
-
-  @Override
-  public void processOutput(File outputFile) {}
-
-  @Override
-  public OutputStream newOutputStream(File file) throws IOException {
-    return new IncrementalFileOutputStream(file);
-  }
-
-  @Override
-  public ResourceStatus getResourceStatus(File file, long lastModified, long length) {
-    if (!isPresent(file)) {
-      return ResourceStatus.REMOVED;
-    }
-    if (length == file.length() && lastModified == file.lastModified()) {
-      return ResourceStatus.UNMODIFIED;
-    }
-    return ResourceStatus.MODIFIED;
-  }
-
-  @Override
   public boolean isPresent(File file) {
-    return file != null && file.isFile() && file.canRead();
+    return delegate.isPresent(file);
   }
 
   @Override
   public boolean isRegularFile(File file) {
-    return Files.isRegularFile(file.toPath());
+    return delegate.isRegularFile(file);
   }
 
   @Override
   public boolean isDirectory(File file) {
-    return Files.isDirectory(file.toPath());
+    return delegate.isDirectory(file);
   }
 
   @Override
-  public void walk(File basedir, final FileVisitor visitor) throws IOException {
-    if (!basedir.isDirectory()) {
-      return;
-    }
-    final Path basepath = basedir.toPath();
-    Files.walkFileTree(basepath, new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-        // BasicFileAttributes#lastModifiedTime() and File#lastModified() appear to have different
-        // resolution in some environments and mixing the two results in "Unexpected input change"
-        // exceptions.
-        // https://github.com/takari/io.takari.incrementalbuild/pull/5
-        final File file = path.toFile();
-        final long lastModified = file.lastModified();
-        final long length = file.length();
-        visitor.visit(file, lastModified, length, ResourceStatus.NEW);
-        return FileVisitResult.CONTINUE;
-      }
-    });
+  public void deleteFile(File file) throws IOException {
+    delegate.deleteFile(file);
+  }
+
+  @Override
+  public void processOutput(File file) {
+    delegate.processOutput(file);
+  }
+
+  @Override
+  public OutputStream newOutputStream(File file) throws IOException {
+    return delegate.newOutputStream(file);
+  }
+
+  @Override
+  public ResourceStatus getResourceStatus(File file, long lastModified, long length) {
+    return delegate.getResourceStatus(file, lastModified, length);
+  }
+
+  @Override
+  public void walk(File basedir, FileVisitor visitor) throws IOException {
+    delegate.walk(basedir, visitor);
   }
 
 }

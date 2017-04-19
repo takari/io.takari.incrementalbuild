@@ -1,0 +1,28 @@
+cache:
+  mount:
+    - .m2
+build:
+  image: maven
+  environment:
+    NEXUS_USERNAME: $$NEXUS_USERNAME
+    NEXUS_PASSWORD: $$NEXUS_PASSWORD
+  commands:
+    - export LOCAL_REPO=$DRONE_BUILD_DIR/.m2/
+    - echo sigh....
+    - sed -i.bkp1 -e "s/\${env.NEXUS_USERNAME}/$NEXUS_USERNAME/g" -e "s/\${env.NEXUS_PASSWORD}/$NEXUS_PASSWORD/g" -e "s!\${env.LOCAL_REPO}!$LOCAL_REPO!g" .drone/settings.xml
+    - export CRTDIR=`dirname $(mktemp -u -t tmp.XXXXXXXXXX)`
+    - openssl s_client -host nexus.soma.salesforce.com -port 443 -prexit -showcerts </dev/null | openssl x509 -outform DER > ${CRTDIR}/salesforce.der
+    - keytool -import -trustcacerts -keystore ${JAVA_HOME}/jre/lib/security/cacerts -storepass changeit -noprompt -alias salesforce_ca -file ${CRTDIR}/salesforce.der
+    - mvn -B clean install --settings ./.drone/settings.xml
+notify:
+  email:
+    from: butc.drone@salesforce.com
+    host: smtp.dci.sfdc.net
+    port: 25
+    skip_verify: true
+    recipients:
+      - rdbutcscrum@salesforce.com 
+    when:
+      success: false
+      failure: true
+      change: true

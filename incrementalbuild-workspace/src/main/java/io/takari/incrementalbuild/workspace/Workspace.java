@@ -27,9 +27,9 @@ public interface Workspace {
   public Workspace escalate();
 
   public boolean isPresent(File file);
-  
+
   public boolean isRegularFile(File file);
-  
+
   public boolean isDirectory(File file);
 
   public void deleteFile(File file) throws IOException;
@@ -47,7 +47,8 @@ public interface Workspace {
    * <ul>
    * <li><strong>{@code NORMAL}</strong> all files are visited and all file status is reported as
    * NEW. BuildContext is expected to calculate actual input resource status.</li>
-   * <li><strong>{@code DELTA}</strong> only NEW, MODIFIED or REMOVED files are visited.</strong></li>
+   * <li><strong>{@code DELTA}</strong> only NEW, MODIFIED or REMOVED files are
+   * visited.</strong></li>
    * <li><strong>{@code ESCALATED}</strong> all files are visited and all file status is reported as
    * NEW. This mode is used when the user has explicitly requested full build in IDE. BuildContext
    * must treat all files as either NEW or MODIFIED.</strong></li>

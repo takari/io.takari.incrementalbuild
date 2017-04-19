@@ -410,11 +410,11 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
     actual = toFileList(context.registerInputs(temp.getRoot(), null, null));
     assertIncludedPaths(Arrays.asList(f1, f2, f3), actual);
 
-    actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("*.txt"), null));
+    actual = toFileList(context.registerInputs(temp.getRoot(), Arrays.asList("**/*.txt"), null));
     assertIncludedPaths(Arrays.asList(f1, f2), actual);
 
     actual = toFileList(
-        context.registerInputs(temp.getRoot(), Arrays.asList("**"), Arrays.asList("*.log")));
+        context.registerInputs(temp.getRoot(), Arrays.asList("**"), Arrays.asList("**/*.log")));
     assertIncludedPaths(Arrays.asList(f1, f2), actual);
   }
 
