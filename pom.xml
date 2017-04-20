@@ -51,43 +51,47 @@
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
     <incrementalbuild-workspace.version>0.20.4-sfdc-1</incrementalbuild-workspace.version>
+    <takari-builder-security-manager.version>0.20.4-sfdc-1</takari-builder-security-manager.version>
   </properties>
 
   <modules>
     <!--
-      | Changes to incrementalbuild-workspace require update to io.takari.m2e.lifecycle and should
-      | be avoided if possible. To emphasise this, incrementalbuild-workspace is not normally part
+      | Changes to incrementalbuild-workspace and takari-builder-security-manager require update to
+      | io.takari.m2e.lifecycle and should be avoided if possible.
+      | To emphasise this, these projects are not normally part
       | of io.takari.incrementalbuild build and special steps are required to produce new builds 
       | and release new versions.
       |
-      | To start work on new incrementalbuild-workspace version
-      | - Uncomment incrementalbuild-workspace module below
-      | - Update <parent> version in incrementalbuild-workspace/pom.xml
-      | - Update incrementalbuild-workspace.version property in incrementalbuild/pom.xml
+      | To start work on new incrementalbuild-workspace or takari-builder-security-manager version
+      | - Uncomment the module below
+      | - Update <parent> version in incrementalbuild-workspace/pom.xml or takari-builder-security-manager/pom.xml
+      | - Update incrementalbuild-workspace.version or takari-builder-security-manager.version property
       |
-      | To release incrementalbuild with new incrementalbuild-workspace version
+      | To release incrementalbuild with new incrementalbuild-workspace or takari-builder-security-manager version
       | - mvn org.eclipse.tycho:tycho-versions-plugin:0.20.0:set-version -DnewVersion=<new-version>
-      | - Update incrementalbuild-workspace.version property in this pom.xml
+      | - Update incrementalbuild-workspace.version property or takari-builder-security-manager.version
       | - git commit -asm "prepare release io.takari.incrementalbuild-<new-version>"
       | - git tag io.takari.incrementalbuild-<new-version>
       | - mvn clean deploy -Ptakari-release
       | - git-push-tags (when you are ready)
       |
-      | To start next incrementalbuild release without new incrementalbuild-workspace
-      | - Comment out incrementalbuild-workspace module below
+      | To start next incrementalbuild release without new incrementalbuild-workspace or takari-builder-security-manager
+      | - Comment out the module below
       | - mvn org.eclipse.tycho:tycho-versions-plugin:0.20.0:set-version -DnewVersion=<next-version>
       | - git commit -asm "prepare for next development iteration"
       |
     
      -->
+     
     <!-- <module>incrementalbuild-workspace</module> -->
+    <!-- <module>takari-builder-security-manager</module> -->
+    
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>
     <module>takari-builder</module>
     <module>takari-builder-apt</module>
     <module>takari-builder-demo</module>
     <module>takari-builder-enforcer</module>
-    <module>takari-builder-security-manager</module>
     <module>takari-builder-common</module>
   </modules>
 
@@ -163,17 +167,17 @@
       </dependency>
       <dependency>
         <groupId>io.takari.builder</groupId>
+        <artifactId>takari-builder-security-manager</artifactId>
+        <version>${takari-builder-security-manager.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.takari.builder</groupId>
         <artifactId>takari-builder</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>io.takari.builder</groupId>
         <artifactId>takari-builder-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.takari.builder</groupId>
-        <artifactId>takari-builder-security-manager</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
