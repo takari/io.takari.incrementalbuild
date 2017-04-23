@@ -28,7 +28,7 @@ import java.util.StringTokenizer;
  *
  * @author Kristian Rosenvold
  */
-public class Plexus_MatchPattern {
+class Plexus_MatchPattern {
   private final String source;
 
   private final String regexPattern;

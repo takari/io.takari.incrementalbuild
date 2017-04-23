@@ -9,7 +9,7 @@ import java.util.List;
  *
  * @author Kristian Rosenvold
  */
-public class Plexus_MatchPatterns {
+class Plexus_MatchPatterns {
   private final Plexus_MatchPattern[] patterns;
 
   private Plexus_MatchPatterns(Plexus_MatchPattern[] patterns) {
