@@ -43,24 +43,6 @@ class Plexus_MatchPatterns {
     return false;
   }
 
-  public boolean matchesPatternStart(String name, boolean isCaseSensitive) {
-    for (Plexus_MatchPattern includesPattern : patterns) {
-      if (includesPattern.matchPatternStart(name, isCaseSensitive)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  public static Plexus_MatchPatterns from(String... sources) {
-    final int length = sources.length;
-    Plexus_MatchPattern[] result = new Plexus_MatchPattern[length];
-    for (int i = 0; i < length; i++) {
-      result[i] = Plexus_MatchPattern.fromString(sources[i]);
-    }
-    return new Plexus_MatchPatterns(result);
-  }
-
   public static Plexus_MatchPatterns from(Iterable<String> strings) {
     return new Plexus_MatchPatterns(getMatchPatterns(strings));
   }

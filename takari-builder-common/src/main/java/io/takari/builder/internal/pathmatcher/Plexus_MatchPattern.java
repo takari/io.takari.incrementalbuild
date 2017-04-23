@@ -33,8 +33,6 @@ class Plexus_MatchPattern {
 
   private final String regexPattern;
 
-  private final String separator;
-
   private final String[] tokenized;
   private final char[][] tokenizedChar;
 
@@ -47,23 +45,12 @@ class Plexus_MatchPattern {
         ? source.substring(Plexus_SelectorUtils.ANT_HANDLER_PREFIX.length(),
             source.length() - Plexus_SelectorUtils.PATTERN_HANDLER_SUFFIX.length())
         : source;
-    this.separator = separator;
     tokenized = tokenizePathToString(this.source, separator);
     tokenizedChar = new char[tokenized.length][];
     for (int i = 0; i < tokenized.length; i++) {
       tokenizedChar[i] = tokenized[i].toCharArray();
     }
 
-  }
-
-
-
-  public boolean matchPath(String str, boolean isCaseSensitive) {
-    if (regexPattern != null) {
-      return str.matches(regexPattern);
-    } else {
-      return Plexus_SelectorUtils.matchAntPathPattern(this, str, separator, isCaseSensitive);
-    }
   }
 
   boolean matchPath(String str, char[][] strDirs, boolean isCaseSensitive) {
@@ -75,33 +62,9 @@ class Plexus_MatchPattern {
     }
   }
 
-  public boolean matchPatternStart(String str, boolean isCaseSensitive) {
-    if (regexPattern != null) {
-      // FIXME: ICK! But we can't do partial matches for regex, so we have to reserve judgement
-      // until we have
-      // a file to deal with, or we can definitely say this is an exclusion...
-      return true;
-    } else {
-      String altStr = source.replace('\\', '/');
-
-      return Plexus_SelectorUtils.matchAntPathPatternStart(this, str, File.separator,
-          isCaseSensitive)
-          || Plexus_SelectorUtils.matchAntPathPatternStart(this, altStr, "/", isCaseSensitive);
-    }
-  }
-
-  public String[] getTokenizedPathString() {
-    return tokenized;
-  }
-
   public char[][] getTokenizedPathChars() {
     return tokenizedChar;
   }
-
-  public boolean startsWith(String string) {
-    return source.startsWith(string);
-  }
-
 
   static String[] tokenizePathToString(String path, String separator) {
     List<String> ret = new ArrayList<String>();
