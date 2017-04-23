@@ -63,7 +63,7 @@ import java.util.StringTokenizer;
  * @version $Id$
  * @since 1.5
  */
-public final class Plexus_SelectorUtils {
+final class Plexus_SelectorUtils {
 
   public static final String PATTERN_HANDLER_PREFIX = "[";
 
