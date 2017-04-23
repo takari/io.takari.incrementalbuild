@@ -76,6 +76,10 @@ public class FileMatcher {
     return matches(file.toAbsolutePath().toString());
   }
 
+  public boolean matches(File file) {
+    return matches(file.getAbsolutePath());
+  }
+
   public static FileMatcher matcher(final Path basedir, Collection<String> includes,
       Collection<String> excludes) {
     final String basepath = basedir.toAbsolutePath().toString();

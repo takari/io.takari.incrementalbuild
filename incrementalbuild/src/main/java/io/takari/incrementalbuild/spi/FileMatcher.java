@@ -12,7 +12,7 @@ class FileMatcher {
   }
 
   public boolean matches(File file) {
-    return fileMatcher.matches(file.toPath());
+    return fileMatcher.matches(file);
   }
 
   public static FileMatcher matcher(final File basedir, Collection<String> includes,
