@@ -614,8 +614,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
         return selectFromJar(basedir, matcher);
       } else if (workspace.isDirectory(basedir)) {
         // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        FileMatcher matcher = FileMatcher.absoluteMatcher(basedir, includes, excludes);
-        return selectFromDirectory(basedir, matcher);
+        return selectFromDirectory(FileMatcher.subdirMatchers(basedir, includes, excludes));
       } else {
         return Collections.emptyList();
       }
@@ -641,14 +640,18 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       }
     }
 
-    private List<Path> selectFromDirectory(Path basedir, FileMatcher matcher) {
-      try (Stream<Path> paths = workspace.walk(basedir)) {
-        return paths //
-            .filter(path -> matcher.matches(path)) //
-            .collect(Collectors.toList());
-      } catch (IOException e) {
-        throw new InvalidConfigurationException(context, "could not list directory files", e);
-      }
+    private List<Path> selectFromDirectory(Map<Path, FileMatcher> matchers) {
+      List<Path> resources = new ArrayList<>();
+      matchers.forEach((subdir, matcher) -> {
+        try (Stream<Path> paths = workspace.walk(subdir)) {
+          paths //
+              .filter(path -> matcher.matches(path)) //
+              .forEach(resources::add);
+        } catch (IOException e) {
+          throw new InvalidConfigurationException(context, "could not list directory files", e);
+        }
+      });
+      return resources;
     }
 
     List<ResourceSelection<B>> evaluateConfiguration() throws UncheckedIOException {
@@ -1269,22 +1272,22 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-    FileMatcher matcher = FileMatcher.absoluteMatcher(location, includes, excludes);
-    try (Stream<Path> paths = workspace.walk(location)) {
-      TreeSet<Path> files = new TreeSet<>();
-      TreeSet<String> filenames = new TreeSet<>();
-      paths.filter(path -> workspace.exists(path)) //
-          .filter(path -> matcher.matches(path)) //
-          .forEach(path -> {
-            files.add(path);
-            filenames.add(location.relativize(path).toString());
-          });
-      if (!required || !files.isEmpty()) {
-        context
-            .accept(new InputDirectoryValue(type, location, includes, excludes, files, filenames));
+    TreeSet<Path> files = new TreeSet<>();
+    TreeSet<String> filenames = new TreeSet<>();
+    FileMatcher.subdirMatchers(location, includes, excludes).forEach((subdir, matcher) -> {
+      try (Stream<Path> paths = workspace.walk(subdir)) {
+        paths.filter(path -> workspace.exists(path)) //
+            .filter(path -> matcher.matches(path)) //
+            .forEach(path -> {
+              files.add(path);
+              filenames.add(subdir.relativize(path).toString());
+            });
+      } catch (IOException e) {
+        throw new InvalidConfigurationException(context, "could not list directory files", e);
       }
-    } catch (IOException e) {
-      throw new InvalidConfigurationException(context, "could not list directory files", e);
+    });
+    if (!required || !files.isEmpty()) {
+      context.accept(new InputDirectoryValue(type, location, includes, excludes, files, filenames));
     }
   }
 
