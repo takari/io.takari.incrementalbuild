@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -176,26 +177,28 @@ public abstract class AbstractBuildContext {
       Collection<String> includes, Collection<String> excludes) throws IOException {
     basedir = normalize(basedir);
     final List<DefaultResourceMetadata<File>> result = new ArrayList<>();
-    final FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
-    workspace.walk(basedir, new FileVisitor() {
-      @Override
-      public void visit(File file, long lastModified, long length,
-          Workspace.ResourceStatus status) {
-        if (matcher.matches(file)) {
-          switch (status) {
-            case MODIFIED:
-            case NEW:
-              result.add(registerNormalizedInput(file, lastModified, length));
-              break;
-            case REMOVED:
-              deletedResources.add(file);
-              break;
-            default:
-              throw new IllegalArgumentException();
+    for (Map.Entry<Path, FileMatcher> subdir : FileMatcher
+        .subdirMatchers(basedir.toPath(), includes, excludes).entrySet()) {
+      workspace.walk(subdir.getKey().toFile(), new FileVisitor() {
+        @Override
+        public void visit(File file, long lastModified, long length,
+            Workspace.ResourceStatus status) {
+          if (subdir.getValue().matches(file)) {
+            switch (status) {
+              case MODIFIED:
+              case NEW:
+                result.add(registerNormalizedInput(file, lastModified, length));
+                break;
+              case REMOVED:
+                deletedResources.add(file);
+                break;
+              default:
+                throw new IllegalArgumentException();
+            }
           }
         }
-      }
-    });
+      });
+    }
     if (workspace.getMode() == Mode.DELTA) {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
@@ -219,31 +222,33 @@ public abstract class AbstractBuildContext {
       Collection<String> includes, Collection<String> excludes) throws IOException {
     basedir = normalize(basedir);
     final List<DefaultResource<File>> result = new ArrayList<>();
-    final FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
-    workspace.walk(basedir, new FileVisitor() {
-      @Override
-      public void visit(File file, long lastModified, long length,
-          Workspace.ResourceStatus status) {
-        if (matcher.matches(file)) {
-          switch (status) {
-            case MODIFIED:
-            case NEW:
-              DefaultResourceMetadata<File> metadata =
-                  registerNormalizedInput(file, lastModified, length);
-              if (workspace.getMode() == Mode.DELTA
-                  || getResourceStatus(file) != ResourceStatus.UNMODIFIED) {
-                result.add(processResource(metadata));
-              }
-              break;
-            case REMOVED:
-              deletedResources.add(file);
-              break;
-            default:
-              throw new IllegalArgumentException();
+    for (Map.Entry<Path, FileMatcher> subdir : FileMatcher
+        .subdirMatchers(basedir.toPath(), includes, excludes).entrySet()) {
+      workspace.walk(subdir.getKey().toFile(), new FileVisitor() {
+        @Override
+        public void visit(File file, long lastModified, long length,
+            Workspace.ResourceStatus status) {
+          if (subdir.getValue().matches(file)) {
+            switch (status) {
+              case MODIFIED:
+              case NEW:
+                DefaultResourceMetadata<File> metadata =
+                    registerNormalizedInput(file, lastModified, length);
+                if (workspace.getMode() == Mode.DELTA
+                    || getResourceStatus(file) != ResourceStatus.UNMODIFIED) {
+                  result.add(processResource(metadata));
+                }
+                break;
+              case REMOVED:
+                deletedResources.add(file);
+                break;
+              default:
+                throw new IllegalArgumentException();
+            }
           }
         }
-      }
-    });
+      });
+    }
     if (workspace.getMode() == Mode.DELTA) {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
