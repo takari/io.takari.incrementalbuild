@@ -610,11 +610,11 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
           throw new InvalidConfigurationException(context, basedir + " is a regular file");
         }
         // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        FileMatcher matcher = FileMatcher.matcher(Paths.get("/"), includes, excludes);
+        FileMatcher matcher = FileMatcher.absoluteMatcher(Paths.get("/"), includes, excludes);
         return selectFromJar(basedir, matcher);
       } else if (workspace.isDirectory(basedir)) {
         // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        FileMatcher matcher = FileMatcher.matcher(basedir, includes, excludes);
+        FileMatcher matcher = FileMatcher.absoluteMatcher(basedir, includes, excludes);
         return selectFromDirectory(basedir, matcher);
       } else {
         return Collections.emptyList();
@@ -629,7 +629,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
         while (entries.hasMoreElements()) {
           JarEntry entry = entries.nextElement();
           if (!entry.isDirectory()) {
-            if (matcher.matches(entry.getName())) {
+            if (matcher.matches("/" + entry.getName())) {
               matchedPaths.add(Paths.get(entry.getName()));
             }
           }
@@ -1269,7 +1269,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-    FileMatcher matcher = FileMatcher.matcher(location, includes, excludes);
+    FileMatcher matcher = FileMatcher.absoluteMatcher(location, includes, excludes);
     try (Stream<Path> paths = workspace.walk(location)) {
       TreeSet<Path> files = new TreeSet<>();
       TreeSet<String> filenames = new TreeSet<>();

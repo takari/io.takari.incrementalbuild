@@ -402,8 +402,8 @@ public class BuilderContext {
 
   private static FileMatcher getExceptionsMatcher(Collection<String> exceptions) {
     return exceptions != null && !exceptions.isEmpty()
-        ? FileMatcher.matcher(Paths.get("/"), exceptions, null)
-        : FileMatcher.matcher(Paths.get("/"), null, Arrays.asList("*"));
+        ? FileMatcher.absoluteMatcher(Paths.get("/"), exceptions, null)
+        : FileMatcher.absoluteMatcher(Paths.get("/"), null, Arrays.asList("*"));
   }
 
   @Override

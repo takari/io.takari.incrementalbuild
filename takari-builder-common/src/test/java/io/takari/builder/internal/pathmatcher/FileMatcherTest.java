@@ -31,7 +31,7 @@ public class FileMatcherTest {
 
     List<String> includes = new ArrayList<>();
     includes.add("*.txt");
-    FileMatcher matcher = FileMatcher.matcher(basedir.toPath(), includes, null);
+    FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, null);
     assertFiles(getMatchingFiles(matcher, basedir), new File(basedir, "1.txt"));
   }
 
@@ -43,7 +43,7 @@ public class FileMatcherTest {
 
     List<String> includes = new ArrayList<>();
     includes.add("**/*.txt");
-    FileMatcher matcher = FileMatcher.matcher(basedir.toPath(), includes, null);
+    FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, null);
     assertFiles(getMatchingFiles(matcher, basedir), new File(basedir, "1.txt"),
         new File(basedir, "sub/2.txt"), new File(basedir, "sub2/3.txt"),
         new File(basedir, "sub/sub/4.txt"), new File(basedir, "sub/sub/5.txt"));

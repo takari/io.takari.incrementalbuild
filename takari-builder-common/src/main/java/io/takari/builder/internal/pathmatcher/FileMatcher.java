@@ -80,14 +80,6 @@ public class FileMatcher {
     return matches(file.getAbsolutePath());
   }
 
-  public static FileMatcher matcher(final Path basedir, Collection<String> includes,
-      Collection<String> excludes) {
-    final String basepath = basedir.toAbsolutePath().toString();
-    final Matcher includesMatcher = fromStrings(basepath, includes, null);
-    final Matcher excludesMatcher = fromStrings(basepath, excludes, MATCH_EVERYTHING);
-    return new FileMatcher(null, includesMatcher, excludesMatcher);
-  }
-
   public static FileMatcher absoluteMatcher(final Path basedir, Collection<String> includes,
       Collection<String> excludes) {
     final String basepath = basedir.toAbsolutePath().toString();
