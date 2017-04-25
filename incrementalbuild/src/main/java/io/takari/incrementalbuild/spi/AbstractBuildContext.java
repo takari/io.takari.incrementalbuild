@@ -18,6 +18,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.takari.builder.internal.pathmatcher.FileMatcher;
 import io.takari.incrementalbuild.MessageSeverity;
 import io.takari.incrementalbuild.ResourceMetadata;
 import io.takari.incrementalbuild.ResourceStatus;
@@ -175,7 +176,7 @@ public abstract class AbstractBuildContext {
       Collection<String> includes, Collection<String> excludes) throws IOException {
     basedir = normalize(basedir);
     final List<DefaultResourceMetadata<File>> result = new ArrayList<>();
-    final FileMatcher matcher = FileMatcher.matcher(basedir, includes, excludes);
+    final FileMatcher matcher = FileMatcher.matcher(basedir.toPath(), includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
       public void visit(File file, long lastModified, long length,
@@ -198,7 +199,8 @@ public abstract class AbstractBuildContext {
     if (workspace.getMode() == Mode.DELTA) {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
-      final FileMatcher absoluteMatcher = FileMatcher.absoluteMatcher(basedir, includes, excludes);
+      final FileMatcher absoluteMatcher =
+          FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
       for (ResourceHolder<?> holder : oldState.getResources().values()) {
         if (holder instanceof FileState) {
           FileState fileState = (FileState) holder;
@@ -217,7 +219,7 @@ public abstract class AbstractBuildContext {
       Collection<String> includes, Collection<String> excludes) throws IOException {
     basedir = normalize(basedir);
     final List<DefaultResource<File>> result = new ArrayList<>();
-    final FileMatcher matcher = FileMatcher.matcher(basedir, includes, excludes);
+    final FileMatcher matcher = FileMatcher.matcher(basedir.toPath(), includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
       public void visit(File file, long lastModified, long length,
@@ -245,7 +247,8 @@ public abstract class AbstractBuildContext {
     if (workspace.getMode() == Mode.DELTA) {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
-      final FileMatcher absoluteMatcher = FileMatcher.absoluteMatcher(basedir, includes, excludes);
+      final FileMatcher absoluteMatcher =
+          FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
       for (ResourceHolder<?> holder : oldState.getResources().values()) {
         if (holder instanceof FileState) {
           FileState fileState = (FileState) holder;
