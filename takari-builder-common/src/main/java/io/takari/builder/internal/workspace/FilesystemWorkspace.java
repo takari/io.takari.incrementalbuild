@@ -69,7 +69,7 @@ public class FilesystemWorkspace implements Workspace {
 
   @Override
   public void walk(File basedir, final FileVisitor visitor) throws IOException {
-    if (!basedir.isDirectory()) {
+    if (!basedir.exists()) {
       return;
     }
     final Path basepath = basedir.toPath();
