@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>io.takari.incrementalbuild</artifactId>
-    <version>0.20.4-sfdc-2</version>
+    <version>0.20.4-sfdc-3-SNAPSHOT</version>
   </parent>
   <artifactId>incrementalbuild-its</artifactId>
   <packaging>takari-maven-component</packaging>
