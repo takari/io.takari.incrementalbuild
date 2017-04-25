@@ -176,7 +176,7 @@ public abstract class AbstractBuildContext {
       Collection<String> includes, Collection<String> excludes) throws IOException {
     basedir = normalize(basedir);
     final List<DefaultResourceMetadata<File>> result = new ArrayList<>();
-    final FileMatcher matcher = FileMatcher.matcher(basedir.toPath(), includes, excludes);
+    final FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
       public void visit(File file, long lastModified, long length,
@@ -219,7 +219,7 @@ public abstract class AbstractBuildContext {
       Collection<String> includes, Collection<String> excludes) throws IOException {
     basedir = normalize(basedir);
     final List<DefaultResource<File>> result = new ArrayList<>();
-    final FileMatcher matcher = FileMatcher.matcher(basedir.toPath(), includes, excludes);
+    final FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
     workspace.walk(basedir, new FileVisitor() {
       @Override
       public void visit(File file, long lastModified, long length,

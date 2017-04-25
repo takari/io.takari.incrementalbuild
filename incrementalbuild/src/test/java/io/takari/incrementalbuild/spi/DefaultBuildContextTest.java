@@ -177,7 +177,7 @@ public class DefaultBuildContextTest extends AbstractBuildContextTest {
   public void testRegisterAndProcessInputs() throws Exception {
     File inputFile = temp.newFile("inputFile");
     File outputFile = temp.newFile("outputFile");
-    List<String> includes = Arrays.asList(inputFile.getName());
+    List<String> includes = Arrays.asList("**/" + inputFile.getName());
 
     TestBuildContext context = newBuildContext();
     List<DefaultResource<File>> inputs =

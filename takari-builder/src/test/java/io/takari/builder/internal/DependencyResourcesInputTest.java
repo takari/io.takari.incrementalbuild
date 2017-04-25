@@ -276,8 +276,8 @@ public class DependencyResourcesInputTest {
     TestInputBuilder builder = builder() //
         .withConfigurationXml("<resources>" + "<resources>"
             + "<dependency><groupId>g</groupId><artifactId>a</artifactId></dependency>"
-            + "<includes><include>a.txt</include></includes>" + "</resources>" + "<resources>"
-            + "<dependency>g:b</dependency>" + "<include>b.txt</include>" + "</resources>"
+            + "<includes><include>**/a.txt</include></includes>" + "</resources>" + "<resources>"
+            + "<dependency>g:b</dependency>" + "<include>**/b.txt</include>" + "</resources>"
             + "</resources>")
         .withDependency("g:a", dependencyA).withDependency("g:b", dependencyB);
 
