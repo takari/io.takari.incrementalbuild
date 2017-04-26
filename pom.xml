@@ -211,9 +211,9 @@
         <version>1.0</version>
       </dependency>
       <dependency>
-        <groupId>org.sonatype.sisu</groupId>
-        <artifactId>sisu-guice</artifactId>
-        <version>3.2.3</version>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>4.0</version>
         <classifier>no_aop</classifier>
       </dependency>    
 
