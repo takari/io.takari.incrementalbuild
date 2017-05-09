@@ -54,10 +54,12 @@ import io.takari.builder.ResolutionScope;
 import io.takari.builder.ResourceType;
 import io.takari.builder.enforcer.internal.EnforcerConfig;
 import io.takari.builder.internal.utils.JarBuilder;
+import io.takari.builder.internal.workspace.FilesystemWorkspace;
 import io.takari.builder.testing.BuilderExecution;
 import io.takari.builder.testing.BuilderExecutionException;
 import io.takari.builder.testing.BuilderRuntime;
 import io.takari.builder.testing.InternalBuilderExecution;
+import io.takari.incrementalbuild.workspace.Workspace;
 import io.takari.maven.testing.TestResources;
 
 public class BuilderRunnerTest {
@@ -1145,5 +1147,40 @@ public class BuilderRunnerTest {
         .withConfiguration("output", "output") //
         .execute();
     assertThat(new File(basedir, "output")).exists();
+  }
+
+  @Test
+  public void testSuppressedWorkspaceModeBuild() throws Exception {
+    File basedir = temp.newFolder();
+
+    Workspace suppressedWorksapce = new FilesystemWorkspace() {
+      @Override
+      public Mode getMode() {
+        return Mode.SUPPRESSED;
+      }
+    };
+
+    InternalBuilderExecution.builderExecution(basedir, GeneratedSourcesBuilder.class) //
+        .withWorkspace(suppressedWorksapce) //
+        .execute() //
+        .assertCompileSourceRoots(new File(basedir, "main")) //
+        .assertTestCompileSourceRoots(new File(basedir, "test")) //
+        .assertOutputFiles(basedir); // expected to not generate output files
+
+    ArrayList<String> includes = new ArrayList<String>();
+    includes.add("**/*.main");
+    ArrayList<String> excludes = new ArrayList<String>();
+    excludes.add("**/*.main.exclude");
+
+    InternalBuilderExecution.builderExecution(basedir, GeneratedResourcesBuilder.class) //
+        .withWorkspace(suppressedWorksapce) //
+        .execute() //
+        .assertProjectResources(
+            new ResourceRoot(new File(basedir, "main").getAbsolutePath(), ResourceType.MAIN,
+                includes, excludes),
+            new ResourceRoot(new File(basedir, "test").getAbsolutePath(), ResourceType.TEST,
+                new ArrayList<>(), new ArrayList<>())) //
+        .assertOutputFiles(basedir); // expected to not generate output files
+
   }
 }

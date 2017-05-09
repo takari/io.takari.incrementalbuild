@@ -7,6 +7,7 @@ import org.junit.Assert;
 
 import io.takari.builder.internal.Reflection;
 import io.takari.builder.internal.model.BuilderMethod;
+import io.takari.incrementalbuild.workspace.Workspace;
 
 public class InternalBuilderExecution extends BuilderExecution {
 
@@ -30,6 +31,12 @@ public class InternalBuilderExecution extends BuilderExecution {
   @Override
   public InternalBuilderExecution withClasspath(List<File> classpath) {
     super.withClasspath(classpath);
+    return this;
+  }
+
+  @Override
+  public InternalBuilderExecution withWorkspace(Workspace workspace) {
+    super.withWorkspace(workspace);
     return this;
   }
 }

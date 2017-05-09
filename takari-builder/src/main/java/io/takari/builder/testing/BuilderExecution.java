@@ -37,6 +37,7 @@ import io.takari.builder.internal.ResourceRoot;
 import io.takari.builder.internal.digest.ClasspathDigester;
 import io.takari.builder.internal.model.BuilderMethod;
 import io.takari.builder.internal.workspace.FilesystemWorkspace;
+import io.takari.incrementalbuild.workspace.Workspace;
 
 public class BuilderExecution {
 
@@ -92,6 +93,7 @@ public class BuilderExecution {
   };
 
   private EnforcerConfig enforcerConfig = EnforcerConfig.empty();
+  private Workspace workspace = new FilesystemWorkspace();
 
   private File stateFile;
 
@@ -197,7 +199,7 @@ public class BuilderExecution {
         .setClasspath(classpath.stream().map(f -> f.toPath()).collect(Collectors.toList()),
             new ClasspathDigester()) //
         .setBuilderId(goal) //
-        .setWorkspace(new FilesystemWorkspace()) //
+        .setWorkspace(workspace) //
         .execute(BuilderExecutionException::new);
     return new BuilderExecutionResult(this, context);
   }
@@ -253,6 +255,16 @@ public class BuilderExecution {
 
   public BuilderExecution withEnforcerConfig(EnforcerConfig enforcerConfig) {
     this.enforcerConfig = enforcerConfig;
+
+    return this;
+  }
+
+  /**
+   * @noreference this method is provided to test {@link BuilderRunner}, it is not useful for
+   *              testing of builder implementations.
+   */
+  BuilderExecution withWorkspace(Workspace workspace) {
+    this.workspace = workspace;
 
     return this;
   }

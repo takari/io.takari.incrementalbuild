@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import io.takari.builder.internal.workspace.FilesystemWorkspace;
 import io.takari.incrementalbuild.workspace.Workspace;
 import io.takari.incrementalbuild.workspace.Workspace.FileVisitor;
+import io.takari.incrementalbuild.workspace.Workspace.Mode;
 import io.takari.incrementalbuild.workspace.Workspace.ResourceStatus;
 
 public class BuilderWorkspace {
@@ -29,10 +30,10 @@ public class BuilderWorkspace {
   }
 
   public Stream<Path> walk(Path basedir) throws IOException {
-    switch (getWorkspace(basedir).getMode()) {
+    switch (getMode(basedir)) {
       case SUPPRESSED:
-        // workspace.walk will not return anything, just get from previous execution state
-        return getUnchanged(basedir, null).stream();
+        // workspace.walk will walk all resources to calculate inputs, but build will still be
+        // skipped in BuilderRunner#execute()
       case DELTA:
         // workspace.walk will only return changed resources,
         // combine these with unchanged resources from previous execution state
@@ -49,6 +50,10 @@ public class BuilderWorkspace {
     }
     // this should not end up here
     return Stream.of();
+  }
+
+  public Mode getMode(Path basedir) {
+    return getWorkspace(basedir).getMode();
   }
 
   public boolean isRegularFile(Path path) {

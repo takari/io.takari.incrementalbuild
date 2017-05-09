@@ -295,13 +295,19 @@ public class BuilderRunner {
         new BuilderWorkspace(workspace, projectModelProvider.getBasedir(), oldExecutionState);
 
     final MessageCollector messages = new MessageCollector(log);
-    final BuilderInputs inputs;
 
+
+
+    final BuilderInputs inputs;
     try {
       inputs = BuilderInputsBuilder.build(goal, projectModelProvider, dependencyResolver, evaluator,
           builderType, configuration, forcedParameters, builderWorkspace);
     } catch (IOException e) {
       throw efactory.exception("Could not compute builder inputs", e);
+    }
+
+    if (workspace.getMode().equals(Workspace.Mode.SUPPRESSED)) {
+      return skippedBuilderExecution(efactory, oldExecutionState, inputs, messages);
     }
 
     final Serializable classpathDigest;
@@ -311,27 +317,22 @@ public class BuilderRunner {
       throw efactory.exception("Could not compute classpath digest", e);
     }
 
-    Collection<String> readAndTrackExceptions;
+    final Collection<String> readAndTrackExceptions;
     try {
       readAndTrackExceptions = getReadAndTrackExceptions();
     } catch (ExpressionEvaluationException e) {
       throw efactory.exception("Unable to evaluate Read and Track exceptions", e);
     }
 
-    BuilderInputs.Digest inputsDigest = inputs.getDigest();
-    if (workspace.getMode().equals(Workspace.Mode.SUPPRESSED)
-        || !workspace.getMode().equals(Workspace.Mode.ESCALATED)
-            && inputsDigest.equals(oldExecutionState.inputsDigest) //
-            && getExceptionsDigest(readAndTrackExceptions)
-                .equals(oldExecutionState.exceptionsDigest)
-            && propertiesDigest(oldExecutionState.properties.keySet())
-                .equals(oldExecutionState.properties) //
-            && classpathDigest.equals(oldExecutionState.classpathDigest)) {
-      oldExecutionState.resourceRoots.forEach(this.resourceConsumer);
-      oldExecutionState.compileSourceRoots.forEach(this::addCompileSourceRootToProject);
-      messages.replayMessages(efactory, oldExecutionState.messages); // fails the build if there
-                                                                     // were errors
-      return null;
+    final Digest inputsDigest = inputs.getDigest();
+    if (!workspace.getMode().equals(Workspace.Mode.ESCALATED)
+        && inputsDigest.equals(oldExecutionState.inputsDigest) //
+        && getExceptionsDigest(readAndTrackExceptions).equals(oldExecutionState.exceptionsDigest)
+        && propertiesDigest(oldExecutionState.properties.keySet())
+            .equals(oldExecutionState.properties) //
+        && classpathDigest.equals(oldExecutionState.classpathDigest)) {
+
+      return skippedBuilderExecution(efactory, oldExecutionState, null, messages);
     }
 
     deleteOutputs(oldExecutionState.outputPaths, efactory);
@@ -487,6 +488,23 @@ public class BuilderRunner {
     }
 
     return builderContext;
+  }
+
+  private <E extends Exception> BuilderContext skippedBuilderExecution(ExceptionFactory<E> efactory,
+      BuilderExecutionState oldExecutionState, BuilderInputs inputs,
+      final MessageCollector messages) throws E {
+
+    if (inputs != null) {
+      inputs.resourceRoots.forEach(this.resourceConsumer);
+      inputs.compileSourceRoots.forEach(this::addCompileSourceRootToProject);
+    } else {
+      oldExecutionState.resourceRoots.forEach(this.resourceConsumer);
+      oldExecutionState.compileSourceRoots.forEach(this::addCompileSourceRootToProject);
+    }
+
+    messages.replayMessages(efactory, oldExecutionState.messages); // fails the build if there
+                                                                   // were errors
+    return null;
   }
 
   private void clearStaleMessages(BuilderExecutionState oldExecutionState) {
