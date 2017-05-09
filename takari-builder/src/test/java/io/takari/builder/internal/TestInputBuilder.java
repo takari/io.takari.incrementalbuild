@@ -29,6 +29,7 @@ import io.takari.builder.internal.model.BuilderClass;
 import io.takari.builder.internal.workspace.FilesystemWorkspace;
 
 class TestInputBuilder {
+
   public static class TestArtifactMetadata implements IArtifactMetadata {
 
     private final String groupId;
@@ -155,9 +156,8 @@ class TestInputBuilder {
   private final BuilderWorkspace workspace;
 
   public TestInputBuilder(File basedir) {
-    this.basedir = basedir;
-    this.workspace = new BuilderWorkspace(new FilesystemWorkspace(),
-        basedir != null ? basedir.toPath() : Paths.get("/"), null);
+    this.basedir = basedir != null ? basedir : new File("/");
+    this.workspace = new BuilderWorkspace(new FilesystemWorkspace(), this.basedir.toPath(), null);
   }
 
   @SuppressWarnings("unchecked")
