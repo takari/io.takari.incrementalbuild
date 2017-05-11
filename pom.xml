@@ -22,12 +22,12 @@
       <url>http://www.spdx.org/licenses/EPL-1.0</url>
     </license>
   </licenses>
-  <scm>
-    <url>https://github.com/takari/io.takari.incrementalbuild</url>
-    <connection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</connection>
-    <developerConnection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
+  <!-- <scm> -->
+  <!--   <url>https://github.com/takari/io.takari.incrementalbuild</url> -->
+  <!--   <connection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</connection> -->
+  <!--   <developerConnection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</developerConnection> -->
+  <!--   <tag>HEAD</tag> -->
+  <!-- </scm> -->
   <developers>
     <developer>
       <name>Jason van Zyl</name>
@@ -53,8 +53,8 @@
     <classworlds.version>2.5.2</classworlds.version>
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
-    <incrementalbuild-workspace.version>0.20.5-SNAPSHOT</incrementalbuild-workspace.version>
-    <takari-builder-security-manager.version>0.20.5-SNAPSHOT</takari-builder-security-manager.version>
+    <incrementalbuild-workspace.version>0.20.4-sfdc-1</incrementalbuild-workspace.version>
+    <takari-builder-security-manager.version>0.20.4-sfdc-1</takari-builder-security-manager.version>
   </properties>
 
   <modules>
@@ -86,8 +86,8 @@
     
      -->
      
-    <module>incrementalbuild-workspace</module>
-    <module>takari-builder-security-manager</module>
+    <!-- <module>incrementalbuild-workspace</module> -->
+    <!-- <module>takari-builder-security-manager</module> -->
     
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>
@@ -287,6 +287,20 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  
+  <scm>
+    <connection>scm:git:https://git.soma.salesforce.com/modularization-team/takari-incr3</connection>
+    <developerConnection>scm:git:git@git.soma.salesforce.com:modularization-team/takari-incr3.git</developerConnection>
+    <url>https://git.soma.salesforce.com/modularization-team/takari-incr3</url>
+    <tag>HEAD</tag>
+  </scm>
+  
+  <distributionManagement>
+    <repository>
+      <id>nexus</id>
+      <url>https://nexus.soma.salesforce.com/nexus/content/repositories/releases/</url>
+    </repository>
+  </distributionManagement>
   
   <build>
     <pluginManagement>
