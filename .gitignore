@@ -8,3 +8,4 @@ bin/
 .idea
 out/
 .DS_Store
+.drone.sec.yml
