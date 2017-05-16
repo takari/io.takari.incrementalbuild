@@ -9,7 +9,9 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -34,7 +36,7 @@ public class LegacyMojoWhitelist implements MojoExecutionListener {
 
   final Path configFile;
 
-  final Set<String> whitelist;
+  final Map<String, Set<String>> whitelist;
 
   @Inject
   public LegacyMojoWhitelist(MavenSession session) throws IOException, MojoExecutionException {
@@ -51,8 +53,9 @@ public class LegacyMojoWhitelist implements MojoExecutionListener {
       return;
     }
     Set<String> whitelist = null;
+    Map<String, Set<String>> executionWhitelist = null;
     try (BufferedReader r = Files.newBufferedReader(configFile)) {
-      whitelist = new LinkedHashSet<>();
+      executionWhitelist = new LinkedHashMap<>();
       int lineno = 0;
       String str;
       while ((str = r.readLine()) != null) {
@@ -73,10 +76,25 @@ public class LegacyMojoWhitelist implements MojoExecutionListener {
           String groupId = st.nextToken();
           String artifactId = st.nextToken();
           String goal = st.nextToken();
-          if (st.hasMoreTokens()) {
-            throw newMojoExecutionException(lineno, str);
+
+          String key = key(groupId, artifactId, goal);
+
+          if (!executionWhitelist.containsKey(key)) {
+            executionWhitelist.put(key, new LinkedHashSet<>());
           }
-          whitelist.add(key(groupId, artifactId, goal));
+
+          if (st.hasMoreTokens()) {
+            String executionId = st.nextToken();
+            String projectGroupId = st.nextToken();
+            String projectArtifactId = st.nextToken();
+
+            executionWhitelist.get(key)
+                .add(executionKey(executionId, projectGroupId, projectArtifactId));
+
+            if (st.hasMoreElements()) {
+              throw newMojoExecutionException(lineno, str);
+            }
+          }
         } catch (NoSuchElementException e) {
           throw newMojoExecutionException(lineno, str);
         }
@@ -84,18 +102,24 @@ public class LegacyMojoWhitelist implements MojoExecutionListener {
     } catch (FileNotFoundException | NoSuchFileException expected) {
       // this is expected and results in this.whitelist == null
     }
-    this.whitelist = whitelist != null ? Collections.unmodifiableSet(whitelist) : null;
+    this.whitelist =
+        executionWhitelist != null ? Collections.unmodifiableMap(executionWhitelist) : null;
   }
 
   private MojoExecutionException newMojoExecutionException(int lineno, String line) {
     String msg = String.format(
-        "Invalid %s:%d configuration, expected <groupId>:<artifactId>:<goal>, found %s",
+        "Invalid %s:%d configuration, expected <groupId>:<artifactId>:<goal> or <groupId>:<artifactId>"
+            + ":<goal>:<executionId>:<projectGroupId>:<projectArtifactId>, found %s",
         FILE_WHITELIST, lineno, line);
     return new MojoExecutionException(msg);
   }
 
   private String key(String groupId, String artifactId, String goal) {
     return groupId + ":" + artifactId + ":" + goal;
+  }
+
+  private String executionKey(String executionId, String projectGroupId, String projectArtifactId) {
+    return executionId + ":" + projectGroupId + ":" + projectArtifactId;
   }
 
   @Override
@@ -115,20 +139,46 @@ public class LegacyMojoWhitelist implements MojoExecutionListener {
       return;
     }
 
-    final boolean whitelisted = whitelist
-        .contains(key(execution.getGroupId(), execution.getArtifactId(), execution.getGoal()));
+    String key = key(execution.getGroupId(), execution.getArtifactId(), execution.getGoal());
+
     final boolean legacy = !AbstractIncrementalMojo.class.isInstance(event.getMojo());
-    if (legacy && !whitelisted) {
+    final boolean executionWhitelisted = isExecutionWhitelisted(key, execution.getExecutionId(),
+        event.getProject().getGroupId(), event.getProject().getArtifactId());
+
+    if (legacy && !executionWhitelisted) {
       String msg = String.format("Unsupported legacy mojo %s @ %s. Whitelist file location %s",
           execution, event.getProject().getArtifactId(), configFile);
       throw new MojoExecutionException(msg);
     }
-    if (!legacy && whitelisted) {
+
+    if (!legacy && executionWhitelisted) {
       String msg =
           String.format("Redundant whitelist entry for builder %s @ %s. Whitelist file location %s",
               execution, event.getProject().getArtifactId(), configFile);
       throw new MojoExecutionException(msg);
     }
+  }
+
+  boolean isExecutionWhitelisted(String key, String executionId, String projectGroupId,
+      String projectArtifactId) {
+
+    if (!whitelist.containsKey(key)) {
+      // not whitelisted
+      return false;
+    }
+
+    Set<String> executions = whitelist.get(key);
+
+    if (executions.isEmpty()) {
+      // no specific executions whitelisted. Allow
+      return true;
+    }
+
+    return executions.contains(executionKey(executionId, projectGroupId, projectArtifactId)) // explicitly
+                                                                                             // whitelisted
+                                                                                             // executions
+        || executions.contains(executionKey(executionId, "*", "*")); // wildcard whitelisted
+                                                                     // execution
   }
 
   @Override
