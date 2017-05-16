@@ -42,4 +42,16 @@ public class LegacyMojoWhitelistMavenTest {
         .assertLogText("[ERROR]").assertLogText("Redundant whitelist entry");
   }
 
+  @Test
+  public void testWhitelistedExecution() throws Exception {
+    File basedir = resources.getBasedir("whitelist-multi-module");
+
+    verifier.forProject(basedir).execute("validate")
+        .assertLogText("[INFO] whitelist-multi-module ............................. SUCCESS")
+        .assertLogText("[INFO] whitelisted-executions ............................. SUCCESS")
+        .assertLogText("[INFO] non-whitelisted-executions ......................... FAILURE")
+        .assertLogText(
+            "Unsupported legacy mojo org.apache.maven.plugins:maven-resources-plugin:2.7:resources {execution: not-allowed} @ non-whitelisted-executions");
+  }
+
 }
