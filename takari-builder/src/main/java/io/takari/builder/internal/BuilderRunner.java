@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -559,12 +560,18 @@ public class BuilderRunner {
     for (String oldDirectory : directories) {
       try {
         Path oldDirectoryFile = Paths.get(oldDirectory);
-        if (!Files.newDirectoryStream(oldDirectoryFile).iterator().hasNext()) {
+        if (isEmpty(oldDirectoryFile)) {
           workspace.deleteFile(oldDirectoryFile.toFile());
         }
       } catch (IOException e) {
         throw efactory.exception("Could not delete builder output", e);
       }
+    }
+  }
+
+  private static boolean isEmpty(Path dir) throws IOException {
+    try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+      return !ds.iterator().hasNext();
     }
   }
 
