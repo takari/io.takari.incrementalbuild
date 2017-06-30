@@ -3,8 +3,11 @@ package io.takari.builder.enforcer;
 import static io.takari.builder.enforcer.ComposableSecurityManagerPolicy.getContextPolicies;
 import static io.takari.builder.enforcer.ComposableSecurityManagerPolicy.setContextPolicies;
 
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.MDC;
 
@@ -19,15 +22,77 @@ import org.slf4j.MDC;
  */
 public class PolicyContextPreserver {
 
-  private final Map<Object, CachingPolicy> policies;
+  /**
+   * Represents thread context and provides methods to preserve and restore the context value.
+   * 
+   * @see PolicyContextPreserver#registerDelegate(CurrentContextAccessor)
+   */
+  public static interface CurrentContextAccessor {
 
-  @SuppressWarnings("rawtypes")
-  private final Map mdc;
+    /**
+     * Returns current thread context value.
+     */
+    public Object getCurrentContext();
+
+    /**
+     * Sets the current thread context value.
+     */
+    public void setCurrentContext(Object value);
+  }
+
+  public static void registerDelegate(CurrentContextAccessor preserver) {
+    accessors.add(preserver);
+  }
+
+  private static final List<CurrentContextAccessor> accessors = new CopyOnWriteArrayList<>(
+      new CurrentContextAccessor[] {new PolicyPreserver(), new SLF4JPreserver()});
+
+  private static IdentityHashMap<CurrentContextAccessor, Object> preserve() {
+    IdentityHashMap<CurrentContextAccessor, Object> context = new IdentityHashMap<>();
+    accessors.forEach(d -> context.put(d, d.getCurrentContext()));
+    return context;
+  }
+
+  private static void restore(IdentityHashMap<CurrentContextAccessor, Object> context) {
+    context.forEach((p, v) -> p.setCurrentContext(v));
+  }
+
+  private static class SLF4JPreserver implements CurrentContextAccessor {
+    @Override
+    public Map getCurrentContext() {
+      return MDC.getCopyOfContextMap();
+    }
+
+    @Override
+    public void setCurrentContext(Object value) {
+      Map mdc = (Map) value;
+      if (mdc != null) {
+        MDC.setContextMap(mdc);
+      } else {
+        MDC.clear();
+      }
+    }
+  }
+
+  private static class PolicyPreserver implements CurrentContextAccessor {
+
+    @Override
+    public Map<Object, CachingPolicy> getCurrentContext() {
+      return getContextPolicies();
+    }
+
+    @Override
+    public void setCurrentContext(Object value) {
+      @SuppressWarnings("unchecked")
+      Map<Object, CachingPolicy> policies = (Map<Object, CachingPolicy>) value;
+      setContextPolicies(policies);
+    }
+  }
+
+  private final IdentityHashMap<CurrentContextAccessor, Object> preservedContext;
 
   public PolicyContextPreserver() {
-    Map<Object, CachingPolicy> policies = getContextPolicies();
-    this.policies = policies;
-    mdc = getMDC();
+    this.preservedContext = preserve();
   }
 
   @SuppressWarnings("serial")
@@ -48,16 +113,12 @@ public class PolicyContextPreserver {
     return new Runnable() {
       @Override
       public void run() {
-        Map<Object, CachingPolicy> _policies = getContextPolicies();
-        @SuppressWarnings("rawtypes")
-        final Map _mdc = getMDC();
+        IdentityHashMap<CurrentContextAccessor, Object> threadContext = preserve();
         try {
-          setMDC(mdc);
-          setContextPolicies(policies);
+          restore(preservedContext);
           runnable.run();
         } finally {
-          setContextPolicies(_policies);
-          setMDC(_mdc);
+          restore(threadContext);
         }
       }
     };
@@ -67,12 +128,9 @@ public class PolicyContextPreserver {
     return new WrappedCallable<T>() {
       @Override
       public T call() throws WrappedException {
-        Map<Object, CachingPolicy> _policies = getContextPolicies();
-        @SuppressWarnings("rawtypes")
-        final Map _mdc = getMDC();
+        IdentityHashMap<CurrentContextAccessor, Object> threadContext = preserve();
         try {
-          setMDC(mdc);
-          setContextPolicies(policies);
+          restore(preservedContext);
           return callable.call();
         } catch (RuntimeException e) {
           throw e;
@@ -81,24 +139,9 @@ public class PolicyContextPreserver {
               + e.getClass().getName();
           throw new WrappedException(message, e);
         } finally {
-          setContextPolicies(_policies);
-          setMDC(_mdc);
+          restore(threadContext);
         }
       }
     };
-  }
-
-  @SuppressWarnings("rawtypes")
-  protected static Map getMDC() {
-    return MDC.getCopyOfContextMap();
-  }
-
-  @SuppressWarnings("rawtypes")
-  protected static void setMDC(final Map mdc) {
-    if (mdc != null) {
-      MDC.setContextMap(mdc);
-    } else {
-      MDC.clear();
-    }
   }
 }
