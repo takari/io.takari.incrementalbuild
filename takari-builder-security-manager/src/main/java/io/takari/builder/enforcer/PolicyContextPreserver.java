@@ -25,7 +25,7 @@ public class PolicyContextPreserver {
   /**
    * Represents thread context and provides methods to preserve and restore the context value.
    * 
-   * @see PolicyContextPreserver#registerDelegate(CurrentContextAccessor)
+   * @see PolicyContextPreserver#registerAccessor(CurrentContextAccessor)
    */
   public static interface CurrentContextAccessor {
 
@@ -40,8 +40,8 @@ public class PolicyContextPreserver {
     public void setCurrentContext(Object value);
   }
 
-  public static void registerDelegate(CurrentContextAccessor preserver) {
-    accessors.add(preserver);
+  public static void registerAccessor(CurrentContextAccessor accessor) {
+    accessors.add(accessor);
   }
 
   private static final List<CurrentContextAccessor> accessors = new CopyOnWriteArrayList<>(
