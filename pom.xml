@@ -10,7 +10,7 @@
 
   <groupId>io.takari</groupId>
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>0.20.4-sfdc-5-SNAPSHOT</version>
+  <version>0.20.4-sfdc-5</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
@@ -54,7 +54,7 @@
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
     <incrementalbuild-workspace.version>0.20.4-sfdc-1</incrementalbuild-workspace.version>
-    <takari-builder-security-manager.version>0.20.4-sfdc-5-SNAPSHOT</takari-builder-security-manager.version>
+    <takari-builder-security-manager.version>0.20.4-sfdc-5</takari-builder-security-manager.version>
   </properties>
 
   <modules>
