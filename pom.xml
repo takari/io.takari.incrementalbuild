@@ -10,7 +10,7 @@
 
   <groupId>io.takari</groupId>
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>0.20.4-sfdc-5</version>
+  <version>0.20.4-sfdc-6-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
@@ -87,7 +87,7 @@
      -->
      
     <!-- <module>incrementalbuild-workspace</module> -->
-    <module>takari-builder-security-manager</module>
+    <!-- <module>takari-builder-security-manager</module> -->
     
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>
