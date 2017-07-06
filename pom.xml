@@ -54,7 +54,7 @@
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
     <incrementalbuild-workspace.version>0.20.4-sfdc-1</incrementalbuild-workspace.version>
-    <takari-builder-security-manager.version>0.20.4-sfdc-1</takari-builder-security-manager.version>
+    <takari-builder-security-manager.version>0.20.4-sfdc-5-SNAPSHOT</takari-builder-security-manager.version>
   </properties>
 
   <modules>
@@ -87,7 +87,7 @@
      -->
      
     <!-- <module>incrementalbuild-workspace</module> -->
-    <!-- <module>takari-builder-security-manager</module> -->
+    <module>takari-builder-security-manager</module>
     
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>
