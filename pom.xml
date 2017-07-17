@@ -10,7 +10,7 @@
 
   <groupId>io.takari</groupId>
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>0.20.5-SNAPSHOT</version>
+  <version>0.20.5</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
@@ -53,8 +53,8 @@
     <classworlds.version>2.5.2</classworlds.version>
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
-    <incrementalbuild-workspace.version>0.20.5-SNAPSHOT</incrementalbuild-workspace.version>
-    <takari-builder-security-manager.version>0.20.5-SNAPSHOT</takari-builder-security-manager.version>
+    <incrementalbuild-workspace.version>0.20.5</incrementalbuild-workspace.version>
+    <takari-builder-security-manager.version>0.20.5</takari-builder-security-manager.version>
   </properties>
 
   <modules>
