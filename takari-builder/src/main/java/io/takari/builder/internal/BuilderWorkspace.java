@@ -24,9 +24,17 @@ public class BuilderWorkspace {
 
   public BuilderWorkspace(Workspace workspace, Path basedir,
       BuilderExecutionState oldExecutionState) {
-    this.workspace = workspace;
     this.projectBasedir = basedir.normalize();
     this.oldExecutionState = oldExecutionState;
+    if (workspace.getMode() == Mode.DELTA && oldExecutionState.isEscalated()) {
+      // Given an escalated execution state, a build must be run for this builder
+      // However, if the workspace is in a delta mode, it must be escalated since
+      // delta mode would depend on the workspace state for inputs. Escalating the workspace
+      // will force a build that the escalated execution state has noted
+      this.workspace = workspace.escalate();
+    } else {
+      this.workspace = workspace;
+    }
   }
 
   public Stream<Path> walk(Path basedir) throws IOException {
