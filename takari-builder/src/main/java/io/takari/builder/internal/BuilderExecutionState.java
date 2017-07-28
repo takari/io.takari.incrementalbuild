@@ -71,6 +71,17 @@ class BuilderExecutionState {
     this.exceptionsDigest = exceptionsDigest;
   }
 
+  /**
+   * Denotes whether the BuilderExecutionState is in an escalated state When it is in an escalated
+   * state, the build needs to be run.
+   * 
+   * @return true if the BuilderExecutionState is in an escalated state false if it is not. By
+   *         default, this will only return true. It must be extended to change the behavior.
+   */
+  public boolean isEscalated() {
+    return false;
+  }
+
   @SuppressWarnings("unchecked")
   public static BuilderExecutionState load(Path file) {
     Collection<String> outputPaths = Collections.emptySet();
@@ -88,9 +99,12 @@ class BuilderExecutionState {
             compileSourceRoots, resourceRoots, messages, exceptionsDigest);
       } catch (IOException | ClassNotFoundException e) {}
     }
-    return new BuilderExecutionState(BuilderInputs.emptyDigest(), Collections.emptyMap(), "",
-        outputPaths, Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
-        Collections.emptyMap());
+
+    // If a normal BuilderExecutionState is not able to be built
+    // Return an escalated state that states that there will need to be
+    // a build for this particular builder. The escalated state will not hold
+    // anything but the outputPaths of the builder
+    return new EscalatedExecutionState(outputPaths);
   }
 
   private static ObjectInputStream newObjectInputStream(Path file) throws IOException {
@@ -120,6 +134,19 @@ class BuilderExecutionState {
       os.writeObject(resourceRoots);
       os.writeObject(messages);
       os.writeObject(exceptionsDigest);
+    }
+  }
+
+  private static class EscalatedExecutionState extends BuilderExecutionState {
+    EscalatedExecutionState(Collection<String> outputPaths) {
+      super(BuilderInputs.emptyDigest(), Collections.emptyMap(), "", outputPaths,
+          Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
+          Collections.emptyMap());
+    }
+
+    @Override
+    public boolean isEscalated() {
+      return true;
     }
   }
 
