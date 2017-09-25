@@ -178,7 +178,7 @@ public abstract class AbstractBuildContext {
     basedir = normalize(basedir);
     final List<DefaultResourceMetadata<File>> result = new ArrayList<>();
     for (Map.Entry<Path, FileMatcher> subdir : FileMatcher
-        .subdirMatchers(basedir.toPath(), includes, excludes).entrySet()) {
+        .subMatchers(basedir.toPath(), includes, excludes).entrySet()) {
       workspace.walk(subdir.getKey().toFile(), new FileVisitor() {
         @Override
         public void visit(File file, long lastModified, long length,
@@ -223,7 +223,7 @@ public abstract class AbstractBuildContext {
     basedir = normalize(basedir);
     final List<DefaultResource<File>> result = new ArrayList<>();
     for (Map.Entry<Path, FileMatcher> subdir : FileMatcher
-        .subdirMatchers(basedir.toPath(), includes, excludes).entrySet()) {
+        .subMatchers(basedir.toPath(), includes, excludes).entrySet()) {
       workspace.walk(subdir.getKey().toFile(), new FileVisitor() {
         @Override
         public void visit(File file, long lastModified, long length,

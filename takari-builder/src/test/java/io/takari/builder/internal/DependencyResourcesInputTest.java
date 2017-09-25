@@ -124,6 +124,36 @@ public class DependencyResourcesInputTest {
   }
 
   @Test
+  public void testSubdirDependency() throws Exception {
+    File dependency = newJarArtifact("dir/test.xml");
+
+    TestInputBuilder builder = builder() //
+        .withConfigurationXml("<resources>" //
+            + "<include>dir/test.xml</include>" + "</resources>") //
+        .withDependency("g:a", dependency);
+
+    @SuppressWarnings("unchecked")
+    List<URL> value = (List<URL>) builder.build(_ListURLData.class, "resources").value();
+    assertThat(value).hasSize(1);
+    assertThat(value.get(0).getPath()).isEqualTo("dir/test.xml");
+  }
+
+  @Test
+  public void testDependencyWithOpenEndedMatcher() throws Exception {
+    File dependency = newJarArtifact("dir/test.xml");
+
+    TestInputBuilder builder = builder() //
+        .withConfigurationXml("<resources>" //
+            + "<include>dir/**/test.xml</include>" + "</resources>") //
+        .withDependency("g:a", dependency);
+
+    @SuppressWarnings("unchecked")
+    List<URL> value = (List<URL>) builder.build(_ListURLData.class, "resources").value();
+    assertThat(value).hasSize(1);
+    assertThat(value.get(0).getPath()).isEqualTo("dir/test.xml");
+  }
+
+  @Test
   public void testDependencies() throws Exception {
     File dependency = newJarArtifact("a.txt");
 

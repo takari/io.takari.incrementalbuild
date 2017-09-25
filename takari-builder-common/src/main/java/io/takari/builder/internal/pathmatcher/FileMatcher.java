@@ -160,8 +160,19 @@ public class FileMatcher {
     return matches(file.getAbsolutePath());
   }
 
-  public static Map<Path, FileMatcher> subdirMatchers(final Path basedir,
-      Collection<String> includes, Collection<String> excludes) {
+  /**
+   * Given a directory, returns a map of location to FileMatcher that will optimize the lookup. The
+   * key can either be a file (if it is a single path matcher) or a directory (if it is an
+   * open-ended matcher). The associated matcher will still be relative to the basedir, not to the
+   * key.
+   * 
+   * @param basedir
+   * @param includes
+   * @param excludes
+   * @return
+   */
+  public static Map<Path, FileMatcher> subMatchers(final Path basedir, Collection<String> includes,
+      Collection<String> excludes) {
     if (includes == null || includes.isEmpty()) {
       return Collections.singletonMap(basedir, absoluteMatcher(basedir, includes, excludes));
     }
