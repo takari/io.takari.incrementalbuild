@@ -14,7 +14,6 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -25,8 +24,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.function.Function;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,6 +50,7 @@ import io.takari.builder.internal.BuilderInputs.StringValue;
 import io.takari.builder.internal.BuilderInputs.Value;
 import io.takari.builder.internal.Reflection.ReflectionField;
 import io.takari.builder.internal.Reflection.ReflectionType;
+import io.takari.builder.internal.cache.JarEntriesCache;
 import io.takari.builder.internal.model.AbstractFileParameter;
 import io.takari.builder.internal.model.AbstractParameter;
 import io.takari.builder.internal.model.AbstractResourceSelectionParameter;
@@ -77,6 +75,7 @@ import io.takari.builder.internal.model.SimpleParameter;
 import io.takari.builder.internal.model.TypeAdapter;
 import io.takari.builder.internal.model.UnsupportedCollectionParameter;
 import io.takari.builder.internal.pathmatcher.FileMatcher;
+import io.takari.builder.internal.pathmatcher.JarEntries;
 
 public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
@@ -610,34 +609,20 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
           throw new InvalidConfigurationException(context, basedir + " is a regular file");
         }
         // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        FileMatcher matcher = FileMatcher.absoluteMatcher(Paths.get("/"), includes, excludes);
-        return selectFromJar(basedir, matcher);
+        return selectFromJar(basedir,
+            FileMatcher.subMatchers(Paths.get("/"), includes, excludes));
       } else if (workspace.isDirectory(basedir)) {
         // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        return selectFromDirectory(FileMatcher.subdirMatchers(basedir, includes, excludes));
+        return selectFromDirectory(FileMatcher.subMatchers(basedir, includes, excludes));
       } else {
         return Collections.emptyList();
       }
     }
 
-    private List<Path> selectFromJar(Path basedir, FileMatcher matcher) {
-      try (JarFile jarFile = new JarFile(basedir.toFile())) {
+    private List<Path> selectFromJar(Path jarPath, Map<Path, FileMatcher> subdirMatchers) {
+      JarEntries jarEntries = JarEntriesCache.get().get(jarPath);
 
-        Enumeration<JarEntry> entries = jarFile.entries();
-        List<Path> matchedPaths = new ArrayList<>();
-        while (entries.hasMoreElements()) {
-          JarEntry entry = entries.nextElement();
-          if (!entry.isDirectory()) {
-            if (matcher.matches("/" + entry.getName())) {
-              matchedPaths.add(Paths.get(entry.getName()));
-            }
-          }
-        }
-
-        return matchedPaths;
-      } catch (IOException e) {
-        throw new InvalidConfigurationException(context, "could not list jar entries", e);
-      }
+      return jarEntries.match(subdirMatchers);
     }
 
     private List<Path> selectFromDirectory(Map<Path, FileMatcher> matchers) {
@@ -837,10 +822,10 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       TreeSet<Path> files = new TreeSet<>();
       TreeSet<String> filenames = new TreeSet<>();
       if (paths != null) {
-        paths.forEach(path -> {
-          files.add(path);
-          filenames.add(relativePath(selection.location, path));
-        });
+        for (int i = 0; i < paths.size(); i++) {
+          files.add(paths.get(i));
+          filenames.add(relativePath(selection.location, paths.get(i)));
+        }
       }
       return new InputDirectoryValue(type, basedir, includes, excludes, files, filenames);
     }
@@ -1274,7 +1259,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     // TODO resource delta support, see takari BuildContext registerAndProcessInputs
     TreeSet<Path> files = new TreeSet<>();
     TreeSet<String> filenames = new TreeSet<>();
-    FileMatcher.subdirMatchers(location, includes, excludes).forEach((subdir, matcher) -> {
+    FileMatcher.subMatchers(location, includes, excludes).forEach((subdir, matcher) -> {
       try (Stream<Path> paths = workspace.walk(subdir)) {
         paths.filter(path -> workspace.exists(path)) //
             .filter(path -> matcher.matches(path)) //

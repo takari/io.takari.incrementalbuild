@@ -68,11 +68,25 @@ class Plexus_MatchPattern {
 
   static String[] tokenizePathToString(String path, String separator) {
     List<String> ret = new ArrayList<String>();
-    StringTokenizer st = new StringTokenizer(path, separator);
+    // using this constructor for StringTokenizer (with returnDelims=true) is substantially more
+    // performant than not returning delimiters, even with the overhead of discarding the
+    // delimiters ourselves.
+    StringTokenizer st = new StringTokenizer(path, separator, true);
     while (st.hasMoreTokens()) {
-      ret.add(st.nextToken());
+      String next = getNext(st, separator);
+      if (next != null) {
+        ret.add(next);
+      }
     }
     return ret.toArray(new String[ret.size()]);
+  }
+
+  private static String getNext(StringTokenizer st, String separator) {
+    String value = st.nextToken();
+    if (separator.equals(value))
+      value = null;
+    else if (st.hasMoreTokens()) st.nextToken();
+    return value;
   }
 
   public static Plexus_MatchPattern fromString(String source) {
