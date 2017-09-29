@@ -34,7 +34,7 @@ public class ClasspathMatcher {
   }
 
   private PathMatcher createMatcher() {
-    Builder builder = PathMatcher.builder(new PathNormalizer(Paths.get("/")));
+    Builder builder = PathMatcher.builder(PathNormalizer.create(Paths.get("/")));
 
     suppliers.stream().map(s -> s.entries()).flatMap(entries -> entries.stream())
         .forEach(entry -> builder.includePrefix(normalize0(entry)));

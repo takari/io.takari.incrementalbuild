@@ -217,7 +217,7 @@ public class BuilderContext {
       this.id = id;
       this.sessionBasedir = sessionBasedir;
       this.messages = messages;
-      this.normalizer = new PathNormalizer(sessionBasedir);
+      this.normalizer = PathNormalizer.create(sessionBasedir);
       this.readMatcherBuilder = PathMatcher.builder(normalizer).excludeRoot();
       this.readAndTrackMatcherBuilder = PathMatcher.builder(normalizer).excludeRoot();
       this.writeMatcherBuilder = PathMatcher.builder(normalizer).excludeRoot();

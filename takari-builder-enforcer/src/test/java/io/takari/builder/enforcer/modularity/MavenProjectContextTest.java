@@ -26,7 +26,7 @@ public class MavenProjectContextTest {
 
   @Test
   public void testStore() throws Exception {
-    PathNormalizer normalizer = new PathNormalizer(Paths.get("/locations"));
+    PathNormalizer normalizer = PathNormalizer.create(Paths.get("/locations"));
     PathMatcher readMatcher = PathMatcher.builder(normalizer) //
         .includePrefix("/read/includes") //
         .includePath("/readIncludes") //
@@ -100,7 +100,7 @@ public class MavenProjectContextTest {
 
   @Test
   public void testExecPath() throws Exception {
-    PathNormalizer normalizer = new PathNormalizer(Paths.get("/locations/"));
+    PathNormalizer normalizer = PathNormalizer.create(Paths.get("/locations/"));
     PathMatcher readMatcher = PathMatcher.builder(normalizer).build();
     PathMatcher writeMatcher = PathMatcher.builder(normalizer).build();
     Set<String> execIncludes = ImmutableSet.of("p4");

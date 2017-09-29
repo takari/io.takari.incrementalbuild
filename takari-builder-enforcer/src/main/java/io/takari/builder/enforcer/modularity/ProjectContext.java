@@ -118,7 +118,7 @@ public class ProjectContext {
     BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     String str;
     String workspaceDirectory = r.readLine();
-    final PathNormalizer normalizer = new PathNormalizer(Paths.get(workspaceDirectory));
+    final PathNormalizer normalizer = PathNormalizer.create(Paths.get(workspaceDirectory));
     Builder readMatcherBuilder = PathMatcher.builder(normalizer);
     Builder writeMatcherBuilder = PathMatcher.builder(normalizer);
     while ((str = r.readLine()) != null) {
