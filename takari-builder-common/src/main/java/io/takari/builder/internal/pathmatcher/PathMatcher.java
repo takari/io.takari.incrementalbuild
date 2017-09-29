@@ -281,11 +281,9 @@ public class PathMatcher {
   }
 
   public static class Builder {
-    private final PathNormalizer normalizer;
     private BuilderNode root;
 
-    private Builder(PathNormalizer normalizer, MatchMode matchMode) {
-      this.normalizer = normalizer;
+    Builder(MatchMode matchMode) {
       this.root = new BuilderNode();
       this.root.matchMode = matchMode;
     }
@@ -293,7 +291,6 @@ public class PathMatcher {
     // returns directory node with the given path
     // creates the requested node and any intermediate nodes if necessary
     BuilderNode getDirectoryNode(String path) {
-      path = normalizer.normalize(path);
       BuilderNode node = root;
       for (String element : split(path)) {
         node = getDirectoryNode(node, element);
@@ -392,11 +389,35 @@ public class PathMatcher {
     }
   }
 
+  private static class NormalizedBuilder extends Builder {
+
+    private PathNormalizer normalizer;
+
+    NormalizedBuilder(PathNormalizer normalizer, MatchMode matchMode) {
+      super(matchMode);
+      this.normalizer = normalizer;
+    }
+
+    @Override
+    BuilderNode getDirectoryNode(String path) {
+      return super.getDirectoryNode(normalizer.normalize(path));
+    }
+  }
+
   /**
-   * Creates and returns new path matcher builder.
+   * Creates and returns new path matcher builder. Paths added to the builder will be normalized
+   * using provided {@code normalizer}.
    */
   public static Builder builder(PathNormalizer normalizer) {
-    return new Builder(normalizer, MatchMode.inherit);
+    return new NormalizedBuilder(normalizer, MatchMode.inherit);
+  }
+
+  /**
+   * Creates and returns new matcher builder. Paths added to the builder are assumed to be
+   * normalized by a {@link PathNormalizer}, but the builder itself will not normalize paths.
+   */
+  public static Builder builder() {
+    return new Builder(MatchMode.inherit);
   }
 
 }

@@ -2,17 +2,12 @@ package io.takari.builder.internal.pathmatcher;
 
 import static org.junit.Assert.assertEquals;
 
-import java.nio.file.Paths;
-
 import org.junit.Assert;
 import org.junit.Test;
 
-import io.takari.builder.internal.pathmatcher.PathMatcher;
 import io.takari.builder.internal.pathmatcher.PathMatcher.Builder;
-import io.takari.builder.internal.pathmatcher.PathNormalizer;
 
 public class PathMatcherTest {
-  private PathNormalizer normalizer = new PathNormalizer(Paths.get("/"));
 
   @Test
   public void testDirectoryMatch() {
@@ -116,7 +111,7 @@ public class PathMatcherTest {
   }
 
   private Builder builder() {
-    return PathMatcher.builder(normalizer);
+    return PathMatcher.builder();
   }
 
   private String toString(PathMatcher matcher) {
