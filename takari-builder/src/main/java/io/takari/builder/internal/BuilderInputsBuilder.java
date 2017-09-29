@@ -609,8 +609,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
           throw new InvalidConfigurationException(context, basedir + " is a regular file");
         }
         // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        return selectFromJar(basedir,
-            FileMatcher.subMatchers(Paths.get("/"), includes, excludes));
+        return selectFromJar(basedir, FileMatcher.subMatchers(Paths.get("/"), includes, excludes));
       } else if (workspace.isDirectory(basedir)) {
         // TODO resource delta support, see takari BuildContext registerAndProcessInputs
         return selectFromDirectory(FileMatcher.subMatchers(basedir, includes, excludes));
@@ -968,13 +967,15 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       try {
         ArtifactLocation artifact = selection.bucket;
         List<URL> urls = new ArrayList<>();
+        boolean isSelectionRegularFile = workspace.isRegularFile(selection.location);
+
         for (Path resource : paths) {
           URL url;
           String relpath;
-          if (workspace.isRegularFile(selection.location)) {
+
+          if (isSelectionRegularFile) {
             relpath = resource.toString();
             url = (new URI("jar:" + selection.location.toUri() + "!/" + relpath)).toURL();
-
           } else {
             relpath = relativePath(selection.location, resource);
             url = resource.toUri().toURL();
