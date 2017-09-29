@@ -396,7 +396,7 @@ public class DefaultProjectBasedirEnforcer implements ProjectBasedirEnforcer {
 
   public void setupMavenSession(MavenSession session, SessionConfig sessionConfig) {
     this.normalizer =
-        new PathNormalizer(session.getRequest().getMultiModuleProjectDirectory().toPath());
+        PathNormalizer.create(session.getRequest().getMultiModuleProjectDirectory().toPath());
 
     PathMatcher.Builder readMatcherBuilder = PathMatcher.builder(normalizer).excludeRoot();
     PathMatcher.Builder writeMatcherBuilder = PathMatcher.builder(normalizer).excludeRoot();

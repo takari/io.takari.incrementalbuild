@@ -20,8 +20,12 @@ public class PathNormalizer {
 
   private final String basedir; // no trailing slash
 
-  public PathNormalizer(Path basedir) {
+  private PathNormalizer(Path basedir) {
     this.basedir = normalize0(basedir);
+  }
+
+  public static PathNormalizer create(Path basedir) {
+    return new PathNormalizer(basedir);
   }
 
   public String getBasedir() {
