@@ -18,6 +18,12 @@ public class PathNormalizerTest {
   @Rule
   public final TemporaryFolder temp = new TemporaryFolder();
 
+  private static void assertIsNormalized(String path) {
+    assertTrue(path.charAt(0) == '/');
+    assertFalse(path.charAt(1) == '/'); // assert no doubles
+    assertFalse(path.contains("\\"));
+  }
+
   @Test
   public void testIsBasedirOrNestedFile() throws Exception {
     Path basedir = temp.newFolder().getCanonicalFile().toPath();
@@ -50,4 +56,18 @@ public class PathNormalizerTest {
     String round1 = normalize0(temp.newFile().toPath());
     assertEquals(round1, normalize0(round1));
   }
+
+  @Test
+  public void testFileUrlPermission0() throws IOException {
+    // this is funny "\C:\path\to\file" path on Windows
+    String path = temp.newFile().toURI().toURL().openConnection().getPermission().getName();
+    assertIsNormalized(normalize0(path));
+  }
+
+  @Test
+  public void testFileUrlPath0() throws IOException {
+    String path = temp.newFile().toURI().getPath();
+    assertIsNormalized(normalize0(path));
+  }
+
 }

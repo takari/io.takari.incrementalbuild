@@ -40,7 +40,7 @@ public class BuilderExecutionResult {
       actual = new TreeSet<>();
     }
     TreeSet<String> expected = Stream.of(paths) //
-        .map(s -> normalize0(new File(basedir, s).getAbsolutePath())) //
+        .map(s -> normalize0(new File(basedir, s).toPath())) //
         .collect(Collectors.toCollection(TreeSet::new));
     assertEquals("(re)created outputs", toString(expected), toString(actual));
 

@@ -1,8 +1,5 @@
 package io.takari.builder.internal;
 
-import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
-
-import java.nio.file.Paths;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -34,10 +31,10 @@ public class ClasspathMatcher {
   }
 
   private PathMatcher createMatcher() {
-    Builder builder = PathMatcher.builder(PathNormalizer.create(Paths.get("/")));
+    Builder builder = PathMatcher.builder(PathNormalizer.createFSRoot());
 
     suppliers.stream().map(s -> s.entries()).flatMap(entries -> entries.stream())
-        .forEach(entry -> builder.includePrefix(normalize0(entry)));
+        .forEach(entry -> builder.includePrefix(entry));
 
     return builder.build();
   }
