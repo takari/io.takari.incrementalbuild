@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>io.takari.incrementalbuild</artifactId>
-    <version>0.20.5-sfdc-1</version>
+    <version>0.20.5-sfdc-2-SNAPSHOT</version>
   </parent>
 
   <groupId>io.takari.builder</groupId>
