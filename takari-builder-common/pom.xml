@@ -3,7 +3,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>io.takari.incrementalbuild</artifactId>
-    <version>0.20.6-SNAPSHOT</version>
+    <version>0.20.5-sfdc-1</version>
   </parent>
   
   <groupId>io.takari.builder</groupId>
