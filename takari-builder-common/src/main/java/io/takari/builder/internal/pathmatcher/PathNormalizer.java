@@ -18,12 +18,10 @@ public class PathNormalizer {
 
   private static final char SEPARATOR_CHAR = '/';
 
-  private final String basedir;
-  private final String basepath; // no trailing slash
+  private final String basedir; // no trailing slash
 
   public PathNormalizer(Path basedir) {
-    this.basepath = normalize0(basedir);
-    this.basedir = this.basepath + SEPARATOR_CHAR;
+    this.basedir = normalize0(basedir);
   }
 
   public String getBasedir() {
@@ -37,8 +35,7 @@ public class PathNormalizer {
    * {@link PathMatcher}.
    */
   public String normalize(String file) {
-    file = Paths.get(file).normalize().toString();
-    if (file.startsWith(basedir) || basepath.equals(file)) {
+    if (isBasedirOrNestedFile(file)) {
       // avoid expensive normalize0 call if file starts with basedir prefix.
       // this is possible because basedir is normalized in the constructor and PatchMatcher
       // resolves ../ and ./ special directory names.
@@ -48,21 +45,32 @@ public class PathNormalizer {
   }
 
   /**
+   * Returns {@code true} if {@code file} equals to {@link #basedir} or one of files/directories
+   * under basedir.
+   */
+  boolean isBasedirOrNestedFile(String file) {
+    if (file.startsWith(basedir)) {
+      int baseLength = basedir.length();
+      return baseLength == file.length() || file.charAt(baseLength) == SEPARATOR_CHAR;
+    }
+    return false;
+  }
+
+  /**
    * File path normalization implementation optimized for use with {@link PathMatcher}.
    * 
    * Normalized path may include '../' and './' special directory names, which are resolved by
    * {@link PathMatcher}.
    */
-  public String normalize(Path file) {
-    String path = file.toAbsolutePath().normalize().toString();
-    if (file.toAbsolutePath().startsWith(basedir)
-        || basepath.equals(file.toAbsolutePath().toString())) {
+  public String normalize(Path path) {
+    String file = path.toString();
+    if (isBasedirOrNestedFile(file)) {
       // avoid expensive normalize0 call if file starts with basedir prefix.
       // this is possible because basedir is normalized in the constructor and PatchMatcher
       // resolves ../ and ./ special directory names.
-      return path;
+      return file;
     }
-    return normalize0(file);
+    return normalize0(path);
   }
 
   /**

@@ -26,7 +26,7 @@ public class MavenProjectContextTest {
 
   @Test
   public void testStore() throws Exception {
-    PathNormalizer normalizer = new PathNormalizer(Paths.get("/locations/"));
+    PathNormalizer normalizer = new PathNormalizer(Paths.get("/locations"));
     PathMatcher readMatcher = PathMatcher.builder(normalizer) //
         .includePrefix("/read/includes") //
         .includePath("/readIncludes") //
@@ -52,7 +52,7 @@ public class MavenProjectContextTest {
         , "-R /read/excludes" //
         , "-R /read/excludes/" //
         , "-W /write/excludes/" //
-        , "/locations/" // was the first line...
+        , "/locations" // was the first line...
     );
   }
 
@@ -75,7 +75,7 @@ public class MavenProjectContextTest {
   public void testLoad() throws Exception {
     StringBuilder input = new StringBuilder();
     // basedir
-    input.append("/locations/").append("\n");
+    input.append("/locations").append("\n");
     // read/write directory
     input.append("+R /locations/dirAllow/").append("\n");
     input.append("-R /locations/dirForbid/").append("\n");
@@ -94,7 +94,7 @@ public class MavenProjectContextTest {
         , "+W /locations/fileAllow" //
         , "-R /locations/dirForbid/" //
         , "-W /locations/fileForbid" //
-        , "/locations/" //
+        , "/locations" //
     );
   }
 
