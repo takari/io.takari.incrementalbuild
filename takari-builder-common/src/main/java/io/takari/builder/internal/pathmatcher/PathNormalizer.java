@@ -16,7 +16,7 @@ import java.nio.file.Paths;
  */
 public class PathNormalizer {
 
-  private static final char SEPARATOR_CHAR = '/';
+  static final char SEPARATOR_CHAR = '/';
   private static final boolean FIXFS = File.separatorChar != SEPARATOR_CHAR;
   static final String SEPARATOR = "/";
 

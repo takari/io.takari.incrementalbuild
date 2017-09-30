@@ -1,6 +1,5 @@
 package io.takari.builder.internal.pathmatcher;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +25,7 @@ class Plexus_MatchPatterns {
    * @return true if any of the supplied patterns match
    */
   public boolean matches(String name, boolean isCaseSensitive) {
-    String[] tokenized = Plexus_MatchPattern.tokenizePathToString(name, File.separator);
+    String[] tokenized = Plexus_MatchPattern.tokenizePathToString(name, PathNormalizer.SEPARATOR);
     return matches(name, tokenized, isCaseSensitive);
   }
 

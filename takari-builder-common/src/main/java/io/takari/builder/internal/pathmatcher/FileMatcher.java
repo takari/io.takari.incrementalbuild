@@ -1,5 +1,7 @@
 package io.takari.builder.internal.pathmatcher;
 
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -122,7 +124,7 @@ public class FileMatcher {
       if (glob.endsWith("/")) {
         gb.append("**");
       }
-      normalized.add(gb.toString().replace('/', File.separatorChar));
+      normalized.add(gb.toString().replace(File.separatorChar, PathNormalizer.SEPARATOR_CHAR));
     }
     final Plexus_MatchPatterns matcher = Plexus_MatchPatterns.from(normalized);
     return new Matcher() {
@@ -133,7 +135,13 @@ public class FileMatcher {
     };
   }
 
-  public boolean matches(String path) {
+  private FileMatcher(String basedir, Matcher includesMatcher, Matcher excludesMatcher) {
+    this.basedir = basedir;
+    this.includesMatcher = includesMatcher;
+    this.excludesMatcher = excludesMatcher;
+  }
+
+  private boolean matches0(String path) {
     if (basedir != null && !path.startsWith(basedir)) {
       return false;
     }
@@ -146,18 +154,16 @@ public class FileMatcher {
     return true;
   }
 
-  private FileMatcher(String basedir, Matcher includesMatcher, Matcher excludesMatcher) {
-    this.basedir = basedir;
-    this.includesMatcher = includesMatcher;
-    this.excludesMatcher = excludesMatcher;
+  public boolean matches(String path) {
+    return matches0(normalize0(path));
   }
 
   public boolean matches(Path file) {
-    return matches(toAbsolutePath(file));
+    return matches0(normalize0(file));
   }
 
   public boolean matches(File file) {
-    return matches(file.getAbsolutePath());
+    return matches0(normalize0(file.toPath()));
   }
 
   /**
@@ -193,8 +199,7 @@ public class FileMatcher {
         trie = trie.child(name);
       }
     }
-    final Matcher excludesMatcher =
-        fromStrings(toAbsolutePath(basedir), excludes, MATCH_EVERYTHING);
+    final Matcher excludesMatcher = fromStrings(normalize0(basedir), excludes, MATCH_EVERYTHING);
     Map<Path, FileMatcher> subdirs = new HashMap<>();
     root.subdirs().forEach((relpath, globs) -> {
       Path path = relpath != null ? basedir.resolve(relpath) : basedir;
@@ -208,13 +213,15 @@ public class FileMatcher {
 
   private static FileMatcher absoluteMatcher(Path basedir, Collection<String> includes,
       Matcher excludesMatcher) {
-    final String basepath = toAbsolutePath(basedir);
+    final Path path = basedir;
+    final String basepath = normalize0(path);
     final Matcher includesMatcher = fromStrings(basepath, includes, null);
     return new FileMatcher(toDirectoryPath(basepath), includesMatcher, excludesMatcher);
   }
 
   private static FileMatcher singlePathMatcher(Path path) {
-    return new FileMatcher(null, new SinglePathMatcher(path.toString()) /* includesMatcher */,
+    final Path path1 = path;
+    return new FileMatcher(null, new SinglePathMatcher(normalize0(path1)) /* includesMatcher */,
         null /* excludesMatcher */);
   }
 
@@ -228,7 +235,7 @@ public class FileMatcher {
 
   public static FileMatcher absoluteMatcher(final Path basedir, Collection<String> includes,
       Collection<String> excludes) {
-    final String basepath = toAbsolutePath(basedir);
+    final String basepath = normalize0(basedir);
     final Matcher includesMatcher = fromStrings(basepath, includes, null);
     final Matcher excludesMatcher = fromStrings(basepath, excludes, MATCH_EVERYTHING);
     return new FileMatcher(toDirectoryPath(basepath), includesMatcher, excludesMatcher);
@@ -236,10 +243,6 @@ public class FileMatcher {
 
   protected static String toDirectoryPath(final String basepath) {
     return basepath.endsWith("/") ? basepath : basepath + "/";
-  }
-
-  private static String toAbsolutePath(final Path path) {
-    return path.toAbsolutePath().toString();
   }
 
 }
