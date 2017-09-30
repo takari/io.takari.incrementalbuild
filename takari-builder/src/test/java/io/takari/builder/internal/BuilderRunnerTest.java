@@ -1,5 +1,6 @@
 package io.takari.builder.internal;
 
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
 import static io.takari.maven.testing.TestResources.assertDirectoryContents;
 import static io.takari.maven.testing.TestResources.create;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -484,8 +485,8 @@ public class BuilderRunnerTest {
 
     thrown.expect(SecurityException.class);
     thrown.expectMessage("Access to an undeclared resource detected");
-    thrown.expectMessage(String.format("R file:%s", file.getCanonicalPath()));
-    thrown.expectMessage(String.format("W file:%s", file.getCanonicalPath()));
+    thrown.expectMessage(String.format("R file:%s", normalize0(file.toPath())));
+    thrown.expectMessage(String.format("W file:%s", normalize0(file.toPath())));
 
     //
     // initial build

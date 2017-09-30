@@ -9,7 +9,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -340,7 +339,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     private Path toPath(String path) {
-      Path file = Paths.get(path);
+      Path file = PathNormalizer.toPath(path);
       if (!file.isAbsolute()) {
         file = projectModelProvider.getBasedir().toAbsolutePath().resolve(path);
       }

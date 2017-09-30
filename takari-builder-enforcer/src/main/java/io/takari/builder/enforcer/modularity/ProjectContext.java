@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
@@ -118,7 +117,8 @@ public class ProjectContext {
     BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     String str;
     String workspaceDirectory = r.readLine();
-    final PathNormalizer normalizer = PathNormalizer.create(Paths.get(workspaceDirectory));
+    final PathNormalizer normalizer =
+        PathNormalizer.create(PathNormalizer.toPath(workspaceDirectory));
     Builder readMatcherBuilder = PathMatcher.builder(normalizer);
     Builder writeMatcherBuilder = PathMatcher.builder(normalizer);
     while ((str = r.readLine()) != null) {

@@ -4,6 +4,7 @@ import static io.takari.builder.enforcer.ComposableSecurityManagerPolicy.getCont
 import static io.takari.builder.enforcer.ComposableSecurityManagerPolicy.registerContextPolicy;
 import static io.takari.builder.enforcer.ComposableSecurityManagerPolicy.unregisterContextPolicy;
 import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.toPath;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -83,7 +84,7 @@ public class BuilderContext {
     public void checkWrite(String file) {
       checkScope();
       if (!ctx.checkAndRecordWrite(file)) {
-        handleViolation(ctx, EnforcerViolationType.WRITE, file);
+        handleViolation(ctx, EnforcerViolationType.WRITE, normalize0(file));
       }
     }
 
@@ -264,7 +265,7 @@ public class BuilderContext {
     }
 
     public Builder addTemporaryDirectory(Path directory) {
-      final String path = directory.toAbsolutePath().toString();
+      final String path = directory.toString();
 
       tempMatcherBuilder.includePrefix(path);
       writeMatcherBuilder.excludePrefix(path);
@@ -426,7 +427,7 @@ public class BuilderContext {
 
       if (!readMatcher.includes(normalized)) {
         // still allow reads of files that do not exist
-        return !workspace.isRegularFile(Paths.get(normalized));
+        return !workspace.isRegularFile(toPath(normalized));
       }
     }
     return true;
@@ -446,7 +447,7 @@ public class BuilderContext {
 
       // Do not allow writes to existing files, unless the existing file is an input (whitelisted in
       // builder-enforcer.config)
-      if (workspace.isRegularFile(Paths.get(normalized))
+      if (workspace.isRegularFile(toPath(normalized))
           && !readAndTrackExceptionsMatcher.includes(normalized)) {
         return false;
       }
@@ -454,7 +455,7 @@ public class BuilderContext {
       if (writeMatcher.includes(normalized)) {
         writes.add(normalized);
         recordInprogressWrite(normalized);
-        workspace.processOutput(Paths.get(normalized));
+        workspace.processOutput(toPath(normalized));
         return true;
       }
 

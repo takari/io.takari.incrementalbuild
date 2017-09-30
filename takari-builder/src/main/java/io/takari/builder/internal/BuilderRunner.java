@@ -2,6 +2,7 @@ package io.takari.builder.internal;
 
 import static io.takari.builder.enforcer.internal.EnforcerConfig.ALL_BUILDERS;
 import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.toPath;
 
 import java.io.File;
 import java.io.IOException;
@@ -391,7 +392,11 @@ public class BuilderRunner {
     if (tempDir != null && !tempDir.isEmpty()) {
       // need to consider both absolute and canonical paths (i.e. with symlinks resolved)
       contextBuilder.addTemporaryDirectory(Paths.get(tempDir));
-      contextBuilder.addTemporaryDirectory(Paths.get(normalize0(tempDir)));
+      try {
+        contextBuilder.addTemporaryDirectory(Paths.get(tempDir).toRealPath());
+      } catch (IOException e) {
+        // couldn't determine tmpdir canonical path, should be safe to ignore
+      }
     }
 
     InprogressStateWriter inprogressWriter = BuilderExecutionState.NOOP_INPROGRESSWRITER;
@@ -418,7 +423,7 @@ public class BuilderRunner {
 
         // NB: keep temporary files if the builder failed, useful for debugging
         for (String file : builderContext.getTemporaryFiles()) {
-          Path filePath = Paths.get(file);
+          Path filePath = toPath(file);
           if (Files.isDirectory(filePath)) {
             FileUtils.deleteDirectory(file);
           } else {
@@ -538,13 +543,14 @@ public class BuilderRunner {
   private <E extends Exception> void deleteOutputs(Collection<String> outputPaths,
       ExceptionFactory<E> efactory) throws E {
 
-    List<String> directories = new ArrayList<>();
-    for (String oldoutput : outputPaths) {
+    List<Path> directories = new ArrayList<>();
+    for (String oldOutput : outputPaths) {
       try {
-        if (!Files.isDirectory(Paths.get(oldoutput))) {
-          workspace.deleteFile(new File(oldoutput));
+        Path oldOutputPath = toPath(oldOutput);
+        if (!Files.isDirectory(oldOutputPath)) {
+          workspace.deleteFile(new File(oldOutput));
         } else {
-          directories.add(oldoutput);
+          directories.add(oldOutputPath);
         }
       } catch (IOException e) {
         throw efactory.exception("Could not delete builder output", e);
@@ -552,16 +558,15 @@ public class BuilderRunner {
     }
 
     directories.sort((s1, s2) -> {
-      if (s1.length() != s2.length()) {
-        return s2.length() - s1.length();
+      if (s1.getNameCount() != s2.getNameCount()) {
+        return s2.getNameCount() - s1.getNameCount();
       }
       return s2.compareTo(s1);
     });
-    for (String oldDirectory : directories) {
+    for (Path oldDirectory : directories) {
       try {
-        Path oldDirectoryFile = Paths.get(oldDirectory);
-        if (isEmpty(oldDirectoryFile)) {
-          workspace.deleteFile(oldDirectoryFile.toFile());
+        if (isEmpty(oldDirectory)) {
+          workspace.deleteFile(oldDirectory.toFile());
         }
       } catch (IOException e) {
         throw efactory.exception("Could not delete builder output", e);
@@ -610,7 +615,7 @@ public class BuilderRunner {
       return fileDigests;
     }
 
-    paths.forEach(path -> fileDigests.put(path.toString(), FileDigest.digest(Paths.get(path))));
+    paths.forEach(path -> fileDigests.put(path.toString(), FileDigest.digest(toPath(path))));
 
     return fileDigests;
   }
