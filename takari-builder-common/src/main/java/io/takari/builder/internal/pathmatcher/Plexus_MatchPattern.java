@@ -14,7 +14,6 @@ package io.takari.builder.internal.pathmatcher;
  * the License.
  */
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -90,7 +89,7 @@ class Plexus_MatchPattern {
   }
 
   public static Plexus_MatchPattern fromString(String source) {
-    return new Plexus_MatchPattern(source, File.separator);
+    return new Plexus_MatchPattern(source, PathNormalizer.SEPARATOR);
   }
 
 }

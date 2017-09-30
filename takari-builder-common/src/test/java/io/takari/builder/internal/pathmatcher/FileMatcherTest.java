@@ -1,6 +1,7 @@
 package io.takari.builder.internal.pathmatcher;
 
 import static com.google.common.collect.ImmutableList.of;
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -121,7 +122,7 @@ public class FileMatcherTest {
     FileMatcher matcher = matchers.values().iterator().next();
     assertNull(matcher.excludesMatcher);
     assertTrue(matcher.includesMatcher instanceof SinglePathMatcher);
-    assertEquals(file.getAbsolutePath(), ((SinglePathMatcher) matcher.includesMatcher).path);
+    assertEquals(normalize0(file.toPath()), ((SinglePathMatcher) matcher.includesMatcher).path);
 
     assertFiles(getMatchingFiles(matchers), file);
   }
@@ -149,8 +150,7 @@ public class FileMatcherTest {
     createFiles(basedir, "dir/1.txt");
     File file = new File(basedir, "dir/1.txt");
 
-    Map<Path, FileMatcher> matchers =
-        FileMatcher.subMatchers(basedir.toPath(), of("dir/"), null);
+    Map<Path, FileMatcher> matchers = FileMatcher.subMatchers(basedir.toPath(), of("dir/"), null);
 
     assertEquals(1, matchers.size());
     assertEquals(new File(basedir, "dir").toPath(), matchers.keySet().iterator().next());
@@ -197,8 +197,7 @@ public class FileMatcherTest {
     createFiles(basedir, "1.txt");
     File file = new File(basedir, "1.txt");
 
-    Map<Path, FileMatcher> matchers =
-        FileMatcher.subMatchers(basedir.toPath(), of("1.txt"), null);
+    Map<Path, FileMatcher> matchers = FileMatcher.subMatchers(basedir.toPath(), of("1.txt"), null);
     assertEquals(1, matchers.size());
     assertEquals(file.toPath(), matchers.keySet().iterator().next());
     assertFiles(getMatchingFiles(matchers), file);
