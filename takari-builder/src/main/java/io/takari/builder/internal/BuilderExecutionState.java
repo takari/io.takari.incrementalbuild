@@ -6,8 +6,10 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -75,30 +77,27 @@ class BuilderExecutionState {
   public static BuilderExecutionState load(Path file) {
     Collection<String> outputPaths = Collections.emptySet();
     if (file != null && Files.isRegularFile(file)) {
-      try (ObjectInputStream is = newObjectInputStream(file)) {
-        outputPaths = readOutputPaths(is);
-        final BuilderInputs.Digest inputsDigest = (BuilderInputs.Digest) is.readObject();
-        final Map<String, Object> properties = (Map<String, Object>) is.readObject();
-        final Serializable classpathDigest = (Serializable) is.readObject();
-        final Set<CompileSourceRoot> compileSourceRoots = (Set<CompileSourceRoot>) is.readObject();
-        final Set<ResourceRoot> resourceRoots = (Set<ResourceRoot>) is.readObject();
-        final List<Message> messages = (List<Message>) is.readObject();
-        final Map<String, FileDigest> exceptionsDigest = (Map<String, FileDigest>) is.readObject();
-        return new BuilderExecutionState(inputsDigest, properties, classpathDigest, outputPaths,
-            compileSourceRoots, resourceRoots, messages, exceptionsDigest);
+      // outer try block prevents open file leak if wrapper stream constructors throws exceptions
+      try (InputStream is = Files.newInputStream(file)) {
+        try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(is))) {
+          outputPaths = readOutputPaths(ois);
+          final BuilderInputs.Digest inputsDigest = (BuilderInputs.Digest) ois.readObject();
+          final Map<String, Object> properties = (Map<String, Object>) ois.readObject();
+          final Serializable classpathDigest = (Serializable) ois.readObject();
+          final Set<CompileSourceRoot> compileSourceRoots =
+              (Set<CompileSourceRoot>) ois.readObject();
+          final Set<ResourceRoot> resourceRoots = (Set<ResourceRoot>) ois.readObject();
+          final List<Message> messages = (List<Message>) ois.readObject();
+          final Map<String, FileDigest> exceptionsDigest =
+              (Map<String, FileDigest>) ois.readObject();
+          return new BuilderExecutionState(inputsDigest, properties, classpathDigest, outputPaths,
+              compileSourceRoots, resourceRoots, messages, exceptionsDigest);
+        }
       } catch (IOException | ClassNotFoundException e) {}
     }
     return new BuilderExecutionState(BuilderInputs.emptyDigest(), Collections.emptyMap(), "",
         outputPaths, Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
         Collections.emptyMap());
-  }
-
-  private static ObjectInputStream newObjectInputStream(Path file) throws IOException {
-    return new ObjectInputStream(new BufferedInputStream(Files.newInputStream(file)));
-  }
-
-  private static ObjectOutputStream newObjectOutputStream(Path file) throws IOException {
-    return new ObjectOutputStream(new BufferedOutputStream(Files.newOutputStream(file)));
   }
 
   public static void store(Path file, BuilderInputs.Digest digest, Map<String, Object> properties,
@@ -111,15 +110,18 @@ class BuilderExecutionState {
     if (!Files.isDirectory(file.getParent())) {
       Files.createDirectories(file.getParent());
     }
-    try (ObjectOutputStream os = newObjectOutputStream(file)) {
-      writeOutputPaths(os, outputPaths);
-      os.writeObject(digest);
-      os.writeObject(properties);
-      os.writeObject(classpathDigest);
-      os.writeObject(compileSourceRoots);
-      os.writeObject(resourceRoots);
-      os.writeObject(messages);
-      os.writeObject(exceptionsDigest);
+    // outer try block prevents open file leak if wrapper stream constructors throws exceptions
+    try (OutputStream os = Files.newOutputStream(file)) {
+      try (ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(os))) {
+        writeOutputPaths(oos, outputPaths);
+        oos.writeObject(digest);
+        oos.writeObject(properties);
+        oos.writeObject(classpathDigest);
+        oos.writeObject(compileSourceRoots);
+        oos.writeObject(resourceRoots);
+        oos.writeObject(messages);
+        oos.writeObject(exceptionsDigest);
+      }
     }
   }
 
