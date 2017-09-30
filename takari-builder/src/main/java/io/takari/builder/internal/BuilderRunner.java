@@ -442,13 +442,13 @@ public class BuilderRunner {
 
     } finally {
       builderContext.leave();
-    }
 
-    // avoid open file leaks in case of builder enforcement violations
-    try {
-      inprogressWriter.close();
-    } catch (IOException e) {
-      throw efactory.exception("Could not persist incremental build state", e);
+      // avoid open file leaks in case of builder enforcement violations
+      try {
+        inprogressWriter.close();
+      } catch (IOException e) {
+        throw efactory.exception("Could not persist incremental build state", e);
+      }
     }
 
     // TODO decide if violations should be persisted/replayed as other build errors
