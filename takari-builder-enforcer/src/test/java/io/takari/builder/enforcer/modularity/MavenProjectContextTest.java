@@ -1,5 +1,7 @@
 package io.takari.builder.enforcer.modularity;
 
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,14 +29,14 @@ public class MavenProjectContextTest {
   @Test
   public void testStore() throws Exception {
     PathNormalizer normalizer = PathNormalizer.create(Paths.get("/locations"));
-    PathMatcher readMatcher = PathMatcher.builder(normalizer) //
+    PathMatcher readMatcher = PathMatcher.builder() //
         .includePrefix("/read/includes") //
         .includePath("/readIncludes") //
         .includePath("/.hidden") //
         .excludePrefix("/read/excludes") //
         .excludePath("/read/excludes") //
         .build();
-    PathMatcher writeMatcher = PathMatcher.builder(normalizer) //
+    PathMatcher writeMatcher = PathMatcher.builder() //
         .includePrefix("/write/includes") //
         .excludePrefix("/write/excludes") //
         .build();
@@ -52,7 +54,7 @@ public class MavenProjectContextTest {
         , "-R /read/excludes" //
         , "-R /read/excludes/" //
         , "-W /write/excludes/" //
-        , "/locations" // was the first line...
+        , normalize0("/locations") // was the first line...
     );
   }
 
@@ -90,12 +92,24 @@ public class MavenProjectContextTest {
 
     assertProjextContext(ctx, //
         "+E p4" //
-        , "+R /locations/dirAllow/" //
-        , "+W /locations/fileAllow" //
-        , "-R /locations/dirForbid/" //
-        , "-W /locations/fileForbid" //
-        , "/locations" //
+        , rule("+R ", "/locations/dirAllow/") //
+        , rule("+W ", "/locations/fileAllow") //
+        , rule("-R ", "/locations/dirForbid/") //
+        , rule("-W ", "/locations/fileForbid") //
+        , rule(null, "/locations") //
     );
+  }
+
+  private static String rule(String prefix, String path) {
+    StringBuilder sb = new StringBuilder();
+    if (prefix != null) {
+      sb.append(prefix);
+    }
+    sb.append(PathNormalizer.normalize0(path));
+    if (path.endsWith("/")) {
+      sb.append('/');
+    }
+    return sb.toString();
   }
 
   @Test
