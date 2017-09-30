@@ -122,13 +122,16 @@ public class PathNormalizer {
    * @see #normalize0(File)
    */
   public static String normalize0(String file) {
+    return normalize0(toPath(file));
+  }
+
+  public static Path toPath(String file) {
     if (FIXFS) {
       // on windows FilePermission path is \C:\path\to\file
       // and some code uses URL.getPath(), which results in /C:/path/to/file
       // both forms are accepted by File(String) constructor, but not Paths.get(String)
-      return normalize0(new File(file).toPath());
+      return new File(file).toPath();
     }
-    return normalize0(Paths.get(file));
+    return Paths.get(file);
   }
-
 }
