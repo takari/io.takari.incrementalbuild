@@ -47,7 +47,7 @@
     <junit.version>4.11</junit.version>
     <guava.version>19.0</guava.version>
     <eclipse-sisu.version>0.3.2</eclipse-sisu.version>
-    <plugin-testing.version>2.9.1</plugin-testing.version>
+    <plugin-testing.version>2.9.2</plugin-testing.version>
     <takari.javaSourceVersion>1.8</takari.javaSourceVersion>
     <takariLifecycleVersion>1.12.1</takariLifecycleVersion>
     <classworlds.version>2.5.2</classworlds.version>
