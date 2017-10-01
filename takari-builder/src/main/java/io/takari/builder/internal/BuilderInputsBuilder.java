@@ -1,5 +1,7 @@
 package io.takari.builder.internal;
 
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.getCanonicalPath;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -75,6 +77,7 @@ import io.takari.builder.internal.model.TypeAdapter;
 import io.takari.builder.internal.model.UnsupportedCollectionParameter;
 import io.takari.builder.internal.pathmatcher.FileMatcher;
 import io.takari.builder.internal.pathmatcher.JarEntries;
+import io.takari.builder.internal.pathmatcher.PathNormalizer;
 
 public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
@@ -155,6 +158,14 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
   static boolean isEmpty(String str) {
     return str == null || str.trim().isEmpty();
+  }
+
+  /**
+   * assumes both basedir and path are canonical according to
+   * {@link PathNormalizer#getCanonicalPath(Path)}
+   */
+  static String relativePath(Path basedir, Path path) {
+    return basedir.relativize(path).toString();
   }
 
   @SuppressWarnings("serial")
@@ -527,10 +538,10 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
     abstract Map.Entry<B, Path> evaluateLocation(String location) throws UncheckedIOException;
 
-    abstract V newBucketValue(ResourceSelection<B> selection, List<Path> paths);
+    abstract V newBucketValue(ResourceSelection<B> selection, List<String> relpaths);
 
     abstract Value<?> newCollectionResourceValue(TypeAdapter type,
-        Map<ResourceSelection<B>, List<Path>> resources, TypeAdapter parameterType);
+        Map<ResourceSelection<B>, List<String>> resources, TypeAdapter parameterType);
 
     protected boolean shouldAllowSourceRoots() {
       return false;
@@ -555,11 +566,11 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
         return;
       }
 
-      Map<ResourceSelection<B>, List<Path>> resources = new LinkedHashMap<>();
+      Map<ResourceSelection<B>, List<String>> resources = new LinkedHashMap<>();
       for (ResourceSelection<B> selection : selections) {
-        List<Path> paths = select(selection.location, selection.includes, selection.excludes);
-        if (!parameter.required() || !paths.isEmpty()) {
-          resources.put(selection, paths);
+        List<String> relpaths = select(selection.location, selection.includes, selection.excludes);
+        if (!parameter.required() || !relpaths.isEmpty()) {
+          resources.put(selection, relpaths);
         }
       }
 
@@ -577,24 +588,25 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
           context.accept(newCollectionValue(type, toListBucketValue(resources)));
         }
       } else if (resources.size() == 1) {
-        Map.Entry<ResourceSelection<B>, List<Path>> entry = resources.entrySet().iterator().next();
-        context.accept(newBucketValue(entry.getKey(), entry.getValue()));
+        resources
+            .forEach((selection, relpaths) -> context.accept(newBucketValue(selection, relpaths)));
       } else {
         throw new InvalidConfigurationException(context, "too many values");
       }
     }
 
-    private List<Value<?>> toListBucketValue(Map<ResourceSelection<B>, List<Path>> resources) {
+    private List<Value<?>> toListBucketValue(Map<ResourceSelection<B>, List<String>> resources) {
       return resources.entrySet().stream() //
           .map(e -> newBucketValue(e.getKey(), e.getValue())) //
           .collect(Collectors.toList());
     }
 
-    final String relativePath(Path basedir, Path path) {
-      return basedir.relativize(path).toString();
-    }
-
-    private List<Path> select(Path basedir, List<String> includes, List<String> excludes) {
+    /**
+     * If provided {@code location} is a jar file, returns selected jar file entry names. If
+     * provided {@code location} is a directory, returns selected file paths relative to the
+     * directory. Returned relative paths use '/' file separator on all platforms.
+     */
+    private List<String> select(Path location, List<String> includes, List<String> excludes) {
       if (includes != null && includes.isEmpty()) {
         includes = null;
       }
@@ -603,33 +615,34 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
         excludes = null;
       }
 
-      if (workspace.isRegularFile(basedir)) {
+      if (workspace.isRegularFile(location)) {
         if (this instanceof InputFileSelector) {
-          throw new InvalidConfigurationException(context, basedir + " is a regular file");
+          throw new InvalidConfigurationException(context, location + " is a regular file");
         }
-        // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        return selectFromJar(basedir, FileMatcher.subMatchers(Paths.get("/"), includes, excludes));
-      } else if (workspace.isDirectory(basedir)) {
-        // TODO resource delta support, see takari BuildContext registerAndProcessInputs
-        return selectFromDirectory(FileMatcher.subMatchers(basedir, includes, excludes));
+        return selectFromJar(location, FileMatcher.createMatchers(includes, excludes));
+      } else if (workspace.isDirectory(location)) {
+        // use canonical location to get correct relative paths
+        Path canonicalLocation = getCanonicalPath(location);
+        return selectFromDirectory(canonicalLocation,
+            FileMatcher.createMatchers(canonicalLocation, includes, excludes));
       } else {
         return Collections.emptyList();
       }
     }
 
-    private List<Path> selectFromJar(Path jarPath, Map<Path, FileMatcher> subdirMatchers) {
+    private List<String> selectFromJar(Path jarPath, Map<String, FileMatcher> subdirMatchers) {
       JarEntries jarEntries = JarEntriesCache.get().get(jarPath);
 
       return jarEntries.match(subdirMatchers);
     }
 
-    private List<Path> selectFromDirectory(Map<Path, FileMatcher> matchers) {
-      List<Path> resources = new ArrayList<>();
+    private List<String> selectFromDirectory(Path location, Map<Path, FileMatcher> matchers) {
+      List<String> resources = new ArrayList<>();
       matchers.forEach((subdir, matcher) -> {
         try (Stream<Path> paths = workspace.walk(subdir)) {
           paths //
               .filter(path -> matcher.matches(path)) //
-              .forEach(resources::add);
+              .map(path -> relativePath(location, path)).forEach(resources::add);
         } catch (IOException e) {
           throw new InvalidConfigurationException(context, "could not list directory files", e);
         }
@@ -812,28 +825,29 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     @Override
-    InputDirectoryValue newBucketValue(ResourceSelection<Path> selection, List<Path> paths) {
+    InputDirectoryValue newBucketValue(ResourceSelection<Path> selection, List<String> relpaths) {
       Class<?> type = ((ReflectionType) parameter.type()).adaptee();
       Path basedir = selection.bucket;
       List<String> includes = selection.includes;
       List<String> excludes = selection.excludes;
       TreeSet<Path> files = new TreeSet<>();
       TreeSet<String> filenames = new TreeSet<>();
-      if (paths != null) {
-        for (int i = 0; i < paths.size(); i++) {
-          files.add(paths.get(i));
-          filenames.add(relativePath(selection.location, paths.get(i)));
-        }
+      for (String relpath : relpaths) {
+        files.add(selection.location.resolve(relpath));
+        filenames.add(relpath);
       }
       return new InputDirectoryValue(type, basedir, includes, excludes, files, filenames);
     }
 
     @Override
     Value<?> newCollectionResourceValue(TypeAdapter type,
-        Map<ResourceSelection<Path>, List<Path>> resources, TypeAdapter parameterType) {
-      List<Path> files = resources.values().stream() //
-          .flatMap(list -> list.stream()) //
-          .collect(Collectors.toList());
+        Map<ResourceSelection<Path>, List<String>> resources, TypeAdapter parameterType) {
+      List<Path> files = new ArrayList<>();
+      resources.forEach((selection, relpaths) -> {
+        relpaths.stream() //
+            .map(relpath -> selection.location.resolve(relpath)) //
+            .forEach(files::add);
+      });
       return new InputFilesValue(((ReflectionType) type).multivalueFactory(), files,
           ((ReflectionType) parameterType));
     }
@@ -939,7 +953,8 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
     @Override
     Value<?> newCollectionResourceValue(TypeAdapter type,
-        Map<ResourceSelection<ArtifactLocation>, List<Path>> resources, TypeAdapter parameterType) {
+        Map<ResourceSelection<ArtifactLocation>, List<String>> resources,
+        TypeAdapter parameterType) {
 
       List<ArtifactResourcesValue> values = resources.entrySet().stream() //
           .map(e -> newBucketValue(e.getKey(), e.getValue())) //
@@ -950,7 +965,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
     @Override
     ArtifactResourcesValue newBucketValue(ResourceSelection<ArtifactLocation> selection,
-        List<Path> paths) {
+        List<String> relpaths) {
       // notes on file handle leaks and performance
       // * each FileSystems.newFileSystem(jar) creates new open file handle (OSX, Java 1.8.0_102)
       // * need to explicitly close open filesystems to avoid file handle leak
@@ -965,27 +980,24 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       // will be used through URL API.
       try {
         ArtifactLocation artifact = selection.bucket;
+        Set<Path> files = new TreeSet<>();
         List<URL> urls = new ArrayList<>();
         boolean isSelectionRegularFile = workspace.isRegularFile(selection.location);
 
-        for (Path resource : paths) {
-          URL url;
-          String relpath;
-
-          if (isSelectionRegularFile) {
-            relpath = resource.toString();
-            url = (new URI("jar:" + selection.location.toUri() + "!/" + relpath)).toURL();
-          } else {
-            relpath = relativePath(selection.location, resource);
-            url = resource.toUri().toURL();
-          }
-          urls.add(ArtifactResourceURLStreamHandler.newURL(artifact.metadata, relpath, url));
-        }
-        Set<Path> files = new TreeSet<>();
         if (artifact.jar != null) {
           files.add(artifact.jar);
-        } else {
-          paths.stream().forEach(p -> files.add(p));
+        }
+
+        for (String relpath : relpaths) {
+          URL url;
+          if (isSelectionRegularFile) {
+            url = (new URI("jar:" + selection.location.toUri() + "!/" + relpath)).toURL();
+          } else {
+            Path file = selection.location.resolve(relpath);
+            url = file.toUri().toURL();
+            files.add(file);
+          }
+          urls.add(ArtifactResourceURLStreamHandler.newURL(artifact.metadata, relpath, url));
         }
         return new ArtifactResourcesValue(files, artifact.metadata, urls);
       } catch (IOException e) {
@@ -1256,16 +1268,15 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       return;
     }
 
-    // TODO resource delta support, see takari BuildContext registerAndProcessInputs
     TreeSet<Path> files = new TreeSet<>();
     TreeSet<String> filenames = new TreeSet<>();
-    FileMatcher.subMatchers(location, includes, excludes).forEach((subdir, matcher) -> {
+    FileMatcher.createMatchers(location, includes, excludes).forEach((subdir, matcher) -> {
       try (Stream<Path> paths = workspace.walk(subdir)) {
         paths.filter(path -> workspace.exists(path)) //
             .filter(path -> matcher.matches(path)) //
             .forEach(path -> {
               files.add(path);
-              filenames.add(subdir.relativize(path).toString());
+              filenames.add(relativePath(subdir, path));
             });
       } catch (IOException e) {
         throw new InvalidConfigurationException(context, "could not list directory files", e);

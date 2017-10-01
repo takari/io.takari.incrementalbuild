@@ -34,25 +34,25 @@ public class FileMatcherTest {
 
   @Test
   public void testSingleDirectoryMatch() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "sub");
     createFiles(basedir, "1.txt", "sub/2.txt", "sub/3.txt");
 
     List<String> includes = new ArrayList<>();
     includes.add("*.txt");
-    FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, null);
+    FileMatcher matcher = FileMatcher.createMatcher(basedir.toPath(), includes, null);
     assertFiles(getMatchingFiles(matcher, basedir), new File(basedir, "1.txt"));
   }
 
   @Test
   public void testNestedDirectoryMatch() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "sub", "sub2", "sub/sub");
     createFiles(basedir, "1.txt", "sub/2.txt", "sub2/3.txt", "sub/sub/4.txt", "sub/sub/5.txt");
 
     List<String> includes = new ArrayList<>();
     includes.add("**/*.txt");
-    FileMatcher matcher = FileMatcher.absoluteMatcher(basedir.toPath(), includes, null);
+    FileMatcher matcher = FileMatcher.createMatcher(basedir.toPath(), includes, null);
     assertFiles(getMatchingFiles(matcher, basedir), new File(basedir, "1.txt"),
         new File(basedir, "sub/2.txt"), new File(basedir, "sub2/3.txt"),
         new File(basedir, "sub/sub/4.txt"), new File(basedir, "sub/sub/5.txt"));
@@ -60,12 +60,12 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "sub", "sub2", "sub/sub");
     createFiles(basedir, "1.txt", "sub/2.txt", "sub2/3.txt", "sub/sub/4.txt", "sub/sub/5.txt");
 
     Map<Path, FileMatcher> matchers =
-        FileMatcher.subMatchers(basedir.toPath(), of("sub2/*.txt", "sub/sub/*.txt"), null);
+        FileMatcher.createMatchers(basedir.toPath(), of("sub2/*.txt", "sub/sub/*.txt"), null);
 
     assertThat(matchers.keySet()) //
         .hasSize(2) //
@@ -77,11 +77,11 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_excludesFile() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "sub", "sub2", "sub/sub");
     createFiles(basedir, "1.txt", "sub/2.txt", "sub2/3.txt", "sub/sub/4.txt", "sub/sub/5.txt");
 
-    Map<Path, FileMatcher> matchers = FileMatcher.subMatchers(basedir.toPath(),
+    Map<Path, FileMatcher> matchers = FileMatcher.createMatchers(basedir.toPath(),
         of("sub2/**/*.txt", "sub/sub/**/*.txt"), of("**/3.txt"));
 
     assertThat(matchers.keySet()) //
@@ -93,12 +93,12 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_excludesDir() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "sub", "sub2", "sub/sub");
     createFiles(basedir, "1.txt", "sub/2.txt", "sub2/3.txt", "sub/sub/4.txt", "sub/sub/5.txt");
 
     Map<Path, FileMatcher> matchers =
-        FileMatcher.subMatchers(basedir.toPath(), of("sub/**/*.txt"), of("sub/sub/**"));
+        FileMatcher.createMatchers(basedir.toPath(), of("sub/**/*.txt"), of("sub/sub/**"));
 
     assertThat(matchers.keySet()) //
         .containsOnly(new File(basedir, "sub").toPath());
@@ -108,13 +108,13 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_specificFile() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "dir");
     createFiles(basedir, "dir/1.txt");
     File file = new File(basedir, "dir/1.txt");
 
     Map<Path, FileMatcher> matchers =
-        FileMatcher.subMatchers(basedir.toPath(), of("dir/1.txt"), null);
+        FileMatcher.createMatchers(basedir.toPath(), of("dir/1.txt"), null);
 
     assertEquals(1, matchers.size());
     assertEquals(file.toPath(), matchers.keySet().iterator().next());
@@ -129,13 +129,13 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_redundant() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "dir");
     createFiles(basedir, "dir/1.txt");
     File file = new File(basedir, "dir/1.txt");
 
     Map<Path, FileMatcher> matchers =
-        FileMatcher.subMatchers(basedir.toPath(), of("dir/1.txt", "dir/1.txt"), null);
+        FileMatcher.createMatchers(basedir.toPath(), of("dir/1.txt", "dir/1.txt"), null);
 
     assertEquals(1, matchers.size());
     assertEquals(file.toPath(), matchers.keySet().iterator().next());
@@ -145,12 +145,13 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_shorthandAll() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "dir");
     createFiles(basedir, "dir/1.txt");
     File file = new File(basedir, "dir/1.txt");
 
-    Map<Path, FileMatcher> matchers = FileMatcher.subMatchers(basedir.toPath(), of("dir/"), null);
+    Map<Path, FileMatcher> matchers =
+        FileMatcher.createMatchers(basedir.toPath(), of("dir/"), null);
 
     assertEquals(1, matchers.size());
     assertEquals(new File(basedir, "dir").toPath(), matchers.keySet().iterator().next());
@@ -160,10 +161,10 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_matchAll() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "dir");
     createFiles(basedir, "dir/1.txt");
-    Map<Path, FileMatcher> matchers = FileMatcher.subMatchers(basedir.toPath(), of("**"), null);
+    Map<Path, FileMatcher> matchers = FileMatcher.createMatchers(basedir.toPath(), of("**"), null);
 
     assertEquals(1, matchers.size());
     assertEquals(basedir.toPath(), matchers.keySet().iterator().next());
@@ -173,18 +174,18 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_wildcard() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createDirectories(basedir, "dir");
     createFiles(basedir, "dir/1.txt");
     Map<Path, FileMatcher> matchers;
 
-    matchers = FileMatcher.subMatchers(basedir.toPath(), of("d*r/**"), null);
+    matchers = FileMatcher.createMatchers(basedir.toPath(), of("d*r/**"), null);
     assertEquals(1, matchers.size());
     assertEquals(basedir.toPath(), matchers.keySet().iterator().next());
     assertFiles(getMatchingFiles(matchers), new File(basedir, "dir"),
         new File(basedir, "dir/1.txt"));
 
-    matchers = FileMatcher.subMatchers(basedir.toPath(), of("d?r/**"), null);
+    matchers = FileMatcher.createMatchers(basedir.toPath(), of("d?r/**"), null);
     assertEquals(1, matchers.size());
     assertEquals(basedir.toPath(), matchers.keySet().iterator().next());
     assertFiles(getMatchingFiles(matchers), new File(basedir, "dir"),
@@ -193,11 +194,12 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_basedirFile() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createFiles(basedir, "1.txt");
     File file = new File(basedir, "1.txt");
 
-    Map<Path, FileMatcher> matchers = FileMatcher.subMatchers(basedir.toPath(), of("1.txt"), null);
+    Map<Path, FileMatcher> matchers =
+        FileMatcher.createMatchers(basedir.toPath(), of("1.txt"), null);
     assertEquals(1, matchers.size());
     assertEquals(file.toPath(), matchers.keySet().iterator().next());
     assertFiles(getMatchingFiles(matchers), file);
@@ -205,17 +207,17 @@ public class FileMatcherTest {
 
   @Test
   public void testSubdirMatchers_noIncludes() throws Exception {
-    File basedir = temp.newFolder();
+    File basedir = temp.newFolder().getCanonicalFile();
     createFiles(basedir, "1.txt");
     Path basepath = basedir.toPath();
     Map<Path, FileMatcher> matchers;
 
-    matchers = FileMatcher.subMatchers(basepath, null, null);
+    matchers = FileMatcher.createMatchers(basepath, null, null);
     assertEquals(1, matchers.size());
     assertEquals(basepath, matchers.keySet().iterator().next());
     assertFiles(getMatchingFiles(matchers), new File(basedir, "1.txt"));
 
-    matchers = FileMatcher.subMatchers(basepath, of(), null);
+    matchers = FileMatcher.createMatchers(basepath, of(), null);
     assertEquals(1, matchers.size());
     assertEquals(basepath, matchers.keySet().iterator().next());
     assertFiles(getMatchingFiles(matchers), new File(basedir, "1.txt"));

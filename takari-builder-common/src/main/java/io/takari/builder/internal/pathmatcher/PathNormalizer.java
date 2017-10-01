@@ -2,6 +2,7 @@ package io.takari.builder.internal.pathmatcher;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -27,7 +28,7 @@ public class PathNormalizer {
   }
 
   public static PathNormalizer create(Path basedir) {
-    return new PathNormalizer(getCanonicalPath(basedir));
+    return new PathNormalizer(toCanonicalPath(basedir));
   }
 
   public static PathNormalizer createFSRoot() {
@@ -103,18 +104,31 @@ public class PathNormalizer {
    * </ul>
    */
   public static String normalize0(Path file) {
-    String canonicalPath = getCanonicalPath(file);
+    String canonicalPath = toCanonicalPath(file);
     if (FIXFS) {
       return fixfs(canonicalPath);
     }
     return canonicalPath;
   }
 
-  private static String getCanonicalPath(Path file) {
+  /**
+   * Like {@link #getCanonicalPath(Path)}, but returns String.
+   */
+  private static String toCanonicalPath(Path file) {
     try {
+      // note that Path#toRealPath() only works for existing files
       return file.toFile().getCanonicalPath();
     } catch (IOException e) {
-      return file.toAbsolutePath().toString();
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  public static Path getCanonicalPath(Path file) {
+    try {
+      // note that Path#toRealPath() only works for existing files
+      return file.toFile().getCanonicalFile().toPath();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 

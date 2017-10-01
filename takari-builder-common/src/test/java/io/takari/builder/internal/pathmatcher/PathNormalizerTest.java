@@ -1,6 +1,7 @@
 package io.takari.builder.internal.pathmatcher;
 
 import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
+import static io.takari.builder.internal.pathmatcher.PathNormalizer.getCanonicalPath;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -8,7 +9,9 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -70,4 +73,19 @@ public class PathNormalizerTest {
     assertIsNormalized(normalize0(path));
   }
 
+  @Test
+  @Ignore("requires local path which the current process does not have permissions to access")
+  public void testToCanonicalPath_noAccess() throws IOException {
+    // TODO figure out how to setup tests for AccessDeniedException
+    String inaccessible = "/Users/karina/Documents/Electronic Arts";
+    Path path = getCanonicalPath(Paths.get(inaccessible));
+    assertEquals(inaccessible, path.toString());
+  }
+
+  @Test
+  public void testToCanonicalPath_doesNotExist() throws IOException {
+    Path basedir = temp.getRoot().toPath();
+    Path realBasedir = basedir.toRealPath();
+    assertEquals(realBasedir.resolve("nope"), getCanonicalPath(basedir.resolve("nope")));
+  }
 }

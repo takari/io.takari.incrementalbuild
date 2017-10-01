@@ -1,8 +1,5 @@
 package io.takari.builder.internal.pathmatcher;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,30 +28,30 @@ public class JarEntries {
       children = isFile ? null : new HashMap<>();
     }
 
-    private List<Path> matchFiles(FileMatcher matcher) {
+    private List<String> matchFiles(FileMatcher matcher) {
       if (isFile) {
         if (matcher.matches("/" + path)) {
-          return Arrays.asList(Paths.get(path));
+          return Collections.singletonList(path);
         } else {
           return Collections.emptyList();
         }
       }
 
-      List<Path> paths = new ArrayList<>();
+      List<String> paths = new ArrayList<>();
 
       matchFiles(matcher, paths);
 
       return paths;
     }
 
-    private void matchFiles(FileMatcher matcher, List<Path> paths) {
+    private void matchFiles(FileMatcher matcher, List<String> paths) {
       if (children == null) {
         return;
       }
       for (Node node : children.values()) {
         if (node.isFile) {
           if (matcher.matches("/" + node.path)) {
-            paths.add(Paths.get(node.path));
+            paths.add(node.path);
           }
         } else {
           node.matchFiles(matcher, paths);
@@ -75,13 +72,12 @@ public class JarEntries {
   }
 
   private void addEntry(String entry) {
-    String[] segments = Plexus_MatchPattern.tokenizePathToString(entry, File.separator);
+    String[] segments = Plexus_MatchPattern.tokenizePathToString(entry, PathNormalizer.SEPARATOR);
     int index = 0, len = segments.length;
     Node node = root;
-    String segment;
 
     while (index < len) {
-      segment = segments[index];
+      String segment = segments[index];
       Map<String, Node> children = node.children;
       node = children.get(segment);
 
@@ -99,14 +95,13 @@ public class JarEntries {
     return String.join("/", Arrays.copyOfRange(segments, 0, index + 1));
   }
 
-  private Node getNode(Path path) {
-    String[] segments = Plexus_MatchPattern.tokenizePathToString(path.toString(), File.separator);
+  private Node getNode(String path) {
+    String[] segments = Plexus_MatchPattern.tokenizePathToString(path, PathNormalizer.SEPARATOR);
     int index = 0, len = segments.length;
     Node node = root;
-    String segment;
 
     while (index < len) {
-      segment = segments[index];
+      String segment = segments[index];
       Map<String, Node> children = node.children;
       node = children.get(segment);
       if (node == null) {
@@ -117,10 +112,10 @@ public class JarEntries {
     return node;
   }
 
-  public List<Path> match(Map<Path, FileMatcher> subdirMatchers) {
-    List<Path> matchedPaths = new ArrayList<>();
+  public List<String> match(Map<String, FileMatcher> subdirMatchers) {
+    List<String> matchedPaths = new ArrayList<>();
 
-    for (Map.Entry<Path, FileMatcher> entry : subdirMatchers.entrySet()) {
+    for (Map.Entry<String, FileMatcher> entry : subdirMatchers.entrySet()) {
       Node node = getNode(entry.getKey());
 
       if (node == null) {
