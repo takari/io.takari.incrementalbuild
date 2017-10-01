@@ -469,4 +469,28 @@ public class InputDirectoryFilesTest {
             TEST_SOURCE_ROOTS_EXPR))
         .build(_Data.class, "files");
   }
+
+  //
+  //
+  //
+
+  static class _ArraySpecificFileData {
+    @InputDirectoryFiles(defaultValue = ".", includes = "1.txt")
+    File[] files;
+  }
+
+  @Test
+  public void testSpecificFile() throws Exception {
+    File dir = temp.newFolder().getCanonicalFile();
+    File file = new File(dir, "1.txt");
+    file.createNewFile();
+    new File(dir, "2.txt").createNewFile();
+
+    File[] files = (File[]) builder(dir) //
+        .build(_ArraySpecificFileData.class, "files") //
+        .value();
+
+    assertThat(files).containsExactly(file);
+  }
+
 }

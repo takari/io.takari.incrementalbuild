@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.function.Function;
 
 public class FileMatcher {
   private static interface Matcher {
@@ -100,7 +101,7 @@ public class FileMatcher {
   final Matcher includesMatcher;
   final Matcher excludesMatcher;
 
-  protected final String basedir;
+  private final String basedir;
 
   private static Matcher fromStrings(String basepath, Collection<String> globs,
       Matcher everything) {
@@ -141,7 +142,12 @@ public class FileMatcher {
     this.excludesMatcher = excludesMatcher;
   }
 
-  private boolean matches0(String path) {
+  /**
+   * Returns {@code true} if provided path is under this matcher's basedir and satisfies
+   * includes/excludes patterns. The provided path is assumed to be normalized according to
+   * {@link PathNormalizer#normalize0(Path)}.
+   */
+  public boolean matches(String path) {
     if (basedir != null && !path.startsWith(basedir)) {
       return false;
     }
@@ -154,34 +160,59 @@ public class FileMatcher {
     return true;
   }
 
-  public boolean matches(String path) {
-    return matches0(normalize0(path));
-  }
-
   public boolean matches(Path file) {
-    return matches0(normalize0(file));
+    return matches(normalize0(file));
   }
 
   public boolean matches(File file) {
-    return matches0(normalize0(file.toPath()));
+    return matches(normalize0(file.toPath()));
   }
 
   /**
    * Given a directory, returns a map of location to FileMatcher that will optimize the lookup. The
    * key can either be a file (if it is a single path matcher) or a directory (if it is an
    * open-ended matcher). The associated matcher will still be relative to the basedir, not to the
-   * key.
-   * 
-   * @param basedir
-   * @param includes
-   * @param excludes
-   * @return
+   * key, but will only match paths that start with the key.
    */
-  public static Map<Path, FileMatcher> subMatchers(final Path basedir, Collection<String> includes,
-      Collection<String> excludes) {
+  public static Map<Path, FileMatcher> createMatchers(final Path basedir,
+      Collection<String> includes, Collection<String> excludes) {
+    String basepath = normalize0(basedir);
     if (includes == null || includes.isEmpty()) {
-      return Collections.singletonMap(basedir, absoluteMatcher(basedir, includes, excludes));
+      return Collections.singletonMap(basedir, createMatcher(basepath, includes, excludes));
     }
+    return createMatchers(basepath, includes, excludes, PathNormalizer::toPath);
+  }
+
+  /**
+   * Returns a map of location to FileMatcher that will optimize the lookup. The key is a path of a
+   * file or directory in a logical filesystem that uses '/' as file separator. The associated
+   * matcher is relative to the root of the logical filesystem, not to the ley, but will only match
+   * paths that start with the key.
+   */
+  public static Map<String, FileMatcher> createMatchers(Collection<String> includes,
+      Collection<String> excludes) {
+    String basepath = "";
+    if (includes == null || includes.isEmpty()) {
+      return Collections.singletonMap(basepath, createMatcher(basepath, includes, excludes));
+    }
+    return createMatchers(basepath, includes, excludes, Function.identity());
+  }
+
+  private static <T> Map<T, FileMatcher> createMatchers(String basepath,
+      Collection<String> includes, Collection<String> excludes, Function<String, T> fromString) {
+    final Matcher excludesMatcher = fromStrings(basepath, excludes, MATCH_EVERYTHING);
+    Map<T, FileMatcher> matchers = new HashMap<>();
+    newIncludesTrie(includes).subdirs().forEach((relpath, globs) -> {
+      String path = relpath != null ? basepath + "/" + relpath : basepath;
+      FileMatcher matcher = globs != null //
+          ? createMatcher(path, globs, excludesMatcher) //
+          : createSinglePathMatcher(path);
+      matchers.put(fromString.apply(path), matcher);
+    });
+    return matchers;
+  }
+
+  private static Trie newIncludesTrie(Collection<String> includes) {
     Trie root = new Trie();
     for (String include : includes) {
       // ant shorthand syntax
@@ -199,29 +230,17 @@ public class FileMatcher {
         trie = trie.child(name);
       }
     }
-    final Matcher excludesMatcher = fromStrings(normalize0(basedir), excludes, MATCH_EVERYTHING);
-    Map<Path, FileMatcher> subdirs = new HashMap<>();
-    root.subdirs().forEach((relpath, globs) -> {
-      Path path = relpath != null ? basedir.resolve(relpath) : basedir;
-      FileMatcher matcher = globs != null //
-          ? absoluteMatcher(path, globs, excludesMatcher) //
-          : singlePathMatcher(path);
-      subdirs.put(path, matcher);
-    });
-    return subdirs;
+    return root;
   }
 
-  private static FileMatcher absoluteMatcher(Path basedir, Collection<String> includes,
+  private static FileMatcher createMatcher(String basedir, Collection<String> includes,
       Matcher excludesMatcher) {
-    final Path path = basedir;
-    final String basepath = normalize0(path);
-    final Matcher includesMatcher = fromStrings(basepath, includes, null);
-    return new FileMatcher(toDirectoryPath(basepath), includesMatcher, excludesMatcher);
+    final Matcher includesMatcher = fromStrings(basedir, includes, null);
+    return new FileMatcher(toDirectoryPath(basedir), includesMatcher, excludesMatcher);
   }
 
-  private static FileMatcher singlePathMatcher(Path path) {
-    final Path path1 = path;
-    return new FileMatcher(null, new SinglePathMatcher(normalize0(path1)) /* includesMatcher */,
+  private static FileMatcher createSinglePathMatcher(String path) {
+    return new FileMatcher(null, new SinglePathMatcher(path) /* includesMatcher */,
         null /* excludesMatcher */);
   }
 
@@ -233,9 +252,22 @@ public class FileMatcher {
     return glob.toString();
   }
 
-  public static FileMatcher absoluteMatcher(final Path basedir, Collection<String> includes,
+  /**
+   * Creates and returns new matcher for files under specified {@code basedir} that satisfy
+   * specified includes/excludes patterns.
+   */
+  public static FileMatcher createMatcher(final Path basedir, Collection<String> includes,
       Collection<String> excludes) {
-    final String basepath = normalize0(basedir);
+    return createMatcher(normalize0(basedir), includes, excludes);
+  }
+
+  public static FileMatcher createMatcher(Collection<String> includes,
+      Collection<String> excludes) {
+    return createMatcher("", includes, excludes);
+  }
+
+  private static FileMatcher createMatcher(final String basepath, Collection<String> includes,
+      Collection<String> excludes) {
     final Matcher includesMatcher = fromStrings(basepath, includes, null);
     final Matcher excludesMatcher = fromStrings(basepath, excludes, MATCH_EVERYTHING);
     return new FileMatcher(toDirectoryPath(basepath), includesMatcher, excludesMatcher);

@@ -8,7 +8,6 @@ import static io.takari.builder.internal.pathmatcher.PathNormalizer.toPath;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -403,8 +402,8 @@ public class BuilderContext {
 
   private static FileMatcher getExceptionsMatcher(Collection<String> exceptions) {
     return exceptions != null && !exceptions.isEmpty()
-        ? FileMatcher.absoluteMatcher(Paths.get("/"), exceptions, null)
-        : FileMatcher.absoluteMatcher(Paths.get("/"), null, Arrays.asList("*"));
+        ? FileMatcher.createMatcher(exceptions, null)
+        : FileMatcher.createMatcher(null, Arrays.asList("*"));
   }
 
   @Override

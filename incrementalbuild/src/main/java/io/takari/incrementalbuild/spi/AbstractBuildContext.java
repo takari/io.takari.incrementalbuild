@@ -178,7 +178,7 @@ public abstract class AbstractBuildContext {
     basedir = normalize(basedir);
     final List<DefaultResourceMetadata<File>> result = new ArrayList<>();
     for (Map.Entry<Path, FileMatcher> subdir : FileMatcher
-        .subMatchers(basedir.toPath(), includes, excludes).entrySet()) {
+        .createMatchers(basedir.toPath(), includes, excludes).entrySet()) {
       workspace.walk(subdir.getKey().toFile(), new FileVisitor() {
         @Override
         public void visit(File file, long lastModified, long length,
@@ -203,7 +203,7 @@ public abstract class AbstractBuildContext {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
       final FileMatcher absoluteMatcher =
-          FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
+          FileMatcher.createMatcher(basedir.toPath(), includes, excludes);
       for (ResourceHolder<?> holder : oldState.getResources().values()) {
         if (holder instanceof FileState) {
           FileState fileState = (FileState) holder;
@@ -223,7 +223,7 @@ public abstract class AbstractBuildContext {
     basedir = normalize(basedir);
     final List<DefaultResource<File>> result = new ArrayList<>();
     for (Map.Entry<Path, FileMatcher> subdir : FileMatcher
-        .subMatchers(basedir.toPath(), includes, excludes).entrySet()) {
+        .createMatchers(basedir.toPath(), includes, excludes).entrySet()) {
       workspace.walk(subdir.getKey().toFile(), new FileVisitor() {
         @Override
         public void visit(File file, long lastModified, long length,
@@ -253,7 +253,7 @@ public abstract class AbstractBuildContext {
       // only NEW, MODIFIED and REMOVED resources are reported in DELTA mode
       // need to find any UNMODIFIED
       final FileMatcher absoluteMatcher =
-          FileMatcher.absoluteMatcher(basedir.toPath(), includes, excludes);
+          FileMatcher.createMatcher(basedir.toPath(), includes, excludes);
       for (ResourceHolder<?> holder : oldState.getResources().values()) {
         if (holder instanceof FileState) {
           FileState fileState = (FileState) holder;

@@ -35,7 +35,7 @@ public class DependencyResourcesInputTest {
   public final TemporaryFolder temp = new TemporaryFolder();
 
   File newDirArtifact(String... entries) throws IOException {
-    File dir = temp.newFolder();
+    File dir = temp.newFolder().getCanonicalFile();
     for (String entry : entries) {
       Files.createFile(dir.toPath().resolve(entry));
     }
@@ -43,11 +43,11 @@ public class DependencyResourcesInputTest {
   }
 
   File newJarArtifact(String... entries) throws IOException {
-    return JarBuilder.create(temp.newFile()).withEntries(entries).build();
+    return JarBuilder.create(temp.newFile().getCanonicalFile()).withEntries(entries).build();
   }
 
   URL newResource(String name, String content) throws IOException {
-    File file = temp.newFile();
+    File file = temp.newFile().getCanonicalFile();
     Files.write(file.toPath(), content.getBytes());
     TestArtifactMetadata artifact = new TestArtifactMetadata("g:a");
     return ArtifactResourceURLStreamHandler.newURL(artifact, name, file.toURI().toURL());
