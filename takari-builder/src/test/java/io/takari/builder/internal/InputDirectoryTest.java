@@ -381,4 +381,26 @@ public class InputDirectoryTest {
   private Set<File> pathToFile(Set<Path> files) {
     return files.stream().map(file -> file.toFile()).collect(Collectors.toSet());
   }
+
+  //
+  //
+  //
+
+  static class _SpecificIncludesData {
+    @InputDirectory(filesRequired = true, value = "dir", includes = "1.txt")
+    public File directory;
+  }
+
+  @Test
+  public void testSpecificIncludes() throws Exception {
+    File basedir = temp.newFolder().getCanonicalFile();
+    new File(basedir, "dir").mkdirs();
+    new File(basedir, "dir/1.txt").createNewFile();
+
+    InputDirectoryValue input = builder(basedir).build(_SpecificIncludesData.class, "directory");
+    assertEquals(new File(basedir, "dir"), input.value());
+    assertFiles(input.files(), new File(basedir, "dir/1.txt"));
+    assertThat(input.filenames()).containsExactly("1.txt");
+  }
+
 }
