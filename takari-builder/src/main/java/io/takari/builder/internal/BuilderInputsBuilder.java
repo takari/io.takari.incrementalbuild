@@ -1270,13 +1270,15 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
     TreeSet<Path> files = new TreeSet<>();
     TreeSet<String> filenames = new TreeSet<>();
-    FileMatcher.createMatchers(location, includes, excludes).forEach((subdir, matcher) -> {
+    // use canonical location to get correct relative paths
+    Path canonicalLocation = getCanonicalPath(location);
+    FileMatcher.createMatchers(canonicalLocation, includes, excludes).forEach((subdir, matcher) -> {
       try (Stream<Path> paths = workspace.walk(subdir)) {
         paths.filter(path -> workspace.exists(path)) //
             .filter(path -> matcher.matches(path)) //
             .forEach(path -> {
               files.add(path);
-              filenames.add(relativePath(subdir, path));
+              filenames.add(relativePath(canonicalLocation, path));
             });
       } catch (IOException e) {
         throw new InvalidConfigurationException(context, "could not list directory files", e);
