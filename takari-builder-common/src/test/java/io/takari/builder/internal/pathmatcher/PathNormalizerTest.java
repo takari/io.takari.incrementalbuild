@@ -30,7 +30,7 @@ public class PathNormalizerTest {
   @Test
   public void testIsBasedirOrNestedFile() throws Exception {
     Path basedir = temp.newFolder().getCanonicalFile().toPath();
-    PathNormalizer testee = PathNormalizer.create(basedir);
+    PathNormalizer testee = PathNormalizer.createNormalizer(basedir);
 
     assertTrue(testee.isBasedirOrNestedFile(basedir.toString()));
     assertTrue(testee.isBasedirOrNestedFile(basedir.resolve("nested").toString()));

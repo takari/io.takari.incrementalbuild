@@ -7,13 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Filesystem path normalizer.
- * 
- * Normalized paths use '/' separator on all platforms and are absolute, i.e. start with '/'.
- * 
- * To minimize number of expensive {@link File#getCanonicalFile()} calls, the normalizer is aware of
- * the build base directory. Normalized paths under the base directory may contain '../' and './'
- * special directories by default.
+ * Filesystem path normalizer. Normalized paths use '/' separator on all platforms and are absolute,
+ * i.e. start with '/'.
  */
 public class PathNormalizer {
 
@@ -21,23 +16,54 @@ public class PathNormalizer {
   private static final boolean FIXFS = File.separatorChar != SEPARATOR_CHAR;
   static final String SEPARATOR = "/";
 
-  private final String basedir; // canonical path without trailing file separatorChar
+  /**
+   * Platform-dependent canonical path without trailing file separatorChar (i.e. on *nix
+   * {@code /some/directory} and on Windows {@code C:\some\directory}).
+   * 
+   * {@code null} means "no normalization base directory" and forces all paths to be normalized
+   * using more expensive {@link #normalize0(Path)}.
+   */
+  private final String basedir;
 
   private PathNormalizer(String basedir) {
     this.basedir = basedir;
   }
 
-  public static PathNormalizer create(Path basedir) {
+  /**
+   * Creates {@link PathNormalizer} optimized for use with {@link PathMatcher}.
+   * 
+   * Paths under the provided {@code basedir} are not normalized using filesystem I/O calls (i.e.
+   * {@link File#getCanonicalFile()} or similar) and may contain '../' and './' special directories
+   * after normalization.
+   */
+  public static PathNormalizer createNormalizer(Path basedir) {
     return new PathNormalizer(toCanonicalPath(basedir));
   }
 
-  public static PathNormalizer createFSRoot() {
-    return new PathNormalizer(SEPARATOR);
+  /**
+   * Creates {@link PathNormalizer} using value returned by {@link #getMemento()}
+   */
+  public static PathNormalizer createNormalizer(String memento) {
+    return new PathNormalizer(memento);
   }
 
-  public String getBasedir() {
-    if (FIXFS) {
-      return fixfs(basedir);
+  /**
+   * Creates {@link PathNormalizer} that uses filesystem I/O calls (i.e.
+   * {@link File#getCanonicalFile()} or similar) to normalize all paths.
+   */
+  public static PathNormalizer createNormalizer() {
+    return new PathNormalizer(null);
+  }
+
+  /**
+   * Returns memento string which can be passed to {@link #createNormalizer(String)}. The main
+   * usecase is to recreate {@link PathNormalizer} in another JVM running on the same system.
+   */
+  public String getMemento() {
+    if (basedir == null) {
+      // existing clients do not call this method for non-optimized normalizer
+      // so lets fail for now and decide what to do when we have a usecase
+      throw new IllegalStateException();
     }
     return basedir;
   }
@@ -67,7 +93,7 @@ public class PathNormalizer {
    * under basedir.
    */
   boolean isBasedirOrNestedFile(String file) {
-    if (file.startsWith(basedir)) {
+    if (basedir != null && file.startsWith(basedir)) {
       int baseLength = basedir.length();
       if (baseLength == file.length()) {
         return true;
