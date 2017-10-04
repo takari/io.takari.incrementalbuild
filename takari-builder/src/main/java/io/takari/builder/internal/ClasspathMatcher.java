@@ -31,7 +31,7 @@ public class ClasspathMatcher {
   }
 
   private PathMatcher createMatcher() {
-    Builder builder = PathMatcher.builder(PathNormalizer.createFSRoot());
+    Builder builder = PathMatcher.builder(PathNormalizer.createNormalizer());
 
     suppliers.stream().map(s -> s.entries()).flatMap(entries -> entries.stream())
         .forEach(entry -> builder.includePrefix(entry));

@@ -96,7 +96,7 @@ public class ProjectContext {
 
     try {
       try {
-        writer.write(normalizer.getBasedir());
+        writer.write(normalizer.getMemento());
         writer.newLine();
         writer.flush();
       } catch (IOException e) {
@@ -115,12 +115,10 @@ public class ProjectContext {
   public static ProjectContext load(InputStream is) throws IOException {
     Set<String> execIncludes = new HashSet<>();
     BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-    String str;
-    String workspaceDirectory = r.readLine();
-    final PathNormalizer normalizer =
-        PathNormalizer.create(PathNormalizer.toPath(workspaceDirectory));
+    PathNormalizer normalizer = PathNormalizer.createNormalizer(r.readLine());
     Builder readMatcherBuilder = PathMatcher.builder(normalizer);
     Builder writeMatcherBuilder = PathMatcher.builder(normalizer);
+    String str;
     while ((str = r.readLine()) != null) {
       PathMatcher.Builder builder;
       boolean include = str.startsWith("+");

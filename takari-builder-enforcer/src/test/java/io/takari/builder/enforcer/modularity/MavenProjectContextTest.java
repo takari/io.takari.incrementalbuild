@@ -1,7 +1,5 @@
 package io.takari.builder.enforcer.modularity;
 
-import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,7 +26,7 @@ public class MavenProjectContextTest {
 
   @Test
   public void testStore() throws Exception {
-    PathNormalizer normalizer = PathNormalizer.create(Paths.get("/locations"));
+    PathNormalizer normalizer = PathNormalizer.createNormalizer("/locations");
     PathMatcher readMatcher = PathMatcher.builder() //
         .includePrefix("/read/includes") //
         .includePath("/readIncludes") //
@@ -54,7 +52,7 @@ public class MavenProjectContextTest {
         , "-R /read/excludes" //
         , "-R /read/excludes/" //
         , "-W /write/excludes/" //
-        , normalize0("/locations") // was the first line...
+        , "/locations" // was the first line...
     );
   }
 
@@ -92,29 +90,17 @@ public class MavenProjectContextTest {
 
     assertProjextContext(ctx, //
         "+E p4" //
-        , rule("+R ", "/locations/dirAllow/") //
-        , rule("+W ", "/locations/fileAllow") //
-        , rule("-R ", "/locations/dirForbid/") //
-        , rule("-W ", "/locations/fileForbid") //
-        , rule(null, "/locations") //
+        , "+R /locations/dirAllow/" //
+        , "+W /locations/fileAllow" //
+        , "-R /locations/dirForbid/" //
+        , "-W /locations/fileForbid" //
+        , "/locations" //
     );
-  }
-
-  private static String rule(String prefix, String path) {
-    StringBuilder sb = new StringBuilder();
-    if (prefix != null) {
-      sb.append(prefix);
-    }
-    sb.append(PathNormalizer.normalize0(path));
-    if (path.endsWith("/")) {
-      sb.append('/');
-    }
-    return sb.toString();
   }
 
   @Test
   public void testExecPath() throws Exception {
-    PathNormalizer normalizer = PathNormalizer.create(Paths.get("/locations/"));
+    PathNormalizer normalizer = PathNormalizer.createNormalizer(Paths.get("/locations/"));
     PathMatcher readMatcher = PathMatcher.builder(normalizer).build();
     PathMatcher writeMatcher = PathMatcher.builder(normalizer).build();
     Set<String> execIncludes = ImmutableSet.of("p4");
