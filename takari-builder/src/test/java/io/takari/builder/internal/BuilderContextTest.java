@@ -15,9 +15,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +28,8 @@ import org.slf4j.helpers.NOPLogger;
 
 import io.takari.builder.enforcer.ComposableSecurityManagerPolicy;
 import io.takari.builder.enforcer.PolicyContextPreserver;
+import io.takari.builder.enforcer.internal.EnforcerViolation;
+import io.takari.builder.enforcer.internal.EnforcerViolationType;
 import io.takari.builder.internal.workspace.FilesystemWorkspace;
 
 public class BuilderContextTest {
@@ -301,6 +305,112 @@ public class BuilderContextTest {
       } catch (IllegalStateException expected) {
         // out-of-scope context rejects all operations
       }
+    } finally {
+      ComposableSecurityManagerPolicy.removeSystemSecurityManager();
+    }
+  }
+
+
+  private void validReadWithoutSettingSecurity() throws Exception {
+    Path file = temp.newFolder().toPath().resolve("1.txt");
+    Files.createFile(file);
+
+    BuilderContext testee = newBuilder() //
+        .addInputFile(file) //
+        .addOutputDirectory(temp.newFolder().toPath()) //
+        .build();
+
+    testee.enter();
+    Files.readAllBytes(file);
+    testee.leave();
+
+    assertTrue(testee.getViolations().isEmpty());
+  }
+
+  private void invalidReadWithoutSettingSecurity() throws Exception {
+    BuilderContext testee = newBuilder() //
+        .addInputFile(temp.newFolder().toPath().resolve("1.txt")) //
+        .addOutputDirectory(temp.newFolder().toPath()) //
+        .build();
+
+    Path file = temp.newFolder().toPath().resolve("2.txt");
+    Files.createFile(file);
+
+    testee.enter();
+    Files.readAllBytes(file);
+    testee.leave();
+
+    assertTrue(!testee.getViolations().isEmpty());
+    assertTrue(testee.getViolations().size() == 1);
+    EnforcerViolation violation = testee.getViolations().iterator().next();
+    assertTrue(violation.getType().equalsIgnoreCase(EnforcerViolationType.READ.getType()));
+    assertTrue(violation.getFile().equalsIgnoreCase(file.toFile().getCanonicalPath()));
+  }
+
+  private Callable<Boolean> getValidRead() {
+    return () -> {
+      validReadWithoutSettingSecurity();
+      return true;
+    };
+  }
+
+  private Callable<Boolean> getInvalidRead() {
+    return () -> {
+      validReadWithoutSettingSecurity();
+      return true;
+    };
+  }
+
+  @Test
+  public void testBuilderContextValidReadWithoutSettingSecurityManager() throws Exception {
+    validReadWithoutSettingSecurity();
+    assertNull(System.getSecurityManager());
+  }
+
+  @Test
+  public void testBuilderContextInvalidReadWithoutSettingSecurityManager() throws Exception {
+    invalidReadWithoutSettingSecurity();
+    assertNull(System.getSecurityManager());
+  }
+
+  @Test
+  public void testParallelStreamsThreadingWithoutSettingSecurityManager() throws Exception {
+    List<Callable<Boolean>> work = Arrays.asList( //
+        getInvalidRead(), //
+        getValidRead(), //
+        getInvalidRead(), //
+        getValidRead(), //
+        getInvalidRead(), //
+        getValidRead());
+    work.parallelStream().map(x -> {
+      try {
+        return x.call();
+      } catch (Exception e) {
+        return e;
+      }
+    }).collect(Collectors.toList());
+    assertNull(System.getSecurityManager());
+  }
+
+  @Test
+  public void testParallelStreamsThreadingWithSettingSecurityManager() throws Exception {
+    ComposableSecurityManagerPolicy.setSystemSecurityManager();
+    try {
+      List<Callable<Boolean>> work = Arrays.asList( //
+          getInvalidRead(), //
+          getValidRead(), //
+          getInvalidRead(), //
+          getValidRead(), //
+          getInvalidRead(), //
+          getValidRead());
+      work.parallelStream().map(x -> {
+        try {
+          return x.call();
+        } catch (Exception e) {
+          return e;
+        }
+      }).collect(Collectors.toList());
+      assertTrue(System.getSecurityManager() != null);
     } finally {
       ComposableSecurityManagerPolicy.removeSystemSecurityManager();
     }

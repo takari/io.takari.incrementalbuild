@@ -14,10 +14,13 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 
 import io.takari.builder.Messages;
+import io.takari.builder.enforcer.ComposableSecurityManagerPolicy;
+import io.takari.builder.enforcer.ExecCommandPassingSecurityManager;
 import io.takari.builder.enforcer.Policy;
 import io.takari.builder.enforcer.internal.EnforcerViolation;
 import io.takari.builder.enforcer.internal.EnforcerViolationType;
@@ -39,7 +42,11 @@ public class BuilderContext {
 
   private static final Object KEY_CONTEXT = BuilderContextPolicy.class;
 
+  // # of builders using managed security manager.
+  private static final AtomicLong managedSecurityManagerReferences = new AtomicLong();
+
   public void enter() {
+    checkSecurityManagerAndSetIfneeded();
     registerContextPolicy(KEY_CONTEXT, new BuilderContextPolicy(this));
   }
 
@@ -49,6 +56,40 @@ public class BuilderContext {
       throw new IllegalStateException();
     }
     policy.inScope.set(false);
+    checkSecurityManagerAndResetIfNeeded();
+  }
+
+  /*
+   * On command line builds, the security manager has already been set, so there is no need for a
+   * managed security manager and this call would be just a no-op with a very small delay due to the
+   * synchronized block. Inside M2E, no one would set the security manager and the security manager
+   * will be managed here and be set within the scope of a builder execution to reduce the
+   * performance impact.
+   */
+  private static synchronized void checkSecurityManagerAndSetIfneeded() {
+    if (managedSecurityManagerReferences.get() == 0) {
+      SecurityManager originalManager = System.getSecurityManager();
+      if (!(originalManager instanceof ExecCommandPassingSecurityManager)) {
+        ComposableSecurityManagerPolicy.setSystemSecurityManager();
+        managedSecurityManagerReferences.addAndGet(1);
+      }
+    } else {
+      managedSecurityManagerReferences.addAndGet(1);
+    }
+  }
+
+  /*
+   * On command line builds, the security manager has already been set, so there is no need for a
+   * managed security manager and this call would be just a no-op with a very small delay due to the
+   * synchronized block. Inside M2E, no one would set the security manager and the security manager
+   * will be managed here and be reset within the scope of a builder execution to reduce the
+   * performance impact.
+   */
+  private static synchronized void checkSecurityManagerAndResetIfNeeded() {
+    if (managedSecurityManagerReferences.get() != 0
+        && managedSecurityManagerReferences.addAndGet(-1) == 0) {
+      ComposableSecurityManagerPolicy.removeSystemSecurityManager();
+    }
   }
 
   private static BuilderContext getCurrentContext() {
