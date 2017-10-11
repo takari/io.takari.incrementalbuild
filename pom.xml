@@ -10,7 +10,7 @@
 
   <groupId>io.takari</groupId>
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>0.20.6</version>
+  <version>0.20.7-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
@@ -26,7 +26,7 @@
     <url>https://github.com/takari/io.takari.incrementalbuild</url>
     <connection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</connection>
     <developerConnection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</developerConnection>
-    <tag>io.takari.incrementalbuild-0.20.6</tag>
+    <tag>HEAD</tag>
   </scm>
   <developers>
     <developer>
