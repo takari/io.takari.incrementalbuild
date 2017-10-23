@@ -1183,4 +1183,55 @@ public class BuilderRunnerTest {
         .assertOutputFiles(basedir); // expected to not generate output files
 
   }
+
+  //
+  //
+  //
+
+  static class NoOpBuilder {
+    @OutputFile
+    File file;
+
+    @OutputDirectory
+    File directory;
+
+    @Builder(name = "no-op")
+    public void copy() throws IOException {}
+  }
+
+  static class OutputFilesystemWorkspace extends FilesystemWorkspace {
+    List<File> files;
+
+    public OutputFilesystemWorkspace() {
+      files = new ArrayList<>();
+    }
+
+    @Override
+    public void processOutput(File outputFile) {
+      files.add(outputFile);
+    }
+  }
+
+  @Test
+  public void testOutputParametersAreProcessedAsOutputs() throws Exception {
+    // assert that @OutputFile and @OutputDirectory are processed as outputs
+    // even if builder code does not explicitly write to them
+    File basedir = temp.newFolder();
+    File stateFile = temp.newFile();
+    File target = temp.newFolder();
+    File targetFile = temp.newFile();
+
+    OutputFilesystemWorkspace workspace = new OutputFilesystemWorkspace();
+
+    InternalBuilderExecution.builderExecution(basedir, NoOpBuilder.class) //
+        .withWorkspace(workspace) //
+        .withStateFile(stateFile) //
+        .withConfiguration("directory", target.getCanonicalPath()) //
+        .withConfiguration("file", targetFile.getCanonicalPath()) //
+        .execute();
+
+    assertThat(workspace.files.size() == 2);
+    assertThat(workspace.files.contains(target));
+    assertThat(workspace.files.contains(targetFile));
+  }
 }

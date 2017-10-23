@@ -344,9 +344,11 @@ public class BuilderRunner {
     try {
       for (Path file : inputs.getOutputDirectories()) {
         Files.createDirectories(file);
+        workspace.processOutput(file.toFile());
       }
       for (Path file : inputs.getOutputFiles()) {
         Files.createDirectories(file.getParent());
+        workspace.processOutput(file.toFile());
       }
     } catch (IOException e) {
       throw efactory.exception("Unable to create Output Directories", e);
