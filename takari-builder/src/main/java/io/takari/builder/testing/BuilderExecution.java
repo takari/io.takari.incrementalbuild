@@ -64,6 +64,7 @@ public class BuilderExecution {
   private final Map<String, String> properties = new LinkedHashMap<>();
   private final Xpp3Dom configuration = new Xpp3Dom("configuration");
   private final Map<IArtifactMetadata, Path> dependencies = new LinkedHashMap<>();
+  private final Map<IArtifactMetadata, Path> allDependencies = new LinkedHashMap<>();
   private final Map<String, BuilderInputs.Value<?>> forcedParameters = new LinkedHashMap<>();
   private final ClasspathMatcher classpathMatcher =
       new ClasspathMatcher(Arrays.asList(new JvmClasspathEntriesSupplier()));
@@ -71,15 +72,17 @@ public class BuilderExecution {
   private final DependencyResolver dependencyResolver = new DependencyResolver() {
 
     @Override
-    public Map<IArtifactMetadata, Path> getProjectDependencies(boolean transitive,
-        ResolutionScope scope) {
+    public Map<IArtifactMetadata, Path> getProjectDependencies(boolean transitive, ResolutionScope scope) {
+      if (transitive) {
+        return Collections.unmodifiableMap(allDependencies);
+      }
       return Collections.unmodifiableMap(dependencies);
     }
 
     @Override
-    public Map.Entry<IArtifactMetadata, Path> getProjectDependency(String groupId,
-        String artifactId, String classifier, ResolutionScope scope) {
-      for (Map.Entry<IArtifactMetadata, Path> entry : dependencies.entrySet()) {
+    public Map.Entry<IArtifactMetadata, Path> getProjectDependency(String groupId, String artifactId, String classifier,
+        ResolutionScope scope) {
+      for (Map.Entry<IArtifactMetadata, Path> entry : allDependencies.entrySet()) {
         IArtifactMetadata key = entry.getKey();
         if (eq(groupId, key.getGroupId()) && eq(artifactId, key.getArtifactId())
             && eq(classifier, key.getClassifier())) {
@@ -113,8 +116,7 @@ public class BuilderExecution {
     this.goal = goal;
   }
 
-  public static BuilderExecution builderExecution(File projectBasedir, Class<?> builder,
-      String goal) {
+  public static BuilderExecution builderExecution(File projectBasedir, Class<?> builder, String goal) {
     return new BuilderExecution(projectBasedir, builder, goal);
   }
 
@@ -148,8 +150,8 @@ public class BuilderExecution {
   }
 
   /**
-   * @noreference this method is provided to test {@link BuilderRunner}, it is not useful for
-   *              testing of builder implementations.
+   * @noreference this method is provided to test {@link BuilderRunner}, it is not useful for testing of builder
+   *              implementations.
    */
   BuilderExecution withStateFile(File stateFile) {
     this.stateFile = stateFile;
@@ -158,8 +160,8 @@ public class BuilderExecution {
   }
 
   /**
-   * @noreference this method is provided to test {@link BuilderRunner}, it is not useful for
-   *              testing of builder implementations.
+   * @noreference this method is provided to test {@link BuilderRunner}, it is not useful for testing of builder
+   *              implementations.
    */
   BuilderExecution withClasspath(List<File> classpath) {
     this.classpath = new ArrayList<>(classpath);
@@ -198,8 +200,7 @@ public class BuilderExecution {
         .setDependencyResolver(dependencyResolver) //
         .setForcedParameters(forcedParameters) //
         .setBuilderEnforcerConfig(enforcerConfig) //
-        .setClasspath(classpath.stream().map(f -> f.toPath()).collect(Collectors.toList()),
-            new ClasspathDigester()) //
+        .setClasspath(classpath.stream().map(f -> f.toPath()).collect(Collectors.toList()), new ClasspathDigester()) //
         .setBuilderId(goal) //
         .setWorkspace(workspace) //
         .execute(BuilderExecutionException::new);
@@ -212,25 +213,22 @@ public class BuilderExecution {
     return dom;
   }
 
-  public BuilderExecution withConfigurationXml(String name, String xml)
-      throws XmlPullParserException, IOException {
-    configuration.addChild(
-        Xpp3DomBuilder.build(new StringReader(String.format("<%s>%s</%s>", name, xml, name))));
+  public BuilderExecution withConfigurationXml(String name, String xml) throws XmlPullParserException, IOException {
+    configuration.addChild(Xpp3DomBuilder.build(new StringReader(String.format("<%s>%s</%s>", name, xml, name))));
 
     return this;
   }
 
-  public BuilderExecution withInputDirectory(String name, File location)
-      throws XmlPullParserException, IOException {
-    StringReader xml = new StringReader(
-        String.format("<%s><location>%s</location></%s>", name, location.getCanonicalPath(), name));
+  public BuilderExecution withInputDirectory(String name, File location) throws XmlPullParserException, IOException {
+    StringReader xml =
+        new StringReader(String.format("<%s><location>%s</location></%s>", name, location.getCanonicalPath(), name));
     configuration.addChild(Xpp3DomBuilder.build(xml));
 
     return this;
   }
 
-  public BuilderExecution withInputDirectory(String name, File location,
-      Collection<String> includes) throws XmlPullParserException, IOException {
+  public BuilderExecution withInputDirectory(String name, File location, Collection<String> includes)
+      throws XmlPullParserException, IOException {
     StringBuilder xml = new StringBuilder();
     xml.append("<").append(name).append(">");
     xml.append("<location>").append(location.getCanonicalPath()).append("</location>");
@@ -251,6 +249,13 @@ public class BuilderExecution {
 
   public BuilderExecution withDependency(String coords, File content) {
     dependencies.put(newArtifactMetadata(coords), content.toPath());
+    allDependencies.put(newArtifactMetadata(coords), content.toPath());
+
+    return this;
+  }
+
+  public BuilderExecution withTransitiveDependency(String coords, File content) {
+    allDependencies.put(newArtifactMetadata(coords), content.toPath());
 
     return this;
   }
@@ -262,8 +267,8 @@ public class BuilderExecution {
   }
 
   /**
-   * @noreference this method is provided to test {@link BuilderRunner}, it is not useful for
-   *              testing of builder implementations.
+   * @noreference this method is provided to test {@link BuilderRunner}, it is not useful for testing of builder
+   *              implementations.
    */
   BuilderExecution withWorkspace(Workspace workspace) {
     this.workspace = workspace;
@@ -277,8 +282,7 @@ public class BuilderExecution {
 
   /**
    * @param coords The artifact coordinates in the format
-   *        {@code <groupId>:<artifactId>:[[<type>]:<classifier>]:<version>}, must not be
-   *        {@code null}.
+   *        {@code <groupId>:<artifactId>:[[<type>]:<classifier>]:<version>}, must not be {@code null}.
    */
   public static IArtifactMetadata newArtifactMetadata(String coords) {
     String[] parts = coords.split(":");
