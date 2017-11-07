@@ -14,11 +14,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import io.takari.builder.IArtifactMetadata;
-import io.takari.builder.IArtifactResources;
 import io.takari.builder.Builder;
 import io.takari.builder.Dependencies;
 import io.takari.builder.DependencyResources;
+import io.takari.builder.IArtifactMetadata;
+import io.takari.builder.IArtifactResources;
 import io.takari.builder.Parameter;
 import io.takari.builder.ResolutionScope;
 
@@ -48,6 +48,31 @@ public class BuilderExecutionTest {
   public void testDependencies_withDependency() throws Exception {
     builderExecution(temp.newFolder(), _ArtifactMetadataBuilder.class) //
         .withDependency("g:a:1", temp.newFile()) //
+        .execute();
+  }
+
+  //
+  //
+  //
+
+  static class _TransitiveArtifactMetadataBuilder {
+    @Dependencies(scope = ResolutionScope.COMPILE)
+    List<IArtifactMetadata> dependencies;
+
+    @Dependencies(scope = ResolutionScope.COMPILE, transitive = false)
+    List<IArtifactMetadata> directDependencies;
+
+    @Builder(name = "test")
+    public void execute() {
+      assertThat(dependencies).hasSize(1);
+      assertThat(directDependencies).isNull();
+    }
+  }
+
+  @Test
+  public void testDependencies_withTransitiveDependency() throws Exception {
+    builderExecution(temp.newFolder(), _TransitiveArtifactMetadataBuilder.class) //
+        .withTransitiveDependency("gt:at:1", temp.newFile()) //
         .execute();
   }
 
