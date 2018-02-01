@@ -64,6 +64,12 @@ public abstract class AbstractBuildContext {
    */
   private final Set<Object> processedResources = new HashSet<>();
 
+  /**
+   * Indicates whether the build will continue even if there are compilation errors.
+   *
+   */
+  private boolean failOnError = true;
+
   protected AbstractBuildContext(BuildContextEnvironment env) {
     this(env.getWorkspace(), env.getStateFile(), env.getParameters(), env.getFinalizer());
   }
@@ -668,6 +674,12 @@ public abstract class AbstractBuildContext {
 
   protected <V extends Serializable> V getAttribute(Object resource, String key, Class<V> clazz) {
     return getResourceAttribute(getState(resource), resource, key, clazz);
+  }
+
+  public void setFailOnError(boolean failOnError) { this.failOnError = failOnError; }
+
+  public boolean getFailOnError(){
+    return failOnError;
   }
 
 }

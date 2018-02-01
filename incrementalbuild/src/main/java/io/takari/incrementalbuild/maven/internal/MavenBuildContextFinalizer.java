@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -51,7 +53,6 @@ public class MavenBuildContextFinalizer
   @Override
   public void afterMojoExecutionSuccess(MojoExecutionEvent event) throws MojoExecutionException {
     final Map<Object, Collection<Message>> messages = new HashMap<>();
-
     MessageSinkAdaptor messager = new MessageSinkAdaptor() {
       @Override
       public void record(Map<Object, Collection<Message>> allMessages,
@@ -105,9 +106,23 @@ public class MavenBuildContextFinalizer
         }
       }
     }
-    if (errorCount > 0) {
+    final Set<Boolean> failOnErrors = extractFailOnErrors(contexts);
+    if (failOnErrors.size() != 1) {
+        throw new IllegalStateException("Contexts FailOnError property have different values.");
+    }
+
+    final Boolean failOnError = failOnErrors.iterator().next();
+    if (errorCount > 0 && failOnError) {
       throw new MojoExecutionException(errorCount + " error(s) encountered:\n" + errors.toString());
     }
+  }
+
+  private Set<Boolean> extractFailOnErrors(List<AbstractBuildContext> contexts) {
+    final Set<Boolean> result = new HashSet<>();
+    for (AbstractBuildContext context : contexts) {
+      result.add(context.getFailOnError());
+    }
+    return result;
   }
 
   @Override
