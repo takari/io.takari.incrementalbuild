@@ -105,9 +105,21 @@ public class MavenBuildContextFinalizer
         }
       }
     }
-    if (errorCount > 0) {
+
+    if (errorCount > 0 && isFailOnErrorPresent(contexts)) {
       throw new MojoExecutionException(errorCount + " error(s) encountered:\n" + errors.toString());
     }
+  }
+
+  private boolean isFailOnErrorPresent(List<AbstractBuildContext> contexts){
+    boolean failOnError = true;
+    for (AbstractBuildContext context : contexts) {
+      if(!context.isFailOnError()){
+        failOnError = false;
+        break;
+      }
+    }
+    return failOnError;
   }
 
   @Override

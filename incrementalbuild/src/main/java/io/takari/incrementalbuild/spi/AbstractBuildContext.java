@@ -64,6 +64,12 @@ public abstract class AbstractBuildContext {
    */
   private final Set<Object> processedResources = new HashSet<>();
 
+  /**
+   * Indicates whether the build will continue even if there are compilation errors.
+   *
+   */
+  private final boolean failOnError;
+
   protected AbstractBuildContext(BuildContextEnvironment env) {
     this(env.getWorkspace(), env.getStateFile(), env.getParameters(), env.getFinalizer());
   }
@@ -79,6 +85,11 @@ public abstract class AbstractBuildContext {
       throw new NullPointerException();
     }
 
+    if (configuration.containsKey("mojo.parameter.failOnError")) {
+      failOnError = Boolean.valueOf(configuration.get("mojo.parameter.failOnError").toString());
+    } else {
+      failOnError = true;
+    }
     this.stateFile = stateFile;
     this.state = DefaultBuildContextState.withConfiguration(configuration);
     this.oldState = DefaultBuildContextState.loadFrom(stateFile);
@@ -668,6 +679,10 @@ public abstract class AbstractBuildContext {
 
   protected <V extends Serializable> V getAttribute(Object resource, String key, Class<V> clazz) {
     return getResourceAttribute(getState(resource), resource, key, clazz);
+  }
+
+  public boolean isFailOnError(){
+    return failOnError;
   }
 
 }
