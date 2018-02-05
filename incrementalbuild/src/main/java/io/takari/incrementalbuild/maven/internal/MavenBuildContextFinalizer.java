@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -52,7 +54,6 @@ public class MavenBuildContextFinalizer
   @Override
   public void afterMojoExecutionSuccess(MojoExecutionEvent event) throws MojoExecutionException {
     final Map<Object, Collection<Message>> messages = new HashMap<>();
-
     MessageSinkAdaptor messager = new MessageSinkAdaptor() {
       @Override
       public void record(Map<Object, Collection<Message>> allMessages,
@@ -106,24 +107,23 @@ public class MavenBuildContextFinalizer
         }
       }
     }
+    final Set<FailOnErrorState> failOnErrorStates = extractFailOnError(contexts);
+    if (failOnErrorStates.size() != 1) {
+        throw new IllegalStateException("Contexts FailOnError property have different values.");
+    }
 
-    if (errorCount > 0 && shouldThrowException(contexts)) {
+    final FailOnErrorState failOnErrorState = failOnErrorStates.iterator().next();
+    if (errorCount > 0 && ( failOnErrorState.equals(FailOnErrorState.TRUE) || failOnErrorState.equals(FailOnErrorState.NONE))) {
       throw new MojoExecutionException(errorCount + " error(s) encountered:\n" + errors.toString());
     }
-
-
   }
 
-  private boolean shouldThrowException(List<AbstractBuildContext> contexts){
-    boolean foundFalse = false;
+  private Set<FailOnErrorState> extractFailOnError(List<AbstractBuildContext> contexts) {
+    final Set<FailOnErrorState> result = new HashSet<>();
     for (AbstractBuildContext context : contexts) {
-      if (context.getFailOnErrorState().equals(FailOnErrorState.TRUE)) {
-        return true;
-      }else if (context.getFailOnErrorState().equals(FailOnErrorState.FALSE))  {
-        foundFalse = true ;
-      }
+      result.add(context.getFailOnErrorState());
     }
-    return !foundFalse;
+    return result;
   }
 
   @Override
