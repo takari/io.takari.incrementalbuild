@@ -68,7 +68,7 @@ public abstract class AbstractBuildContext {
    * Indicates whether the build will continue even if there are compilation errors.
    *
    */
-  private final boolean failOnError;
+  private FailOnErrorState failOnErrorState = FailOnErrorState.NONE;
 
   protected AbstractBuildContext(BuildContextEnvironment env) {
     this(env.getWorkspace(), env.getStateFile(), env.getParameters(), env.getFinalizer());
@@ -85,11 +85,6 @@ public abstract class AbstractBuildContext {
       throw new NullPointerException();
     }
 
-    if (configuration.containsKey("mojo.parameter.failOnError")) {
-      failOnError = Boolean.valueOf(configuration.get("mojo.parameter.failOnError").toString());
-    } else {
-      failOnError = true;
-    }
     this.stateFile = stateFile;
     this.state = DefaultBuildContextState.withConfiguration(configuration);
     this.oldState = DefaultBuildContextState.loadFrom(stateFile);
@@ -681,8 +676,10 @@ public abstract class AbstractBuildContext {
     return getResourceAttribute(getState(resource), resource, key, clazz);
   }
 
-  public boolean isFailOnError(){
-    return failOnError;
+  public void setFailOnErrorState(FailOnErrorState failOnErrorState) { this.failOnErrorState = failOnErrorState; }
+
+  public FailOnErrorState getFailOnErrorState(){
+    return failOnErrorState;
   }
 
 }

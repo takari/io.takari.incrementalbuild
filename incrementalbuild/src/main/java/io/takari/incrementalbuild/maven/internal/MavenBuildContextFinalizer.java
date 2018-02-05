@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import io.takari.incrementalbuild.spi.FailOnErrorState;
 import org.apache.maven.execution.MojoExecutionEvent;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.execution.scope.WeakMojoExecutionListener;
@@ -106,20 +107,23 @@ public class MavenBuildContextFinalizer
       }
     }
 
-    if (errorCount > 0 && isFailOnErrorPresent(contexts)) {
+    if (errorCount > 0 && shouldThrowException(contexts)) {
       throw new MojoExecutionException(errorCount + " error(s) encountered:\n" + errors.toString());
     }
+
+
   }
 
-  private boolean isFailOnErrorPresent(List<AbstractBuildContext> contexts){
-    boolean failOnError = true;
+  private boolean shouldThrowException(List<AbstractBuildContext> contexts){
+    boolean foundFalse = false;
     for (AbstractBuildContext context : contexts) {
-      if(!context.isFailOnError()){
-        failOnError = false;
-        break;
+      if (context.getFailOnErrorState().equals(FailOnErrorState.TRUE)) {
+        return true;
+      }else if (context.getFailOnErrorState().equals(FailOnErrorState.FALSE))  {
+        foundFalse = true ;
       }
     }
-    return failOnError;
+    return !foundFalse;
   }
 
   @Override
