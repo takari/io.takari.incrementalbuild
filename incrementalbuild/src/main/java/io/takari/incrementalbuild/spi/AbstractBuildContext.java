@@ -68,7 +68,7 @@ public abstract class AbstractBuildContext {
    * Indicates whether the build will continue even if there are compilation errors.
    *
    */
-  private FailOnErrorState failOnErrorState = FailOnErrorState.NONE;
+  private boolean failOnError = true;
 
   protected AbstractBuildContext(BuildContextEnvironment env) {
     this(env.getWorkspace(), env.getStateFile(), env.getParameters(), env.getFinalizer());
@@ -676,10 +676,10 @@ public abstract class AbstractBuildContext {
     return getResourceAttribute(getState(resource), resource, key, clazz);
   }
 
-  public void setFailOnErrorState(FailOnErrorState failOnErrorState) { this.failOnErrorState = failOnErrorState; }
+  public void setFailOnError(boolean failOnError) { this.failOnError = failOnError; }
 
-  public FailOnErrorState getFailOnErrorState(){
-    return failOnErrorState;
+  public boolean getFailOnError(){
+    return failOnError;
   }
 
 }

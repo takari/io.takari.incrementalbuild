@@ -12,7 +12,6 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import io.takari.incrementalbuild.spi.FailOnErrorState;
 import org.apache.maven.execution.MojoExecutionEvent;
 import org.apache.maven.execution.scope.MojoExecutionScoped;
 import org.apache.maven.execution.scope.WeakMojoExecutionListener;
@@ -107,21 +106,21 @@ public class MavenBuildContextFinalizer
         }
       }
     }
-    final Set<FailOnErrorState> failOnErrorStates = extractFailOnError(contexts);
-    if (failOnErrorStates.size() != 1) {
+    final Set<Boolean> failOnErrors = extractFailOnErrors(contexts);
+    if (failOnErrors.size() != 1) {
         throw new IllegalStateException("Contexts FailOnError property have different values.");
     }
 
-    final FailOnErrorState failOnErrorState = failOnErrorStates.iterator().next();
-    if (errorCount > 0 && ( failOnErrorState.equals(FailOnErrorState.TRUE) || failOnErrorState.equals(FailOnErrorState.NONE))) {
+    final Boolean failOnError = failOnErrors.iterator().next();
+    if (errorCount > 0 && failOnError) {
       throw new MojoExecutionException(errorCount + " error(s) encountered:\n" + errors.toString());
     }
   }
 
-  private Set<FailOnErrorState> extractFailOnError(List<AbstractBuildContext> contexts) {
-    final Set<FailOnErrorState> result = new HashSet<>();
+  private Set<Boolean> extractFailOnErrors(List<AbstractBuildContext> contexts) {
+    final Set<Boolean> result = new HashSet<>();
     for (AbstractBuildContext context : contexts) {
-      result.add(context.getFailOnErrorState());
+      result.add(context.getFailOnError());
     }
     return result;
   }
