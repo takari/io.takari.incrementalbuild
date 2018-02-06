@@ -16,7 +16,6 @@ import io.takari.builder.IArtifactMetadata;
 import io.takari.builder.IArtifactResources;
 import io.takari.builder.IDirectoryFiles;
 import io.takari.builder.Parameter;
-import io.takari.builder.ResolutionScope;
 
 public abstract class BuilderValidationVisitor implements BuilderMetadataVisitor {
 
@@ -31,8 +30,6 @@ public abstract class BuilderValidationVisitor implements BuilderMetadataVisitor
   private void error(AbstractParameter parameter, String message, Object... values) {
     error(parameter, String.format(message, values));
   }
-
-  private ResolutionScope resolutionScope;
 
   private void validateParameterAnnotation(AbstractParameter parameter) {
     MemberAdapter element = parameter.originatingElement();
@@ -250,21 +247,11 @@ public abstract class BuilderValidationVisitor implements BuilderMetadataVisitor
             IArtifactMetadata.class);
       }
     }
-    validateResolutionScope(metadata.annotation().scope(), metadata);
-  }
-
-  private void validateResolutionScope(ResolutionScope scope, AbstractParameter metadata) {
-    if (resolutionScope != null && !resolutionScope.equals(scope)) {
-      error(metadata, "ambiguous resolution scope configuration");
-    } else {
-      resolutionScope = scope;
-    }
   }
 
   private void validateArtifactResources(AbstractResourceSelectionParameter metadata,
-      ResolutionScope scope, String parameterName) {
+      String parameterName) {
     validateParameterAnnotation(metadata);
-    validateResolutionScope(scope, metadata);
 
     // parameter target type
     TypeAdapter type = metadata.type();
@@ -303,11 +290,11 @@ public abstract class BuilderValidationVisitor implements BuilderMetadataVisitor
 
   @Override
   public void visitDependencyResources(DependencyResourcesParameter metadata) {
-    validateArtifactResources(metadata, metadata.annotation().scope(), "@DependencyResources");
+    validateArtifactResources(metadata, "@DependencyResources");
   }
 
   @Override
   public void visitArtifactResources(ArtifactResourcesParameter metadata) {
-    validateArtifactResources(metadata, metadata.annotation().scope(), "@ArtifactResources");
+    validateArtifactResources(metadata, "@ArtifactResources");
   }
 }

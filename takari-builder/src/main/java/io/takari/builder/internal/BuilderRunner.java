@@ -46,6 +46,7 @@ import io.takari.builder.internal.digest.ClasspathDigester;
 import io.takari.builder.internal.digest.FileDigest;
 import io.takari.builder.internal.digest.SHA1Digester;
 import io.takari.builder.internal.pathmatcher.PathMatcher;
+import io.takari.builder.internal.resolver.DependencyResolver;
 import io.takari.incrementalbuild.workspace.MessageSink;
 import io.takari.incrementalbuild.workspace.MessageSink.Severity;
 import io.takari.incrementalbuild.workspace.Workspace;

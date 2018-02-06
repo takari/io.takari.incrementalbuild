@@ -92,21 +92,21 @@ public class BuilderMojoGeneratorTest {
         "  @Builder(name=\"test-builder\")", "  public void execute() {}", "",
         "  private static class Inner {", "    @InputFile File innerFile;", "  }", "", "", "}");
 
-    JavaFileObject generatedClass = JavaFileObjects.forSourceLines(
-        "test.TestClass$GeneratedMojo$test_builder", "package test;",
-        "" + "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
-        "import org.apache.maven.plugins.annotations.LifecyclePhase;",
-        "import org.apache.maven.plugins.annotations.Mojo;",
-        "import org.apache.maven.plugins.annotations.Parameter;",
-        "import org.apache.maven.plugins.annotations.ResolutionScope;",
-        "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
-        "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
-        "    requiresProject = true,", "    requiresDependencyResolution = ResolutionScope.NONE,",
-        "    threadSafe = true", ")",
-        "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {", "",
-        "  @Parameter", "  PlexusConfiguration myInner;", "",
-        "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);", "  }",
-        "}");
+    JavaFileObject generatedClass =
+        JavaFileObjects.forSourceLines("test.TestClass$GeneratedMojo$test_builder", "package test;",
+            "" + "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
+            "import org.apache.maven.plugins.annotations.LifecyclePhase;",
+            "import org.apache.maven.plugins.annotations.Mojo;",
+            "import org.apache.maven.plugins.annotations.Parameter;",
+            "import org.apache.maven.plugins.annotations.ResolutionScope;",
+            "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
+            "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
+            "    requiresProject = true,", "requiresDependencyResolution = ResolutionScope.NONE,",
+            "    threadSafe = true", ")",
+            "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
+            "", "  @Parameter", "  PlexusConfiguration myInner;", "",
+            "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);",
+            "  }", "}");
 
     assertAbout(javaSources()).that(Arrays.asList(definitionClass))
         .processedWith(newMojoGenerator()).compilesWithoutError().and()
@@ -123,22 +123,22 @@ public class BuilderMojoGeneratorTest {
         "  private String foo;", "", "  @Builder(name=\"test-builder\")",
         "  public void execute() {}", "", "}");
 
-    JavaFileObject generatedClass = JavaFileObjects.forSourceLines(
-        "test.TestClass$GeneratedMojo$test_builder", "package test;",
-        "" + "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
-        "import java.lang.Deprecated;",
-        "import org.apache.maven.plugins.annotations.LifecyclePhase;",
-        "import org.apache.maven.plugins.annotations.Mojo;",
-        "import org.apache.maven.plugins.annotations.Parameter;",
-        "import org.apache.maven.plugins.annotations.ResolutionScope;",
-        "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
-        "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
-        "    requiresProject = true,", "    requiresDependencyResolution = ResolutionScope.NONE,",
-        "    threadSafe = true", ")",
-        "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {", "",
-        "  @Parameter", "  @Deprecated", "  PlexusConfiguration foo;", "",
-        "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);", "  }",
-        "}");
+    JavaFileObject generatedClass =
+        JavaFileObjects.forSourceLines("test.TestClass$GeneratedMojo$test_builder", "package test;",
+            "" + "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
+            "import java.lang.Deprecated;",
+            "import org.apache.maven.plugins.annotations.LifecyclePhase;",
+            "import org.apache.maven.plugins.annotations.Mojo;",
+            "import org.apache.maven.plugins.annotations.Parameter;",
+            "import org.apache.maven.plugins.annotations.ResolutionScope;",
+            "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
+            "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
+            "    requiresProject = true,", "requiresDependencyResolution = ResolutionScope.NONE,",
+            "    threadSafe = true", ")",
+            "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
+            "", "  @Parameter", "  @Deprecated", "  PlexusConfiguration foo;", "",
+            "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);",
+            "  }", "}");
 
     assertAbout(javaSources()).that(Arrays.asList(definitionClass))
         .processedWith(newMojoGenerator()).compilesWithoutError().and()
@@ -159,21 +159,21 @@ public class BuilderMojoGeneratorTest {
             "import io.takari.builder.*;", "", "public abstract class AbstractClass {", "",
             "  @Parameter String parameter;", "", "  protected abstract void execute();", "}");
 
-    JavaFileObject generatedClass = JavaFileObjects.forSourceLines(
-        "test.TestClass$GeneratedMojo$test_builder", "package test;",
-        "" + "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
-        "import org.apache.maven.plugins.annotations.LifecyclePhase;",
-        "import org.apache.maven.plugins.annotations.Mojo;",
-        "import org.apache.maven.plugins.annotations.Parameter;",
-        "import org.apache.maven.plugins.annotations.ResolutionScope;",
-        "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
-        "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
-        "    requiresProject = true,", "    requiresDependencyResolution = ResolutionScope.NONE,",
-        "    threadSafe = true", ")",
-        "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {", "",
-        "  @Parameter", "  PlexusConfiguration parameter;", "",
-        "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);", "  }",
-        "}");
+    JavaFileObject generatedClass =
+        JavaFileObjects.forSourceLines("test.TestClass$GeneratedMojo$test_builder", "package test;",
+            "" + "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
+            "import org.apache.maven.plugins.annotations.LifecyclePhase;",
+            "import org.apache.maven.plugins.annotations.Mojo;",
+            "import org.apache.maven.plugins.annotations.Parameter;",
+            "import org.apache.maven.plugins.annotations.ResolutionScope;",
+            "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
+            "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
+            "    requiresProject = true,", "requiresDependencyResolution = ResolutionScope.NONE,",
+            "    threadSafe = true", ")",
+            "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
+            "", "  @Parameter", "  PlexusConfiguration parameter;", "",
+            "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);",
+            "  }", "}");
 
     assertAbout(javaSources()).that(Arrays.asList(abstractClass, testClass))
         .processedWith(newMojoGenerator()).compilesWithoutError().and()
@@ -213,29 +213,29 @@ public class BuilderMojoGeneratorTest {
         "  @Dependencies(scope=ResolutionScope.COMPILE) List<File> dependencies;", "",
         "  @Builder(name=\"test-builder\")", "  public void execute() {}", "", "}");
 
-    JavaFileObject generatedClass = JavaFileObjects.forSourceLines(
-        "test.TestClass$GeneratedMojo$test_builder", "package test;", "",
-        "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
-        "import org.apache.maven.plugins.annotations.LifecyclePhase;",
-        "import org.apache.maven.plugins.annotations.Mojo;",
-        "import org.apache.maven.plugins.annotations.Parameter;",
-        "import org.apache.maven.plugins.annotations.ResolutionScope;",
-        "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
-        "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
-        "    requiresProject = true,",
-        "    requiresDependencyResolution = ResolutionScope.COMPILE,", "    threadSafe = true", ")",
-        "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
-        "  @Parameter", "  PlexusConfiguration parameter;", "", "  @Parameter",
-        "  PlexusConfiguration inputDirectory;", "", "  @Parameter",
-        "  PlexusConfiguration inputDirectoryFiles;", "", "  @Parameter",
-        "  PlexusConfiguration inputFile;", "", "  @Parameter",
-        "  PlexusConfiguration outputDirectory;", "", "  @Parameter",
-        "  PlexusConfiguration outputFile;", "", "  @Parameter",
-        "  PlexusConfiguration generatedSourcesDirectory;", "", "  @Parameter",
-        "  PlexusConfiguration dependencyResources;", "", "  @Parameter",
-        "  PlexusConfiguration dependencies;", "",
-        "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);", "  }",
-        "}");
+    JavaFileObject generatedClass =
+        JavaFileObjects.forSourceLines("test.TestClass$GeneratedMojo$test_builder", "package test;",
+            "", "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
+            "import org.apache.maven.plugins.annotations.LifecyclePhase;",
+            "import org.apache.maven.plugins.annotations.Mojo;",
+            "import org.apache.maven.plugins.annotations.Parameter;",
+            "import org.apache.maven.plugins.annotations.ResolutionScope;",
+            "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
+            "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
+            "    requiresProject = true,", "requiresDependencyResolution = ResolutionScope.NONE,",
+            "    threadSafe = true", ")",
+            "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
+            "  @Parameter", "  PlexusConfiguration parameter;", "", "  @Parameter",
+            "  PlexusConfiguration inputDirectory;", "", "  @Parameter",
+            "  PlexusConfiguration inputDirectoryFiles;", "", "  @Parameter",
+            "  PlexusConfiguration inputFile;", "", "  @Parameter",
+            "  PlexusConfiguration outputDirectory;", "", "  @Parameter",
+            "  PlexusConfiguration outputFile;", "", "  @Parameter",
+            "  PlexusConfiguration generatedSourcesDirectory;", "", "  @Parameter",
+            "  PlexusConfiguration dependencyResources;", "", "  @Parameter",
+            "  PlexusConfiguration dependencies;", "",
+            "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);",
+            "  }", "}");
 
     assertAbout(javaSources()).that(Arrays.asList(testClass)).processedWith(newMojoGenerator())
         .compilesWithoutError().and().generatesSources(generatedClass);
@@ -268,21 +268,21 @@ public class BuilderMojoGeneratorTest {
         "  @DependencyResources(scope=ResolutionScope.COMPILE) List<IArtifactResources> dependencyResources;",
         "", "  @Builder(name=\"test-builder\")", "  public void execute() {}", "", "}");
 
-    JavaFileObject generatedClass = JavaFileObjects.forSourceLines(
-        "test.TestClass$GeneratedMojo$test_builder", "package test;", "",
-        "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
-        "import org.apache.maven.plugins.annotations.LifecyclePhase;",
-        "import org.apache.maven.plugins.annotations.Mojo;",
-        "import org.apache.maven.plugins.annotations.Parameter;",
-        "import org.apache.maven.plugins.annotations.ResolutionScope;",
-        "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
-        "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
-        "    requiresProject = true,",
-        "    requiresDependencyResolution = ResolutionScope.COMPILE,", "    threadSafe = true", ")",
-        "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
-        "  @Parameter", "  PlexusConfiguration dependencyResources;", "",
-        "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);", "  }",
-        "}");
+    JavaFileObject generatedClass =
+        JavaFileObjects.forSourceLines("test.TestClass$GeneratedMojo$test_builder", "package test;",
+            "", "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
+            "import org.apache.maven.plugins.annotations.LifecyclePhase;",
+            "import org.apache.maven.plugins.annotations.Mojo;",
+            "import org.apache.maven.plugins.annotations.Parameter;",
+            "import org.apache.maven.plugins.annotations.ResolutionScope;",
+            "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
+            "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
+            "    requiresProject = true,", "requiresDependencyResolution = ResolutionScope.NONE,",
+            "    threadSafe = true", ")",
+            "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
+            "  @Parameter", "  PlexusConfiguration dependencyResources;", "",
+            "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);",
+            "  }", "}");
 
     assertAbout(javaSources()).that(Arrays.asList(testClass)).processedWith(newMojoGenerator())
         .compilesWithoutError().and().generatesSources(generatedClass);
@@ -298,21 +298,21 @@ public class BuilderMojoGeneratorTest {
         "    @DependencyResources(scope=ResolutionScope.COMPILE) IArtifactResources turtles;",
         "  }", "}");
 
-    JavaFileObject generatedClass = JavaFileObjects.forSourceLines(
-        "test.TestClass$GeneratedMojo$test_builder", "package test;", "",
-        "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
-        "import org.apache.maven.plugins.annotations.LifecyclePhase;",
-        "import org.apache.maven.plugins.annotations.Mojo;",
-        "import org.apache.maven.plugins.annotations.Parameter;",
-        "import org.apache.maven.plugins.annotations.ResolutionScope;",
-        "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
-        "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
-        "    requiresProject = true,",
-        "    requiresDependencyResolution = ResolutionScope.COMPILE,", "    threadSafe = true", ")",
-        "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
-        "  @Parameter", "  PlexusConfiguration compositeWithResolutionScope;", "",
-        "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);", "  }",
-        "}");
+    JavaFileObject generatedClass =
+        JavaFileObjects.forSourceLines("test.TestClass$GeneratedMojo$test_builder", "package test;",
+            "", "import io.takari.builder.internal.maven.AbstractIncrementalMojo;",
+            "import org.apache.maven.plugins.annotations.LifecyclePhase;",
+            "import org.apache.maven.plugins.annotations.Mojo;",
+            "import org.apache.maven.plugins.annotations.Parameter;",
+            "import org.apache.maven.plugins.annotations.ResolutionScope;",
+            "import org.codehaus.plexus.configuration.PlexusConfiguration;", "", "@Mojo(",
+            "    name = \"test-builder\",", "    defaultPhase = LifecyclePhase.NONE,",
+            "    requiresProject = true,", "requiresDependencyResolution = ResolutionScope.NONE,",
+            "    threadSafe = true", ")",
+            "public class TestClass$GeneratedMojo$test_builder extends AbstractIncrementalMojo {",
+            "  @Parameter", "  PlexusConfiguration compositeWithResolutionScope;", "",
+            "  public TestClass$GeneratedMojo$test_builder() {", "    super(TestClass.class);",
+            "  }", "}");
 
     assertAbout(javaSources()).that(Arrays.asList(testClass)).processedWith(newMojoGenerator())
         .compilesWithoutError().and().generatesSources(generatedClass);

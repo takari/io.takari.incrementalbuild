@@ -32,6 +32,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import io.takari.builder.GeneratedSourcesDirectory;
 import io.takari.builder.IArtifactMetadata;
+import io.takari.builder.ResolutionScope;
 import io.takari.builder.internal.BuilderInputs.ArtifactResourcesValue;
 import io.takari.builder.internal.BuilderInputs.CollectionValue;
 import io.takari.builder.internal.BuilderInputs.CompositeValue;
@@ -78,6 +79,7 @@ import io.takari.builder.internal.model.UnsupportedCollectionParameter;
 import io.takari.builder.internal.pathmatcher.FileMatcher;
 import io.takari.builder.internal.pathmatcher.JarEntries;
 import io.takari.builder.internal.pathmatcher.PathNormalizer;
+import io.takari.builder.internal.resolver.DependencyResolver;
 
 public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
@@ -526,17 +528,22 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
     final AbstractResourceSelectionParameter parameter;
 
+    final ResolutionScope scope;
+
     protected ResourceSelector(String multivalue, String locationPlural, String locationSingular,
-        AbstractResourceSelectionParameter parameter) {
+        AbstractResourceSelectionParameter parameter, ResolutionScope scope) {
       this.xmlMultivalue = multivalue;
       this.xmlLocationPlural = locationPlural;
       this.xmlLocationSingular = locationSingular;
       this.parameter = parameter;
+      this.scope = scope;
     }
 
-    abstract Map.Entry<B, Path> evaluateLocation(Xpp3Dom location) throws UncheckedIOException;
+    abstract Map.Entry<B, Path> evaluateLocation(Xpp3Dom location, ResolutionScope scope)
+        throws UncheckedIOException;
 
-    abstract Map.Entry<B, Path> evaluateLocation(String location) throws UncheckedIOException;
+    abstract Map.Entry<B, Path> evaluateLocation(String location, ResolutionScope scope)
+        throws UncheckedIOException;
 
     abstract V newBucketValue(ResourceSelection<B> selection, List<String> relpaths);
 
@@ -673,14 +680,14 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       List<String> includes = includes(configuration);
       List<String> excludes = excludes(configuration);
       if (configuration.getChildCount() == 0 && !isEmpty(configuration.getValue())) {
-        Map.Entry<B, Path> e = evaluateLocation(configuration.getValue());
+        Map.Entry<B, Path> e = evaluateLocation(configuration.getValue(), scope);
         return Collections
             .singletonList(new ResourceSelection<>(e.getKey(), e.getValue(), includes, excludes));
       }
       Xpp3Dom[] locations = getXmlList(configuration, xmlLocationPlural, xmlLocationSingular);
       if (locations != null && locations.length > 0) {
         return Stream.of(locations) //
-            .map(this::evaluateLocation) //
+            .map(l -> this.evaluateLocation(l, scope)) //
             .map(p -> new ResourceSelection<>(p.getKey(), p.getValue(), includes, excludes)) //
             .collect(Collectors.toList());
       }
@@ -696,7 +703,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       List<String> excludes = excludes(context.configuration);
 
       return context.evaluator().withValue(locations).asStrings(shouldAllowSourceRoots()) //
-          .map(this::evaluateLocation) //
+          .map(l -> this.evaluateLocation(l, scope)) //
           .map(f -> new ResourceSelection<>(f.getKey(), f.getValue(), includes, excludes)) //
           .collect(Collectors.toList());
     }
@@ -797,7 +804,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
   class InputFileSelector extends ResourceSelector<InputDirectoryValue, Path> {
 
     public InputFileSelector(InputDirectoryFilesParameter parameter) {
-      super("files", "locations", "location", parameter);
+      super("files", "locations", "location", parameter, null);
     }
 
     @Override
@@ -806,13 +813,15 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     @Override
-    SimpleEntry<Path, Path> evaluateLocation(String location) throws UncheckedIOException {
+    SimpleEntry<Path, Path> evaluateLocation(String location, ResolutionScope scope)
+        throws UncheckedIOException {
       Path path = context.evaluator().toPath(location);
       return new SimpleEntry<>(path, path);
     }
 
     @Override
-    SimpleEntry<Path, Path> evaluateLocation(Xpp3Dom location) throws UncheckedIOException {
+    SimpleEntry<Path, Path> evaluateLocation(Xpp3Dom location, ResolutionScope scope)
+        throws UncheckedIOException {
       if (location.getChildCount() > 0) {
         throw new InvalidConfigurationException(context, "only value is allowed");
       }
@@ -821,7 +830,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
         throw new InvalidConfigurationException(context,
             String.format("%s expression is not allowed in configuration", value));
       }
-      return evaluateLocation(location.getValue());
+      return evaluateLocation(location.getValue(), null);
     }
 
     @Override
@@ -872,8 +881,9 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       extends ResourceSelector<ArtifactResourcesValue, ArtifactLocation> {
 
     public BaseArtifactResourceSelector(String multivalue, String locationPlural,
-        String locationSingular, AbstractResourceSelectionParameter parameter) {
-      super(multivalue, locationPlural, locationSingular, parameter);
+        String locationSingular, AbstractResourceSelectionParameter parameter,
+        ResolutionScope scope) {
+      super(multivalue, locationPlural, locationSingular, parameter, scope);
     }
 
     private String evaluate(Xpp3Dom element, String childName, boolean required) {
@@ -898,28 +908,28 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     @Override
-    Map.Entry<ArtifactLocation, Path> evaluateLocation(Xpp3Dom location)
+    Map.Entry<ArtifactLocation, Path> evaluateLocation(Xpp3Dom location, ResolutionScope scope)
         throws UncheckedIOException {
       if (location.getChildCount() > 0 && !isEmpty(location.getValue())) {
         throw new InvalidConfigurationException(context, "both elements and value are not allowed");
       }
       if (!isEmpty(location.getValue())) {
-        return evaluateLocation(location.getValue());
+        return evaluateLocation(location.getValue(), scope);
       }
       // TODO validate no other elements
       String groupId = evaluate(location, "groupId", true);
       String artifactId = evaluate(location, "artifactId", true);
       String classifier = evaluate(location, "classifier", false);
-      return evaluateLocation(groupId, artifactId, classifier);
+      return evaluateLocation(groupId, artifactId, classifier, scope);
     }
 
     private Map.Entry<ArtifactLocation, Path> evaluateLocation(String groupId, String artifactId,
-        String classifier) {
+        String classifier, ResolutionScope scope) {
       // TODO Use artifact resolver instead of a dependency resolver to support any artifacts not
       // just
       // dependency artifacts.
       Map.Entry<IArtifactMetadata, Path> dependency =
-          dependencyResolver.getProjectDependency(groupId, artifactId, classifier);
+          dependencyResolver.getProjectDependency(groupId, artifactId, classifier, scope);
       if (dependency == null || dependency.getValue() == null
           || !(workspace.isRegularFile(dependency.getValue())
               || workspace.isDirectory(dependency.getValue()))) {
@@ -942,13 +952,13 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     @Override
-    Map.Entry<ArtifactLocation, Path> evaluateLocation(String location)
+    Map.Entry<ArtifactLocation, Path> evaluateLocation(String location, ResolutionScope scope)
         throws UncheckedIOException {
       StringTokenizer st = new StringTokenizer(location, ":");
       String groupId = st.nextToken();
       String artifactId = st.nextToken();
       String classifier = st.hasMoreTokens() ? st.nextToken() : null;
-      return evaluateLocation(groupId, artifactId, classifier);
+      return evaluateLocation(groupId, artifactId, classifier, scope);
     }
 
     @Override
@@ -1010,8 +1020,8 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
 
   class DependencyResourceSelector extends BaseArtifactResourceSelector {
 
-    public DependencyResourceSelector(AbstractResourceSelectionParameter parameter) {
-      super("resources", "dependencies", "dependency", parameter);
+    public DependencyResourceSelector(DependencyResourcesParameter parameter) {
+      super("resources", "dependencies", "dependency", parameter, parameter.annotation().scope());
     }
 
     @Override
@@ -1020,7 +1030,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
       if (buckets == null) {
         List<String> includes = includes(context.configuration);
         List<String> excludes = excludes(context.configuration);
-        buckets = dependencyResolver.getProjectDependencies(true).entrySet().stream() //
+        buckets = dependencyResolver.getProjectDependencies(true, scope).entrySet().stream() //
             .map(this::toArtifactLocation) //
             .map(e -> new ResourceSelection<>(e.getKey(), e.getValue(), includes, excludes)) //
             .collect(Collectors.toList());
@@ -1032,7 +1042,7 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
   class ArtifactResourceSelector extends BaseArtifactResourceSelector {
 
     public ArtifactResourceSelector(ArtifactResourcesParameter parameter) {
-      super("resources", "artifacts", "artifact", parameter);
+      super("resources", "artifacts", "artifact", parameter, parameter.annotation().scope());
     }
   }
 
@@ -1297,8 +1307,8 @@ public class BuilderInputsBuilder implements BuilderMetadataVisitor {
     }
 
     Class<?> type = ((ReflectionType) metadata.type()).adaptee();
-    Map<IArtifactMetadata, Path> dependencyMap =
-        dependencyResolver.getProjectDependencies(metadata.transitive());
+    Map<IArtifactMetadata, Path> dependencyMap = dependencyResolver
+        .getProjectDependencies(metadata.transitive(), metadata.annotation().scope());
 
     if (dependencyMap.isEmpty()) {
       return;

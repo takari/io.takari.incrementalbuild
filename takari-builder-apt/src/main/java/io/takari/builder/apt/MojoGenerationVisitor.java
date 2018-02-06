@@ -2,7 +2,10 @@ package io.takari.builder.apt;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
@@ -10,15 +13,42 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
 
-import org.apache.maven.plugins.annotations.*;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.codehaus.plexus.configuration.PlexusConfiguration;
 
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
 
 import io.takari.builder.Builder;
-import io.takari.builder.apt.APT.*;
+import io.takari.builder.apt.APT.APTMember;
+import io.takari.builder.apt.APT.APTMethod;
+import io.takari.builder.apt.APT.APTType;
 import io.takari.builder.internal.maven.AbstractIncrementalMojo;
-import io.takari.builder.internal.model.*;
+import io.takari.builder.internal.model.AbstractParameter;
+import io.takari.builder.internal.model.ArtifactResourcesParameter;
+import io.takari.builder.internal.model.BuilderMetadataVisitor;
+import io.takari.builder.internal.model.BuilderMethod;
+import io.takari.builder.internal.model.CompositeParameter;
+import io.takari.builder.internal.model.DependenciesParameter;
+import io.takari.builder.internal.model.DependencyResourcesParameter;
+import io.takari.builder.internal.model.GeneratedResourcesDirectoryParameter;
+import io.takari.builder.internal.model.GeneratedSourcesDirectoryParameter;
+import io.takari.builder.internal.model.InputDirectoryFilesParameter;
+import io.takari.builder.internal.model.InputDirectoryParameter;
+import io.takari.builder.internal.model.InputFileParameter;
+import io.takari.builder.internal.model.MapParameter;
+import io.takari.builder.internal.model.MultivalueParameter;
+import io.takari.builder.internal.model.OutputDirectoryParameter;
+import io.takari.builder.internal.model.OutputFileParameter;
+import io.takari.builder.internal.model.SimpleParameter;
+import io.takari.builder.internal.model.TypeAdapter;
+import io.takari.builder.internal.model.UnsupportedCollectionParameter;
 
 public class MojoGenerationVisitor implements BuilderMetadataVisitor {
   private final Filer filer;
@@ -27,8 +57,6 @@ public class MojoGenerationVisitor implements BuilderMetadataVisitor {
   // private TypeSpec.Builder classBuilder;
   private final List<FieldSpec> fields = new ArrayList<>();
   private final Set<TypeElement> types = new LinkedHashSet<>();
-
-  private String resolutionScope = null;
 
   public MojoGenerationVisitor(Filer filer, Messager messager) {
     this.filer = filer;
@@ -71,16 +99,6 @@ public class MojoGenerationVisitor implements BuilderMetadataVisitor {
     }
   }
 
-  private void visitScopedMetadata(AbstractParameter metadata,
-      io.takari.builder.ResolutionScope scope) {
-    addField(metadata);
-    checkResolutionScope(scope);
-  }
-
-  private void checkResolutionScope(io.takari.builder.ResolutionScope scope) {
-    assert resolutionScope == null || resolutionScope.equals(scope.name());
-    resolutionScope = scope.name();
-  }
 
   //
   //
@@ -90,14 +108,13 @@ public class MojoGenerationVisitor implements BuilderMetadataVisitor {
   public void visitBuilder(BuilderMethod metadata) {
     Builder ann = metadata.annotation();
     String defaultPhase = ann.defaultPhase().name();
-    String resolutionScope =
-        this.resolutionScope != null ? this.resolutionScope : ResolutionScope.NONE.name();
 
     AnnotationSpec.Builder annBuilder = AnnotationSpec.builder(Mojo.class) //
         .addMember("name", "$S", ann.name()) //
         .addMember("defaultPhase", "$T.$L", LifecyclePhase.class, defaultPhase) //
         .addMember("requiresProject", "$L", true) //
-        .addMember("requiresDependencyResolution", "$T.$L", ResolutionScope.class, resolutionScope) //
+        .addMember("requiresDependencyResolution", "$T.$L", ResolutionScope.class,
+            ResolutionScope.NONE) //
         .addMember("threadSafe", "$L", true);
 
     TypeSpec.Builder classBuilder = TypeSpec.classBuilder(getMojoClassname(metadata)) //
@@ -153,12 +170,6 @@ public class MojoGenerationVisitor implements BuilderMetadataVisitor {
   @Override
   public boolean enterComposite(CompositeParameter metadata) {
     addField(metadata);
-
-    // ensure resolution scopes are honored within composites
-    metadata.members.stream().filter(m -> m instanceof DependencyResourcesParameter).forEach(m -> {
-      checkResolutionScope(((DependencyResourcesParameter) m).annotation().scope());
-    });
-
     return false; // no need to generate anything for individual members
   }
 
@@ -184,7 +195,7 @@ public class MojoGenerationVisitor implements BuilderMetadataVisitor {
 
   @Override
   public void visitDependencies(DependenciesParameter metadata) {
-    visitScopedMetadata(metadata, metadata.annotation().scope());
+    addField(metadata);
   }
 
   @Override
@@ -214,11 +225,11 @@ public class MojoGenerationVisitor implements BuilderMetadataVisitor {
 
   @Override
   public void visitDependencyResources(DependencyResourcesParameter metadata) {
-    visitScopedMetadata(metadata, metadata.annotation().scope());
+    addField(metadata);
   }
 
   @Override
   public void visitArtifactResources(ArtifactResourcesParameter metadata) {
-    visitScopedMetadata(metadata, metadata.annotation().scope());
+    addField(metadata);
   }
 }

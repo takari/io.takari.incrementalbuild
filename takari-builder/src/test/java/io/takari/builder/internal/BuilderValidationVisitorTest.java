@@ -1,7 +1,6 @@
 package io.takari.builder.internal;
 
 import java.io.File;
-import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -11,12 +10,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import io.takari.builder.Builder;
-import io.takari.builder.Dependencies;
-import io.takari.builder.DependencyResources;
 import io.takari.builder.InputDirectory;
 import io.takari.builder.Messages;
 import io.takari.builder.Parameter;
-import io.takari.builder.ResolutionScope;
 import io.takari.builder.internal.model.AbstractParameter;
 import io.takari.builder.internal.model.BuilderMethod;
 import io.takari.builder.internal.model.BuilderValidationVisitor;
@@ -116,26 +112,6 @@ public class BuilderValidationVisitorTest {
     thrown.expectMessage("@InputDirectory paramerer must be of type File");
 
     validate(_UnsupportedInputDirectoryType.class);
-  }
-
-  //
-  //
-  //
-
-  static class _AmbiguousDependencyResolutionScope {
-    @Dependencies(scope = ResolutionScope.COMPILE)
-    List<File> dependencies;
-
-    @DependencyResources(scope = ResolutionScope.RUNTIME)
-    List<URL> dependencyResources;
-  }
-
-  @Test
-  public void testAmbiguousDependencyResolutionScope() throws Exception {
-    thrown.expect(ParameterValidationException.class);
-    thrown.expectMessage("ambiguous resolution scope configuration");
-
-    validate(_AmbiguousDependencyResolutionScope.class);
   }
 
   //
