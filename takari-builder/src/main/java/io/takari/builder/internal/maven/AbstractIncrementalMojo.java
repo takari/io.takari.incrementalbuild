@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
@@ -28,6 +29,7 @@ import io.takari.builder.enforcer.modularity.internal.WorkspaceProjectsProvider.
 import io.takari.builder.internal.BuilderRunner;
 import io.takari.builder.internal.ClasspathMatcher;
 import io.takari.builder.internal.ResourceRoot;
+import io.takari.builder.internal.resolver.ArtifactResolverProvider;
 import io.takari.incrementalbuild.workspace.MessageSink;
 import io.takari.incrementalbuild.workspace.Workspace;
 
@@ -49,6 +51,10 @@ public abstract class AbstractIncrementalMojo extends AbstractMojo {
   @Inject
   @Nullable
   private MessageSink messageSink;
+
+  @Inject
+  @Named(MavenArtifactResolverProvider.MAVEN)
+  private ArtifactResolverProvider<MavenProject> resolverProvider;
 
   @Parameter(defaultValue = "${project}", readonly = true)
   private MavenProject __internal_project;
@@ -101,7 +107,7 @@ public abstract class AbstractIncrementalMojo extends AbstractMojo {
         .setClasspath(
             classpath.stream().map(a -> a.getFile().toPath()).collect(Collectors.toList()),
             classpathDigester) //
-        .setDependencyResolver(new MavenProjectDependencyResolver(__internal_project)) //
+        .setDependencyResolver(resolverProvider.getResolver(__internal_project)) //
         .setProjectResourcesConsumer(resourceConsumer) //
         .setProjectCompileSourceRoots(__internal_project.getCompileSourceRoots()) //
         .setProjectTestCompileSourceRoots(__internal_project.getTestCompileSourceRoots()) //

@@ -25,17 +25,18 @@ import org.slf4j.LoggerFactory;
 
 import io.takari.builder.IArtifactMetadata;
 import io.takari.builder.IArtifactResources;
+import io.takari.builder.ResolutionScope;
 import io.takari.builder.enforcer.internal.EnforcerConfig;
 import io.takari.builder.internal.BuilderContext;
 import io.takari.builder.internal.BuilderInputs;
 import io.takari.builder.internal.BuilderRunner;
 import io.takari.builder.internal.ClasspathMatcher;
-import io.takari.builder.internal.DependencyResolver;
 import io.takari.builder.internal.JvmClasspathEntriesSupplier;
 import io.takari.builder.internal.Reflection;
 import io.takari.builder.internal.ResourceRoot;
 import io.takari.builder.internal.digest.ClasspathDigester;
 import io.takari.builder.internal.model.BuilderMethod;
+import io.takari.builder.internal.resolver.DependencyResolver;
 import io.takari.builder.internal.workspace.FilesystemWorkspace;
 import io.takari.incrementalbuild.workspace.Workspace;
 
@@ -70,13 +71,14 @@ public class BuilderExecution {
   private final DependencyResolver dependencyResolver = new DependencyResolver() {
 
     @Override
-    public Map<IArtifactMetadata, Path> getProjectDependencies(boolean transitive) {
+    public Map<IArtifactMetadata, Path> getProjectDependencies(boolean transitive,
+        ResolutionScope scope) {
       return Collections.unmodifiableMap(dependencies);
     }
 
     @Override
     public Map.Entry<IArtifactMetadata, Path> getProjectDependency(String groupId,
-        String artifactId, String classifier) {
+        String artifactId, String classifier, ResolutionScope scope) {
       for (Map.Entry<IArtifactMetadata, Path> entry : dependencies.entrySet()) {
         IArtifactMetadata key = entry.getKey();
         if (eq(groupId, key.getGroupId()) && eq(artifactId, key.getArtifactId())

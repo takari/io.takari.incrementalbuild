@@ -23,9 +23,11 @@ import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import io.takari.builder.IArtifactMetadata;
+import io.takari.builder.ResolutionScope;
 import io.takari.builder.internal.BuilderInputs.Value;
 import io.takari.builder.internal.model.AbstractParameter;
 import io.takari.builder.internal.model.BuilderClass;
+import io.takari.builder.internal.resolver.DependencyResolver;
 import io.takari.builder.internal.workspace.FilesystemWorkspace;
 
 class TestInputBuilder {
@@ -95,8 +97,13 @@ class TestInputBuilder {
 
   class TestDependencyResolver implements DependencyResolver {
     @Override
-    public Map<IArtifactMetadata, Path> getProjectDependencies(boolean transitive) {
+    public Map<IArtifactMetadata, Path> getProjectDependencies(boolean transitive,
+        ResolutionScope scope) {
       Map<IArtifactMetadata, Path> result = new LinkedHashMap<>();
+      if (scope == null) {
+        return result;
+      }
+      Map<String, Path> dependencies = getDependencies(scope);
       dependencies.forEach((gac, path) -> {
         result.put(new TestArtifactMetadata(gac), path);
       });
@@ -105,12 +112,12 @@ class TestInputBuilder {
 
     @Override
     public SimpleEntry<IArtifactMetadata, Path> getProjectDependency(String groupId,
-        String artifactId, String classifier) {
+        String artifactId, String classifier, ResolutionScope scope) {
       String gac = groupId + ":" + artifactId;
       if (classifier != null) {
         gac = gac + ":" + classifier;
       }
-      Path path = dependencies.get(gac);
+      Path path = getDependencies(scope).get(gac);
       return path != null ? new SimpleEntry<>(new TestArtifactMetadata(gac), path) : null;
     }
   }
@@ -150,7 +157,7 @@ class TestInputBuilder {
   };
 
   private Xpp3Dom configuration;
-  private final Map<String, Path> dependencies = new LinkedHashMap<>();
+  private final Map<ResolutionScope, Map<String, Path>> scopedDependencies = new LinkedHashMap<>();
   private final Map<String, String> properties = new LinkedHashMap<>();
   private String goal = "goal";
   private final BuilderWorkspace workspace;
@@ -227,15 +234,23 @@ class TestInputBuilder {
   }
 
   public TestInputBuilder withDependencies(String... dependencies) {
+    return withDependencies(ResolutionScope.COMPILE, dependencies);
+  }
+
+  public TestInputBuilder withDependency(String gac, File dependency) {
+    return withDependency(gac, dependency, ResolutionScope.COMPILE);
+  }
+
+  public TestInputBuilder withDependencies(ResolutionScope scope, String... dependencies) {
     for (String dependency : dependencies) {
       Path path = Paths.get(dependency);
-      this.dependencies.put("g:" + path.getFileName().toString(), path);
+      getDependencies(scope).put("g:" + path.getFileName().toString(), path);
     }
     return this;
   }
 
-  public TestInputBuilder withDependency(String gac, File dependency) {
-    this.dependencies.put(gac, dependency.toPath());
+  public TestInputBuilder withDependency(String gac, File dependency, ResolutionScope scope) {
+    getDependencies(scope).put(gac, dependency.toPath());
     return this;
   }
 
@@ -247,5 +262,14 @@ class TestInputBuilder {
   public TestInputBuilder withGoal(String goal) {
     this.goal = goal;
     return this;
+  }
+
+  private Map<String, Path> getDependencies(ResolutionScope scope) {
+    Map<String, Path> dependencies = scopedDependencies.get(scope);
+    if (dependencies == null) {
+      dependencies = new LinkedHashMap<>();
+      scopedDependencies.put(scope, dependencies);
+    }
+    return dependencies;
   }
 }
