@@ -345,12 +345,14 @@ public class BuilderRunner {
 
     try {
       for (Path file : inputs.getOutputDirectories()) {
+        // Does anyone know why we are creating output directories here preemptively????!!!!
         Files.createDirectories(file);
         workspace.processOutput(file.toFile());
       }
       for (Path file : inputs.getOutputFiles()) {
+        // Does anyone know why we are creating output directories here preemptively????!!!!
         Files.createDirectories(file.getParent());
-        workspace.processOutput(file.toFile());
+        workspace.processOutput(file.getParent().toFile());
       }
     } catch (IOException e) {
       throw efactory.exception("Unable to create Output Directories", e);

@@ -1231,8 +1231,8 @@ public class BuilderRunnerTest {
         .withConfiguration("file", targetFile.getCanonicalPath()) //
         .execute();
 
-    assertThat(workspace.files.size() == 2);
-    assertThat(workspace.files.contains(target));
-    assertThat(workspace.files.contains(targetFile));
+    assertThat(workspace.files.size()).isEqualTo(2);
+    assertThat(workspace.files).contains(target.getCanonicalFile());
+    assertThat(workspace.files).contains(targetFile.getCanonicalFile().getParentFile());
   }
 }
