@@ -10,7 +10,7 @@
 
   <groupId>io.takari</groupId>
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>0.20.7</version>
+  <version>0.20.8-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
