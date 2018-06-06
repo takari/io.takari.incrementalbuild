@@ -2,7 +2,7 @@ package io.takari.builder.internal.cache;
 
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -101,7 +101,7 @@ public class ScopedProjectDependencyCache {
     Map<IArtifactMetadata, Path> dependencies = cache.get(key);
 
     if (dependencies == null) {
-      dependencies = Collections.unmodifiableMap(new HashMap<>(supplier.get()));
+      dependencies = Collections.unmodifiableMap(new LinkedHashMap<>(supplier.get()));
       if (dependencies == null) {
         dependencies = Collections.emptyMap();
       }
