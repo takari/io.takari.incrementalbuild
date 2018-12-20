@@ -3,6 +3,7 @@ package io.takari.incrementalbuild.workspace;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Set;
 
 /**
  * {@code Workspace} provides a layer of indirection between BuildContext and underlying resource
@@ -59,4 +60,16 @@ public interface Workspace {
    * </ul>
    */
   public void walk(File basedir, FileVisitor visitor) throws IOException;
+
+  default public boolean isOptimizedBuildEnabled() {
+    return false;
+  }
+
+  default public boolean hasProjectDependenciesChanged() {
+    return true;
+  }
+
+  default public boolean hasDelta(Set<String> resources) {
+    return true;
+  }
 }
