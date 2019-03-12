@@ -88,7 +88,7 @@
     
      -->
      
-    <!-- <module>incrementalbuild-workspace</module> -->
+    <module>incrementalbuild-workspace</module>
     <!-- <module>takari-builder-security-manager</module> -->
     
     <module>incrementalbuild</module>
