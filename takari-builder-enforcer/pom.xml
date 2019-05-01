@@ -12,6 +12,12 @@
   <artifactId>takari-builder-enforcer</artifactId>
   <packaging>takari-maven-plugin</packaging>
 
+
+  <properties>
+    <minimum-coverage.instruction>0.85</minimum-coverage.instruction>
+    <minimum-coverage.branch>0.74</minimum-coverage.branch>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.takari.builder</groupId>

@@ -13,6 +13,8 @@
   
   <properties>
     <takari.testJar>true</takari.testJar>
+    <minimum-coverage.instruction>0.82</minimum-coverage.instruction>
+    <minimum-coverage.branch>0.70</minimum-coverage.branch>
   </properties>
 
   <dependencies>

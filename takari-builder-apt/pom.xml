@@ -10,6 +10,11 @@
   
   <groupId>io.takari.builder</groupId>
   <artifactId>takari-builder-apt</artifactId>
+
+  <properties>
+    <minimum-coverage.instruction>0.88</minimum-coverage.instruction>
+    <minimum-coverage.branch>0.69</minimum-coverage.branch>
+  </properties>
   
   <dependencies>
     <dependency>

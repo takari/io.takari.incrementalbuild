@@ -10,6 +10,11 @@
   <artifactId>takari-builder-common</artifactId>
   
   <packaging>takari-maven-component</packaging>
+
+  <properties>
+    <minimum-coverage.instruction>0.66</minimum-coverage.instruction>
+    <minimum-coverage.branch>0.56</minimum-coverage.branch>
+  </properties>
   
   <dependencies>
     

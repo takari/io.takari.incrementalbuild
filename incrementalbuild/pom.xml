@@ -9,6 +9,11 @@
   <artifactId>incrementalbuild</artifactId>
   <packaging>takari-maven-component</packaging>
 
+  <properties>
+    <minimum-coverage.instruction>0.61</minimum-coverage.instruction>
+    <minimum-coverage.branch>0.55</minimum-coverage.branch>
+  </properties>
+
   <dependencies>
 
     <dependency>
