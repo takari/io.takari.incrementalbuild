@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>io.takari.incrementalbuild</artifactId>
-    <version>0.20.9</version>
+    <version>0.20.10-SNAPSHOT</version>
   </parent>
   <artifactId>incrementalbuild-workspace</artifactId>
   <packaging>takari-jar</packaging>
@@ -13,7 +13,7 @@
   Provides hooks to run incremental build inside m2e workspace. Other host applications
   may also be able to use this API, but have not been tested.
 
-  Incremental build workspace API will be embedded in m2e, and therefore the same version 
+  Incremental build workspace API will be embedded in m2e, and therefore the same version
   of this API should work with multiple versions of incrementalbuild library. This means
   all changes to this API must be backwards compatible. This also means that changes to
   this API will require update to io.takari.m2e.lifecycle.
@@ -68,7 +68,7 @@
                 <_snapshot>${osgi-version-qualifier}</_snapshot>
 
                 <Bundle-SymbolicName>io.takari.incrementalbuild.workspace;singleton:=false</Bundle-SymbolicName>
-                <Bundle-RequiredExecutionEnvironment>JavaSE-1.7,JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
+                <Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
                 <Export-Package>io.takari.incrementalbuild.workspace,io.takari.incrementalbuild.classpath</Export-Package>
                 <Import-Package>!*</Import-Package>
               </instructions>

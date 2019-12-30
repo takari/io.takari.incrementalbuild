@@ -15,7 +15,7 @@ import io.takari.maven.testing.executor.MavenVersions;
 import io.takari.maven.testing.executor.junit.MavenJUnitTestRunner;
 
 @RunWith(MavenJUnitTestRunner.class)
-@MavenVersions({"3.2.5", "3.3.1", "3.3.9"})
+@MavenVersions({"3.6.3"})
 public class MavenIncrementalBuildTest {
 
   @Rule
