@@ -48,6 +48,11 @@ public class ModularityEnforcerTestUtil {
       Collection<MavenProject> dependencies = this.dependencies.get(project);
       return dependencies == null ? ImmutableList.of() : ImmutableList.copyOf(dependencies);
     }
+
+    @Override
+    public List<MavenProject> getAllProjects() {
+      return ImmutableList.copyOf(dependents.values()); // this is probably wrong
+    }
   }
 
   public static class Builder {

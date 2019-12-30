@@ -3,9 +3,9 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>io.takari.incrementalbuild</artifactId>
-    <version>0.20.5</version>
+    <version>0.20.10-SNAPSHOT</version>
   </parent>
-  
+
   <groupId>io.takari.builder</groupId>
   <artifactId>takari-builder-security-manager</artifactId>
 
@@ -36,7 +36,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  
+
   <build>
     <pluginManagement>
       <plugins>
@@ -74,7 +74,7 @@
                 <_nouses>true</_nouses>
                 <_nodefaultversion>true</_nodefaultversion>
                 <_snapshot>${osgi-version-qualifier}</_snapshot>
-                
+
                 <Import-Package>
                   org.slf4j;version="1.6.2"
                 </Import-Package>
@@ -82,7 +82,7 @@
                 <Bundle-SymbolicName>io.takari.builder.takari-builder-security-manager;singleton:=false</Bundle-SymbolicName>
                 <Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
                 <Export-Package>io.takari.builder.enforcer</Export-Package>
-                
+
               </instructions>
             </configuration>
           </execution>
@@ -118,5 +118,5 @@
       </build>
     </profile>
   </profiles>
-  
+
 </project>
