@@ -21,7 +21,7 @@ import io.takari.maven.testing.executor.junit.MavenJUnitTestRunner;
  * {@link MavenVersions} test annotation.
  */
 @RunWith(MavenJUnitTestRunner.class)
-@MavenVersions({"3.3.9"})
+@MavenVersions({"3.6.3"})
 public class CopyFilesMavenIntegrationTest {
 
   @Rule

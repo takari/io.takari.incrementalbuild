@@ -13,7 +13,7 @@ import io.takari.maven.testing.executor.MavenVersions;
 import io.takari.maven.testing.executor.junit.MavenJUnitTestRunner;
 
 @RunWith(MavenJUnitTestRunner.class)
-@MavenVersions({"3.3.9"})
+@MavenVersions({"3.6.3"})
 public class ModularityEnforcerIntegrationTest {
 
   @Rule
@@ -67,7 +67,7 @@ public class ModularityEnforcerIntegrationTest {
         .assertLogText("[ERROR] W")
         .assertLogText("Unexpected filesystem access for project: enforce")
         .assertLogText("Violated Rules Are:").assertLogText("  W ").assertLogText(
-            "/target/test-projects/ModularityEnforcerIntegrationTest_testEnforceLogOnlyWithCommandLineProp[3.3.9]_enforce/**");
+            "/target/test-projects/ModularityEnforcerIntegrationTest_testEnforceLogOnlyWithCommandLineProp[3.6.3]_enforce/**");
   }
 
   @Test
