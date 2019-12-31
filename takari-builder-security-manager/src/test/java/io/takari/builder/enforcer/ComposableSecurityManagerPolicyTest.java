@@ -5,6 +5,9 @@ import static org.junit.Assert.fail;
 
 import java.io.FilePermission;
 import java.net.SocketPermission;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.PropertyPermission;
@@ -15,9 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
-
-import io.takari.builder.enforcer.ComposableSecurityManagerPolicy;
-import io.takari.builder.enforcer.Policy;
 
 public class ComposableSecurityManagerPolicyTest {
 
@@ -104,12 +104,16 @@ public class ComposableSecurityManagerPolicyTest {
           getWork("allowed"), //
           getWork("not.allowed"), //
           getWork("allowed"));
+
+      AccessControlContext accessControlContext = AccessController.getContext();
       List<String> exs1 = work.parallelStream().map(x -> {
-        try {
-          return x.call();
-        } catch (Exception e) {
-          return e;
-        }
+        return AccessController.doPrivileged((PrivilegedAction<Exception>) () -> {
+          try {
+            return x.call();
+          } catch (Exception e) {
+            return e;
+          }
+        }, accessControlContext);
       }).map(e -> e != null ? e.getMessage() : null).collect(Collectors.toList());
 
       assertThat(exs1).containsExactly("nope", null, "nope", null, "nope", null);
