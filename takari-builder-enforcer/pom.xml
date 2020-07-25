@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>io.takari.incrementalbuild</artifactId>
-    <version>0.20.10-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <groupId>io.takari.builder</groupId>
