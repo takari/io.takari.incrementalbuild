@@ -154,4 +154,18 @@ public class DefaultAggregatorBuildContextTest extends AbstractBuildContextTest 
     Assert.assertEquals(1, indexer.outputs.size());
   }
 
+  @Test
+  public void testEmptyNoCreate() throws Exception {
+    File outputFile = new File(temp.getRoot(), "output");
+    File basedir = temp.newFolder();
+
+    FileIndexer indexer = new FileIndexer();
+    DefaultAggregatorBuildContext actx = newContext();
+    DefaultInputSet output = actx.newInputSet(false);
+    output.addInputs(basedir, null, null);
+    output.aggregateIfNecessary(outputFile, indexer);
+    actx.commit(null);
+    Assert.assertFalse(outputFile.exists());
+    Assert.assertEquals(0, indexer.outputs.size());
+  }
 }
