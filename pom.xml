@@ -43,7 +43,7 @@
     <mavenPluginPlugin.version>3.6.0</mavenPluginPlugin.version>
     <slf4j.version>1.7.30</slf4j.version>
     <junit.version>4.11</junit.version>
-    <guava.version>28.2-jre</guava.version>
+    <guava.version>29.0-jre</guava.version>
     <eclipse-sisu.version>0.3.4</eclipse-sisu.version>
     <plugin-testing.version>3.0.0</plugin-testing.version>
     <takariLifecycleVersion>1.13.9</takariLifecycleVersion>
