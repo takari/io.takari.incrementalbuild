@@ -49,7 +49,7 @@ public class MavenDependencyResolverTest {
     File basedir = resources.getBasedir("dependency-resolution");
     File projectfile = new File(basedir, projectdir);
     File repodir = new File(basedir, "repository");
-    jarfile = new File(repodir, "junit/junit/4.12/junit-4.12.jar");
+    jarfile = new File(repodir, "junit/junit/4.13.2/junit-4.13.2.jar");
     MavenProject directProject = maven.readMavenProject(new File(basedir, "direct"));
     MavenProject transitiveProject = maven.readMavenProject(new File(basedir, "transitive"));
     dirfiledirect = new File(directProject.getBuild().getOutputDirectory());

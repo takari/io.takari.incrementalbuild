@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>takari</artifactId>
-    <version>28</version>
+    <version>50</version>
   </parent>
 
   <artifactId>io.takari.incrementalbuild</artifactId>
@@ -39,22 +39,22 @@
   </developers>
 
   <properties>
-    <apache-maven.version>3.6.3</apache-maven.version>
+    <apache-maven.version>3.8.6</apache-maven.version>
     <mavenPluginPlugin.version>3.6.0</mavenPluginPlugin.version>
-    <slf4j.version>1.7.30</slf4j.version>
-    <junit.version>4.11</junit.version>
-    <guava.version>28.2-jre</guava.version>
-    <eclipse-sisu.version>0.3.4</eclipse-sisu.version>
-    <plugin-testing.version>3.0.0</plugin-testing.version>
-    <takariLifecycleVersion>1.13.9</takariLifecycleVersion>
+    <slf4j.version>1.7.36</slf4j.version>
+    <junit.version>4.13.2</junit.version>
+    <guava.version>30.1.1-jre</guava.version> <!-- TODO: MessageCollectorTest deadlocks with 31.1, see why -->
+    <eclipse-sisu.version>0.3.5</eclipse-sisu.version>
+    <plugin-testing.version>3.0.1</plugin-testing.version>
+    <takariLifecycleVersion>2.0.9</takariLifecycleVersion>
     <takari.javaSourceVersion>1.8</takari.javaSourceVersion>
     <classworlds.version>2.6.0</classworlds.version>
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
-    <incrementalbuild-workspace.version>0.20.9</incrementalbuild-workspace.version>
-    <takari-builder-security-manager.version>0.20.5</takari-builder-security-manager.version>
-    <maven-resolver.version>1.4.1</maven-resolver.version>
-    <maven-wagon.version>3.3.4</maven-wagon.version>
+    <incrementalbuild-workspace.version>1.0.1-SNAPSHOT</incrementalbuild-workspace.version>
+    <takari-builder-security-manager.version>1.0.1-SNAPSHOT</takari-builder-security-manager.version>
+    <maven-resolver.version>1.6.3</maven-resolver.version>
+    <maven-wagon.version>3.5.1</maven-wagon.version>
   </properties>
 
   <modules>
@@ -86,8 +86,8 @@
 
      -->
 
-    <!-- <module>incrementalbuild-workspace</module> -->
-    <!-- <module>takari-builder-security-manager</module> -->
+    <module>incrementalbuild-workspace</module>
+    <module>takari-builder-security-manager</module>
 
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>

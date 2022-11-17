@@ -92,4 +92,16 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>java17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <properties>
+        <argLine>--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</argLine>
+      </properties>
+    </profile>
+  </profiles>
 </project>
