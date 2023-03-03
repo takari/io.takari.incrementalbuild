@@ -27,4 +27,6 @@ public interface AggregatorBuildContext {
 
   public InputSet newInputSet();
 
+  public InputSet newInputSet(boolean createOutputIfEmpty);
+
 }

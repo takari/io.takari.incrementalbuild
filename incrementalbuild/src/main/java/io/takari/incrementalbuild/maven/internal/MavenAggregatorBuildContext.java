@@ -38,4 +38,9 @@ public class MavenAggregatorBuildContext implements AggregatorBuildContext {
     return provider.get().newInputSet();
   }
 
+  @Override
+  public InputSet newInputSet(boolean createOutputIfEmpty) {
+    return provider.get().newInputSet(createOutputIfEmpty);
+  }
+
 }

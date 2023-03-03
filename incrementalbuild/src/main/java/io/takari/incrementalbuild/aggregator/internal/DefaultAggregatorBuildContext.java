@@ -38,7 +38,12 @@ public class DefaultAggregatorBuildContext extends AbstractBuildContext
 
   @Override
   public DefaultInputSet newInputSet() {
-    return new DefaultInputSet(this);
+    return newInputSet(true);
+  }
+
+  @Override
+  public DefaultInputSet newInputSet(boolean createOutputIfEmpty) {
+    return new DefaultInputSet(this, createOutputIfEmpty);
   }
 
   private File registerOutput(File outputFile) {
