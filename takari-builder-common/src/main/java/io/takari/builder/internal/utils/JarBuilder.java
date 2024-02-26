@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.builder.internal.utils;
 
 import java.io.File;
@@ -8,48 +15,48 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
 public class JarBuilder {
-  public static final Charset UTF8 = Charset.forName("UTF-8");
+    public static final Charset UTF8 = Charset.forName("UTF-8");
 
-  final File file;
-  final JarOutputStream out;
+    final File file;
+    final JarOutputStream out;
 
-  private JarBuilder(File jar) throws IOException {
-    this.file = jar;
-    this.out = new JarOutputStream(new FileOutputStream(jar));
-  }
-
-  public JarBuilder withEntries(String... paths) throws IOException {
-    for (String path : paths) {
-      writeFileEntry(path, null);
+    private JarBuilder(File jar) throws IOException {
+        this.file = jar;
+        this.out = new JarOutputStream(new FileOutputStream(jar));
     }
 
-    return this;
-  }
+    public JarBuilder withEntries(String... paths) throws IOException {
+        for (String path : paths) {
+            writeFileEntry(path, null);
+        }
 
-  public JarBuilder withEntry(String path, String content) throws IOException {
-    writeFileEntry(path, content);
-
-    return this;
-  }
-
-  private void writeFileEntry(String path, String content) throws IOException {
-    if (path.startsWith("/") || path.endsWith("/")) {
-      throw new IllegalArgumentException("jar entry path must not start or end with '/'.");
+        return this;
     }
 
-    out.putNextEntry(new ZipEntry(path));
-    if (content != null) {
-      out.write(content.getBytes(UTF8));
+    public JarBuilder withEntry(String path, String content) throws IOException {
+        writeFileEntry(path, content);
+
+        return this;
     }
-    out.closeEntry();
-  }
 
-  public File build() throws IOException {
-    out.close();
-    return file;
-  }
+    private void writeFileEntry(String path, String content) throws IOException {
+        if (path.startsWith("/") || path.endsWith("/")) {
+            throw new IllegalArgumentException("jar entry path must not start or end with '/'.");
+        }
 
-  public static JarBuilder create(File file) throws IOException {
-    return new JarBuilder(file);
-  }
+        out.putNextEntry(new ZipEntry(path));
+        if (content != null) {
+            out.write(content.getBytes(UTF8));
+        }
+        out.closeEntry();
+    }
+
+    public File build() throws IOException {
+        out.close();
+        return file;
+    }
+
+    public static JarBuilder create(File file) throws IOException {
+        return new JarBuilder(file);
+    }
 }

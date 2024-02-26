@@ -1,68 +1,74 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.ResourceStatus;
-
 import java.io.File;
 
 class FileState implements ResourceHolder<File> {
 
-  private static final long serialVersionUID = 1;
+    private static final long serialVersionUID = 1;
 
-  final File file;
+    final File file;
 
-  final long lastModified;
+    final long lastModified;
 
-  final long length;
+    final long length;
 
-  public FileState(File file, long lastModified, long length) {
-    if (file == null) {
-      // throw new IllegalArgumentException("File does not exist or cannot be read " + file);
-      throw new NullPointerException();
+    public FileState(File file, long lastModified, long length) {
+        if (file == null) {
+            // throw new IllegalArgumentException("File does not exist or cannot be read " + file);
+            throw new NullPointerException();
+        }
+
+        this.file = file;
+        this.lastModified = lastModified;
+        this.length = length;
     }
 
-    this.file = file;
-    this.lastModified = lastModified;
-    this.length = length;
-  }
-
-  @Override
-  public File getResource() {
-    return file;
-  }
-
-  @Override
-  public ResourceStatus getStatus() {
-    if (!isPresent(file)) {
-      return ResourceStatus.REMOVED;
+    @Override
+    public File getResource() {
+        return file;
     }
-    if (length == file.length() && lastModified == file.lastModified()) {
-      return ResourceStatus.UNMODIFIED;
-    }
-    return ResourceStatus.MODIFIED;
-  }
 
-  private boolean isPresent(File file) {
-    return file != null && file.isFile() && file.canRead();
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = 31;
-    hash = hash * 17 + file.hashCode();
-    hash = hash * 17 + (int) lastModified;
-    hash = hash * 17 + (int) length;
-    return hash;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
+    @Override
+    public ResourceStatus getStatus() {
+        if (!isPresent(file)) {
+            return ResourceStatus.REMOVED;
+        }
+        if (length == file.length() && lastModified == file.lastModified()) {
+            return ResourceStatus.UNMODIFIED;
+        }
+        return ResourceStatus.MODIFIED;
     }
-    if (!(obj instanceof FileState)) {
-      return false;
+
+    private boolean isPresent(File file) {
+        return file != null && file.isFile() && file.canRead();
     }
-    FileState other = (FileState) obj;
-    return file.equals(other.file) && lastModified == other.lastModified && length == other.length;
-  }
+
+    @Override
+    public int hashCode() {
+        int hash = 31;
+        hash = hash * 17 + file.hashCode();
+        hash = hash * 17 + (int) lastModified;
+        hash = hash * 17 + (int) length;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof FileState)) {
+            return false;
+        }
+        FileState other = (FileState) obj;
+        return file.equals(other.file) && lastModified == other.lastModified && length == other.length;
+    }
 }

@@ -1,14 +1,20 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.incrementalbuild.workspace;
 
-
 public interface MessageSink {
-  public static enum Severity {
-    ERROR, WARNING, INFO
-  }
+    public static enum Severity {
+        ERROR,
+        WARNING,
+        INFO
+    }
 
-  public void clearMessages(Object resource);
+    public void clearMessages(Object resource);
 
-  public void message(Object resource, int line, int column, String message, Severity severity,
-      Throwable cause);
-
+    public void message(Object resource, int line, int column, String message, Severity severity, Throwable cause);
 }

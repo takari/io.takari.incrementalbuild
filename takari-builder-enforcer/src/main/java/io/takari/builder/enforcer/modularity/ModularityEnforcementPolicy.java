@@ -1,13 +1,19 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.builder.enforcer.modularity;
 
 import static io.takari.builder.internal.pathmatcher.PathNormalizer.normalize0;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-
 import io.takari.builder.enforcer.Policy;
 import io.takari.builder.enforcer.internal.EnforcerViolation;
 import io.takari.builder.enforcer.internal.EnforcerViolationType;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 
 /**
  * This is the heart of this project.
@@ -43,90 +49,89 @@ import io.takari.builder.enforcer.internal.EnforcerViolationType;
  */
 public class ModularityEnforcementPolicy implements Policy {
 
-  @Override
-  public void checkRead(String file) {
-    checkScope();
-    checkProjectRead(file);
-  }
-
-  @Override
-  public void checkWrite(String file) {
-    checkScope();
-    checkProjectWrite(file);
-  }
-
-  @Override
-  public void checkExec(String cmd) {
-    checkScope();
-    if (execPrivileged.get() != null) {
-      return;
+    @Override
+    public void checkRead(String file) {
+        checkScope();
+        checkProjectRead(file);
     }
-    if (!context.checkExecute(cmd)) {
-      handler.accept(context, new EnforcerViolation(EnforcerViolationType.EXECUTE, cmd));
+
+    @Override
+    public void checkWrite(String file) {
+        checkScope();
+        checkProjectWrite(file);
     }
-  }
 
-  @Override
-  public void checkSocketPermission() {
-    checkScope();
-    // allow all
-  }
-
-  @Override
-  public void checkPropertyPermission(String action, String name) {
-    checkScope();
-    // allow all
-  }
-
-  //
-  //
-  //
-
-  private final ProjectContext context;
-
-  private final BiConsumer<ProjectContext, EnforcerViolation> handler;
-
-  private final ThreadLocal<Boolean> execPrivileged = new ThreadLocal<>();
-
-  private final AtomicBoolean inScope = new AtomicBoolean(true);
-
-  public ModularityEnforcementPolicy(ProjectContext context,
-      BiConsumer<ProjectContext, EnforcerViolation> handler) {
-    this.context = context;
-    this.handler = handler;
-  }
-
-  public void checkProjectRead(String file) {
-    if (!context.checkRead(file)) {
-      handler.accept(context, new EnforcerViolation(EnforcerViolationType.READ, normalize0(file)));
+    @Override
+    public void checkExec(String cmd) {
+        checkScope();
+        if (execPrivileged.get() != null) {
+            return;
+        }
+        if (!context.checkExecute(cmd)) {
+            handler.accept(context, new EnforcerViolation(EnforcerViolationType.EXECUTE, cmd));
+        }
     }
-  }
 
-  public void checkProjectWrite(String file) {
-    if (!context.checkWrite(file)) {
-      handler.accept(context, new EnforcerViolation(EnforcerViolationType.WRITE, normalize0(file)));
+    @Override
+    public void checkSocketPermission() {
+        checkScope();
+        // allow all
     }
-  }
 
-  public void enterExecPrivileged() {
-    execPrivileged.set(Boolean.TRUE);
-  }
-
-  public void leaveExecPrivileged() {
-    execPrivileged.remove();
-  }
-
-  public ProjectContext getProjectContext() {
-    return context;
-  }
-
-  private void checkScope() {
-    if (!inScope.get()) {
-      throw new IllegalStateException("ModularityEnforcerContext is no longer in scope");
+    @Override
+    public void checkPropertyPermission(String action, String name) {
+        checkScope();
+        // allow all
     }
-  }
 
-  public void close() {
-    inScope.set(false);
-  }
+    //
+    //
+    //
+
+    private final ProjectContext context;
+
+    private final BiConsumer<ProjectContext, EnforcerViolation> handler;
+
+    private final ThreadLocal<Boolean> execPrivileged = new ThreadLocal<>();
+
+    private final AtomicBoolean inScope = new AtomicBoolean(true);
+
+    public ModularityEnforcementPolicy(ProjectContext context, BiConsumer<ProjectContext, EnforcerViolation> handler) {
+        this.context = context;
+        this.handler = handler;
+    }
+
+    public void checkProjectRead(String file) {
+        if (!context.checkRead(file)) {
+            handler.accept(context, new EnforcerViolation(EnforcerViolationType.READ, normalize0(file)));
+        }
+    }
+
+    public void checkProjectWrite(String file) {
+        if (!context.checkWrite(file)) {
+            handler.accept(context, new EnforcerViolation(EnforcerViolationType.WRITE, normalize0(file)));
+        }
+    }
+
+    public void enterExecPrivileged() {
+        execPrivileged.set(Boolean.TRUE);
+    }
+
+    public void leaveExecPrivileged() {
+        execPrivileged.remove();
+    }
+
+    public ProjectContext getProjectContext() {
+        return context;
+    }
+
+    private void checkScope() {
+        if (!inScope.get()) {
+            throw new IllegalStateException("ModularityEnforcerContext is no longer in scope");
+        }
+    }
+
+    public void close() {
+        inScope.set(false);
+    }
 }

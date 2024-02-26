@@ -1,8 +1,17 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.builder.apt;
 
+import io.takari.builder.apt.APT.APTMember;
+import io.takari.builder.apt.APT.APTMethod;
+import io.takari.builder.internal.model.*;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
@@ -14,71 +23,69 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
 
-import io.takari.builder.apt.APT.APTMember;
-import io.takari.builder.apt.APT.APTMethod;
-import io.takari.builder.internal.model.*;
-
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class BuilderMojoGenerator extends AbstractProcessor {
 
-  private Filer filer;
-  private Messager messager;
+    private Filer filer;
+    private Messager messager;
 
-  private APT apt;
+    private APT apt;
 
-  private class APTValidationVisitor extends BuilderValidationVisitor {
-    public boolean errorRaised;
+    private class APTValidationVisitor extends BuilderValidationVisitor {
+        public boolean errorRaised;
+
+        @Override
+        protected void error(AbstractParameter parameter, String message) {
+            APTMember element = (APTMember) parameter.originatingElement();
+            error(element.adaptee(), message);
+        }
+
+        @Override
+        protected void error(BuilderMethod builder, String message) {
+            APTMethod builderMethod = (APTMethod) builder.originatingElement();
+            error(builderMethod.adaptee(), message);
+        }
+
+        private void error(Element element, String message) {
+            // TODO AnnotationMirror annotationMirror
+            messager.printMessage(Kind.ERROR, message, element);
+            errorRaised = true;
+        }
+    }
+    ;
 
     @Override
-    protected void error(AbstractParameter parameter, String message) {
-      APTMember element = (APTMember) parameter.originatingElement();
-      error(element.adaptee(), message);
+    public synchronized void init(ProcessingEnvironment env) {
+        super.init(env);
+
+        this.filer = env.getFiler();
+        this.messager = env.getMessager();
+        this.apt = new APT(env.getElementUtils(), env.getTypeUtils());
     }
 
     @Override
-    protected void error(BuilderMethod builder, String message) {
-      APTMethod builderMethod = (APTMethod) builder.originatingElement();
-      error(builderMethod.adaptee(), message);
+    public Set<String> getSupportedAnnotationTypes() {
+        Set<String> annotations = new LinkedHashSet<>();
+        annotations.add("io.takari.builder.*");
+        return annotations;
     }
 
-    private void error(Element element, String message) {
-      // TODO AnnotationMirror annotationMirror
-      messager.printMessage(Kind.ERROR, message, element);
-      errorRaised = true;
+    @Override
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
+        BuilderClass.annotations().stream() //
+                .flatMap(a -> env.getElementsAnnotatedWith(a).stream()) //
+                .map(m -> (TypeElement) m.getEnclosingElement()) //
+                .distinct()
+                .forEach(m -> process(m, env));
+        return false;
     }
-  };
 
-  @Override
-  public synchronized void init(ProcessingEnvironment env) {
-    super.init(env);
-
-    this.filer = env.getFiler();
-    this.messager = env.getMessager();
-    this.apt = new APT(env.getElementUtils(), env.getTypeUtils());
-  }
-
-  @Override
-  public Set<String> getSupportedAnnotationTypes() {
-    Set<String> annotations = new LinkedHashSet<>();
-    annotations.add("io.takari.builder.*");
-    return annotations;
-  }
-
-  @Override
-  public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
-    BuilderClass.annotations().stream() //
-        .flatMap(a -> env.getElementsAnnotatedWith(a).stream()) //
-        .map(m -> (TypeElement) m.getEnclosingElement()) //
-        .distinct().forEach(m -> process(m, env));
-    return false;
-  }
-
-  private void process(TypeElement type, RoundEnvironment env) {
-    BuilderClass metadata = apt.createBuilderClass(type);
-    APTValidationVisitor validator = new APTValidationVisitor();
-    metadata.accept(validator);
-    if (!validator.errorRaised) {
-      metadata.accept(new MojoGenerationVisitor(filer, messager));
+    private void process(TypeElement type, RoundEnvironment env) {
+        BuilderClass metadata = apt.createBuilderClass(type);
+        APTValidationVisitor validator = new APTValidationVisitor();
+        metadata.accept(validator);
+        if (!validator.errorRaised) {
+            metadata.accept(new MojoGenerationVisitor(filer, messager));
+        }
     }
-  }
 }

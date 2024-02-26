@@ -1,14 +1,5 @@
 package io.takari.builder.internal;
 
-import java.io.File;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import io.takari.builder.Builder;
 import io.takari.builder.InputDirectory;
 import io.takari.builder.Messages;
@@ -16,152 +7,156 @@ import io.takari.builder.Parameter;
 import io.takari.builder.internal.model.AbstractParameter;
 import io.takari.builder.internal.model.BuilderMethod;
 import io.takari.builder.internal.model.BuilderValidationVisitor;
+import java.io.File;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class BuilderValidationVisitorTest {
 
-  @Rule
-  public final ExpectedException thrown = ExpectedException.none();
+    @Rule
+    public final ExpectedException thrown = ExpectedException.none();
 
-  @SuppressWarnings("serial")
-  private static class ParameterValidationException extends RuntimeException {
+    @SuppressWarnings("serial")
+    private static class ParameterValidationException extends RuntimeException {
 
-    public ParameterValidationException(AbstractParameter parameter, String message) {
-      super(message);
+        public ParameterValidationException(AbstractParameter parameter, String message) {
+            super(message);
+        }
     }
 
-  }
+    @SuppressWarnings("serial")
+    private static class BuilderValidationException extends RuntimeException {
 
-  @SuppressWarnings("serial")
-  private static class BuilderValidationException extends RuntimeException {
-
-    public BuilderValidationException(String message) {
-      super(message);
+        public BuilderValidationException(String message) {
+            super(message);
+        }
     }
 
-  }
+    private BuilderValidationVisitor testee = new BuilderValidationVisitor() {
+        @Override
+        protected void error(AbstractParameter parameter, String message) {
+            throw new ParameterValidationException(parameter, message);
+        }
 
-  private BuilderValidationVisitor testee = new BuilderValidationVisitor() {
-    @Override
-    protected void error(AbstractParameter parameter, String message) {
-      throw new ParameterValidationException(parameter, message);
+        @Override
+        protected void error(BuilderMethod builder, String message) {
+            throw new BuilderValidationException(message);
+        }
+    };
+
+    private void validate(Class<?> type) {
+        Reflection.createBuilderClass(type).accept(testee);
     }
 
-    @Override
-    protected void error(BuilderMethod builder, String message) {
-      throw new BuilderValidationException(message);
+    //
+    //
+    //
+
+    static class _AmbiguousParameterAnnotations {
+        @Parameter
+        @InputDirectory(includes = "**/*")
+        File parameter;
     }
-  };
 
-  private void validate(Class<?> type) {
-    Reflection.createBuilderClass(type).accept(testee);
-  }
+    @Test
+    public void testAmbiguousParameterAnnotations() throws Exception {
 
-  //
-  //
-  //
+        thrown.expect(ParameterValidationException.class);
+        thrown.expectMessage("ambigous parameter annotation present: [InputDirectory, Parameter]");
 
-  static class _AmbiguousParameterAnnotations {
-    @Parameter
-    @InputDirectory(includes = "**/*")
-    File parameter;
-  }
+        validate(_AmbiguousParameterAnnotations.class);
+    }
 
-  @Test
-  public void testAmbiguousParameterAnnotations() throws Exception {
+    //
+    //
+    //
 
-    thrown.expect(ParameterValidationException.class);
-    thrown.expectMessage("ambigous parameter annotation present: [InputDirectory, Parameter]");
+    static interface CustomList<E> extends List<E> {}
 
-    validate(_AmbiguousParameterAnnotations.class);
-  }
+    static class _UnsupportedMultivalueType {
+        @Parameter
+        CustomList<String> list;
+    }
 
-  //
-  //
-  //
+    @Test
+    public void testUnsupportedMultivalueType() throws Exception {
 
-  static interface CustomList<E> extends List<E> {}
+        thrown.expect(ParameterValidationException.class);
+        thrown.expectMessage("multivalue prarmeter type must be concrete type or one of Collection, List and Set");
 
-  static class _UnsupportedMultivalueType {
-    @Parameter
-    CustomList<String> list;
-  }
+        validate(_UnsupportedMultivalueType.class);
+    }
 
-  @Test
-  public void testUnsupportedMultivalueType() throws Exception {
+    //
+    //
+    //
 
-    thrown.expect(ParameterValidationException.class);
-    thrown.expectMessage(
-        "multivalue prarmeter type must be concrete type or one of Collection, List and Set");
+    static class _UnsupportedInputDirectoryType {
+        @InputDirectory(includes = "**/*")
+        Date directory;
+    }
 
-    validate(_UnsupportedMultivalueType.class);
-  }
+    @Test
+    public void testUnsupportedInputDirectoryType() throws Exception {
 
-  //
-  //
-  //
+        thrown.expect(ParameterValidationException.class);
+        thrown.expectMessage("@InputDirectory paramerer must be of type File");
 
-  static class _UnsupportedInputDirectoryType {
-    @InputDirectory(includes = "**/*")
-    Date directory;
-  }
+        validate(_UnsupportedInputDirectoryType.class);
+    }
 
-  @Test
-  public void testUnsupportedInputDirectoryType() throws Exception {
+    //
+    //
+    //
 
-    thrown.expect(ParameterValidationException.class);
-    thrown.expectMessage("@InputDirectory paramerer must be of type File");
+    static class _UnsupportedBuilderMethodParameters {
+        @Builder(name = "builder")
+        public void method(Messages message) {}
+    }
 
-    validate(_UnsupportedInputDirectoryType.class);
-  }
+    @Test
+    public void testUnsupportedBuilderMethodParameters() throws Exception {
+        thrown.expect(BuilderValidationException.class);
+        thrown.expectMessage("Buidler method must not take parameters");
 
-  //
-  //
-  //
+        validate(_UnsupportedBuilderMethodParameters.class);
+    }
 
-  static class _UnsupportedBuilderMethodParameters {
-    @Builder(name = "builder")
-    public void method(Messages message) {}
-  }
+    //
+    // Unknown collection element type
+    //
 
-  @Test
-  public void testUnsupportedBuilderMethodParameters() throws Exception {
-    thrown.expect(BuilderValidationException.class);
-    thrown.expectMessage("Buidler method must not take parameters");
+    static class _UnknownListElement {
+        @Parameter
+        List<?> list;
+    }
 
-    validate(_UnsupportedBuilderMethodParameters.class);
-  }
+    @Test
+    public void testUnknownListElement() throws Exception {
+        thrown.expect(ParameterValidationException.class);
+        thrown.expectMessage("Raw Collection or wildcard Collection element type");
 
-  //
-  // Unknown collection element type
-  //
+        validate(_UnknownListElement.class);
+    }
 
-  static class _UnknownListElement {
-    @Parameter
-    List<?> list;
-  }
+    //
+    // Unknown map key/value types
+    //
 
-  @Test
-  public void testUnknownListElement() throws Exception {
-    thrown.expect(ParameterValidationException.class);
-    thrown.expectMessage("Raw Collection or wildcard Collection element type");
+    static class _UnknownMayKeyValue {
+        @Parameter
+        Map<?, ?> map;
+    }
 
-    validate(_UnknownListElement.class);
-  }
+    @Test
+    public void testUnknownMapKeyValue() throws Exception {
+        thrown.expect(ParameterValidationException.class);
+        thrown.expectMessage("Raw Map or wildcard Map key and/or value types");
 
-  //
-  // Unknown map key/value types
-  //
-
-  static class _UnknownMayKeyValue {
-    @Parameter
-    Map<?, ?> map;
-  }
-
-  @Test
-  public void testUnknownMapKeyValue() throws Exception {
-    thrown.expect(ParameterValidationException.class);
-    thrown.expectMessage("Raw Map or wildcard Map key and/or value types");
-
-    validate(_UnknownMayKeyValue.class);
-  }
+        validate(_UnknownMayKeyValue.class);
+    }
 }

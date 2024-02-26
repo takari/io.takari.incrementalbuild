@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.builder.internal;
 
 import java.nio.file.Path;
@@ -5,10 +12,9 @@ import java.util.List;
 
 public interface ProjectModelProvider {
 
-  public Path getBasedir();
+    public Path getBasedir();
 
-  public List<String> getCompileSourceRoots();
+    public List<String> getCompileSourceRoots();
 
-  public List<String> getTestCompileSourceRoots();
-
+    public List<String> getTestCompileSourceRoots();
 }
