@@ -90,7 +90,7 @@
   </scm>
 
   <properties>
-    <apache-maven.version>3.8.6</apache-maven.version>
+    <apache-maven.version>3.9.6</apache-maven.version>
     <mavenPluginPlugin.version>3.6.0</mavenPluginPlugin.version>
     <slf4j.version>1.7.36</slf4j.version>
     <junit.version>4.13.2</junit.version>
