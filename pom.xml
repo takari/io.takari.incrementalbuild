@@ -108,7 +108,7 @@
     <maven-resolver.version>1.6.3</maven-resolver.version>
     <maven-wagon.version>3.5.1</maven-wagon.version>
 
-    <argLine>-Djava.security.manager=allow</argLine>
+    <argLine />
   </properties>
 
   <dependencyManagement>
@@ -351,5 +351,17 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>java17plus</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <properties>
+        <argLine>-Djava.security.manager=allow</argLine>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>
