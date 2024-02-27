@@ -91,7 +91,7 @@
 
   <properties>
     <apache-maven.version>3.8.6</apache-maven.version>
-    <mavenPluginPlugin.version>3.6.0</mavenPluginPlugin.version>
+    <mavenPluginPlugin.version>3.11.0</mavenPluginPlugin.version>
     <slf4j.version>1.7.36</slf4j.version>
     <junit.version>4.13.2</junit.version>
     <guava.version>30.1.1-jre</guava.version>
