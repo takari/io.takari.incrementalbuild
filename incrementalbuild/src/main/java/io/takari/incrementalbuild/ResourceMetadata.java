@@ -1,11 +1,17 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.incrementalbuild;
 
 public interface ResourceMetadata<T> {
 
-  public T getResource();
+    public T getResource();
 
-  public ResourceStatus getStatus();
+    public ResourceStatus getStatus();
 
-  public Resource<T> process();
-
+    public Resource<T> process();
 }

@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.builder;
 
 import static java.lang.annotation.ElementType.FIELD;
@@ -14,50 +21,50 @@ import java.lang.annotation.Target;
 @Target({FIELD})
 @Retention(RUNTIME)
 public @interface GeneratedResourcesDirectory {
-  /**
-   * @see Parameter#required()
-   */
-  boolean required() default true;
+    /**
+     * @see Parameter#required()
+     */
+    boolean required() default true;
 
-  /**
-   * @see Parameter#value()
-   */
-  String[] value() default {};
+    /**
+     * @see Parameter#value()
+     */
+    String[] value() default {};
 
-  /**
-   * @see Parameter#defaultValue()
-   */
-  String[] defaultValue() default {};
+    /**
+     * @see Parameter#defaultValue()
+     */
+    String[] defaultValue() default {};
 
-  /**
-   * Generated resource type. Cannot be changed/overridden in pom.xml {@code <configuration>}
-   * section.
-   */
-  ResourceType type() default ResourceType.MAIN;
+    /**
+     * Generated resource type. Cannot be changed/overridden in pom.xml {@code <configuration>}
+     * section.
+     */
+    ResourceType type() default ResourceType.MAIN;
 
-  /**
-   * A list of inclusion filters. Cannot be changed/overridden in pom.xml {@code <configuration>}
-   * section. #includes and #defaultIncludes cannot be both used for the same parameter.
-   */
-  String[] includes() default {};
+    /**
+     * A list of inclusion filters. Cannot be changed/overridden in pom.xml {@code <configuration>}
+     * section. #includes and #defaultIncludes cannot be both used for the same parameter.
+     */
+    String[] includes() default {};
 
-  /**
-   * A list of default inclusion filters. Can be changed/overridden in pom.xml
-   * {@code <configuration>} section. #includes and #defaultIncludes cannot be both used for the
-   * same parameter.
-   */
-  String[] defaultIncludes() default {};
+    /**
+     * A list of default inclusion filters. Can be changed/overridden in pom.xml
+     * {@code <configuration>} section. #includes and #defaultIncludes cannot be both used for the
+     * same parameter.
+     */
+    String[] defaultIncludes() default {};
 
-  /**
-   * A list of exclusion filters. Cannot be changed/overridden in pom.xml {@code <configuration>}
-   * section. #excludes and #defaultExcludes cannot be both used for the same parameter.
-   */
-  String[] excludes() default {};
+    /**
+     * A list of exclusion filters. Cannot be changed/overridden in pom.xml {@code <configuration>}
+     * section. #excludes and #defaultExcludes cannot be both used for the same parameter.
+     */
+    String[] excludes() default {};
 
-  /**
-   * A list of default exclusion filters. Can be changed/overridden in pom.xml
-   * {@code <configuration>} section. #excludes and #defaultExcludes cannot be both used for the
-   * same parameter.
-   */
-  String[] defaultExcludes() default {};
+    /**
+     * A list of default exclusion filters. Can be changed/overridden in pom.xml
+     * {@code <configuration>} section. #excludes and #defaultExcludes cannot be both used for the
+     * same parameter.
+     */
+    String[] defaultExcludes() default {};
 }

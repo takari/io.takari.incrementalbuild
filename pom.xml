@@ -1,10 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2014-2024 Takari, Inc.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v1.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-v10.html
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>io.takari</groupId>
     <artifactId>takari</artifactId>
-    <version>50</version>
+    <version>53</version>
   </parent>
 
   <artifactId>io.takari.incrementalbuild</artifactId>
@@ -20,12 +30,6 @@
       <url>http://www.spdx.org/licenses/EPL-1.0</url>
     </license>
   </licenses>
-  <scm>
-    <url>https://github.com/takari/io.takari.incrementalbuild</url>
-    <connection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</connection>
-    <developerConnection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
   <developers>
     <developer>
       <name>Jason van Zyl</name>
@@ -37,25 +41,6 @@
       <name>Jaime Morales</name>
     </developer>
   </developers>
-
-  <properties>
-    <apache-maven.version>3.8.6</apache-maven.version>
-    <mavenPluginPlugin.version>3.6.0</mavenPluginPlugin.version>
-    <slf4j.version>1.7.36</slf4j.version>
-    <junit.version>4.13.2</junit.version>
-    <guava.version>30.1.1-jre</guava.version> <!-- TODO: MessageCollectorTest deadlocks with 31.1, see why -->
-    <eclipse-sisu.version>0.3.5</eclipse-sisu.version>
-    <plugin-testing.version>3.0.1</plugin-testing.version>
-    <takariLifecycleVersion>2.0.9</takariLifecycleVersion>
-    <takari.javaSourceVersion>1.8</takari.javaSourceVersion>
-    <classworlds.version>2.6.0</classworlds.version>
-    <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
-    <takari.privatePackageReference>ignore</takari.privatePackageReference>
-    <incrementalbuild-workspace.version>1.0.1-SNAPSHOT</incrementalbuild-workspace.version>
-    <takari-builder-security-manager.version>1.0.1-SNAPSHOT</takari-builder-security-manager.version>
-    <maven-resolver.version>1.6.3</maven-resolver.version>
-    <maven-wagon.version>3.5.1</maven-wagon.version>
-  </properties>
 
   <modules>
     <!--
@@ -97,8 +82,36 @@
     <module>takari-builder-enforcer</module>
     <module>takari-builder-common</module>
   </modules>
+  <scm>
+    <connection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</connection>
+    <developerConnection>scm:git:https://github.com/takari/io.takari.incrementalbuild.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/takari/io.takari.incrementalbuild</url>
+  </scm>
 
-   <dependencyManagement>
+  <properties>
+    <apache-maven.version>3.8.6</apache-maven.version>
+    <mavenPluginPlugin.version>3.6.0</mavenPluginPlugin.version>
+    <slf4j.version>1.7.36</slf4j.version>
+    <junit.version>4.13.2</junit.version>
+    <guava.version>30.1.1-jre</guava.version>
+    <!-- TODO: MessageCollectorTest deadlocks with 31.1, see why -->
+    <eclipse-sisu.version>0.3.5</eclipse-sisu.version>
+    <plugin-testing.version>3.0.1</plugin-testing.version>
+    <takariLifecycleVersion>2.0.9</takariLifecycleVersion>
+    <takari.javaSourceVersion>1.8</takari.javaSourceVersion>
+    <classworlds.version>2.6.0</classworlds.version>
+    <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
+    <takari.privatePackageReference>ignore</takari.privatePackageReference>
+    <incrementalbuild-workspace.version>1.0.1-SNAPSHOT</incrementalbuild-workspace.version>
+    <takari-builder-security-manager.version>1.0.1-SNAPSHOT</takari-builder-security-manager.version>
+    <maven-resolver.version>1.6.3</maven-resolver.version>
+    <maven-wagon.version>3.5.1</maven-wagon.version>
+
+    <argLine />
+  </properties>
+
+  <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>org.apache.maven</groupId>
@@ -194,7 +207,7 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-      <groupId>io.takari</groupId>
+        <groupId>io.takari</groupId>
         <artifactId>incrementalbuild</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -272,13 +285,13 @@
       <dependency>
         <groupId>com.google.testing.compile</groupId>
         <artifactId>compile-testing</artifactId>
-        <version>0.18</version>
+        <version>0.21.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>com.google.truth</groupId>
         <artifactId>truth</artifactId>
-        <version>0.45</version>
+        <version>1.4.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -328,27 +341,27 @@
   </dependencyManagement>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>animal-sniffer-maven-plugin</artifactId>
-          <version>1.18</version>
-          <configuration>
-            <signature>
-              <groupId>org.codehaus.mojo.signature</groupId>
-              <artifactId>java18</artifactId>
-              <version>1.0</version>
-            </signature>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>${argLine}</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>java17plus</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <properties>
+        <argLine>-Djava.security.manager=allow</argLine>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>

@@ -1,3 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2014-2024 Takari, Inc.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v1.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-v10.html
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -9,12 +19,12 @@
   <groupId>io.takari.builder</groupId>
   <artifactId>takari-builder-security-manager</artifactId>
 
+  <packaging>takari-jar</packaging>
+
   <properties>
     <maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
     <osgi-version-qualifier>${maven.build.timestamp}</osgi-version-qualifier>
   </properties>
-
-  <packaging>takari-jar</packaging>
 
   <dependencies>
     <dependency>
@@ -22,7 +32,6 @@
       <artifactId>slf4j-api</artifactId>
       <scope>provided</scope>
     </dependency>
-
 
     <!-- | TEST DEPENDENCIES -->
     <dependency>
@@ -64,10 +73,10 @@
         <executions>
           <execution>
             <id>bundle-manifest</id>
-            <phase>process-classes</phase>
             <goals>
               <goal>manifest</goal>
             </goals>
+            <phase>process-classes</phase>
             <configuration>
               <instructions>
                 <_failok>true</_failok>
@@ -75,9 +84,7 @@
                 <_nodefaultversion>true</_nodefaultversion>
                 <_snapshot>${osgi-version-qualifier}</_snapshot>
 
-                <Import-Package>
-                  org.slf4j;version="1.6.2"
-                </Import-Package>
+                <Import-Package>org.slf4j;version="1.6.2"</Import-Package>
 
                 <Bundle-SymbolicName>io.takari.builder.takari-builder-security-manager;singleton:=false</Bundle-SymbolicName>
                 <Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>

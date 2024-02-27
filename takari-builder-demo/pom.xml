@@ -1,3 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2014-2024 Takari, Inc.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v1.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-v10.html
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -12,7 +22,7 @@
   <packaging>takari-maven-plugin</packaging>
 
   <dependencies>
-    
+
     <!-- 
       | takari-builder/takari-builder-apt version is managed in parent pom to ensure
       | demo project is tested with the latest takari-builder version. builder projects
@@ -61,52 +71,52 @@
   </dependencies>
 
   <build>
-  <pluginManagement>
-    <plugins>
-      <plugin>
-        <groupId>io.takari.maven.plugins</groupId>
-        <artifactId>takari-lifecycle-plugin</artifactId>
-        <configuration>
-          <proc>procEX</proc>
-          <transitiveDependencyReference>ignore</transitiveDependencyReference>
-          <privatePackageReference>ignore</privatePackageReference>
-        </configuration>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.takari.maven.plugins</groupId>
+          <artifactId>takari-lifecycle-plugin</artifactId>
+          <configuration>
+            <proc>procEX</proc>
+            <transitiveDependencyReference>ignore</transitiveDependencyReference>
+            <privatePackageReference>ignore</privatePackageReference>
+          </configuration>
 
-        <!-- 
+          <!-- 
            | don't package/deploy artifacts of the demo project
            | this section is not applicable to and MUST NOT be included in builder projects
            -->
-        <executions>
-          <execution>
-            <id>default-jar</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-          <execution>
-            <id>default-install</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-          <execution>
-            <id>default-deploy</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </pluginManagement>
-    
+          <executions>
+            <execution>
+              <id>default-jar</id>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </execution>
+            <execution>
+              <id>default-install</id>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </execution>
+            <execution>
+              <id>default-deploy</id>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <configuration>
+            <skip>true</skip>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
   </build>
 
 </project>

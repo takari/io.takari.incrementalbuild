@@ -1,5 +1,11 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.incrementalbuild.aggregator;
-
 
 /**
  * Convenience interface to create aggregate outputs
@@ -9,10 +15,10 @@ package io.takari.incrementalbuild.aggregator;
  * META-INF/maven/plugin.xml file, is an aggregate of all Mojo implementations in the Maven plugin.
  * <p>
  * Intended usage
- * 
+ *
  * <pre>
  *    {@code @}Inject AggregatorBuildContext context;
- * 
+ *
  *    AggregateOutput output = context.registerOutput(outputFile);
  *    output.associateInputs(sourceDirectory, includes, excludes);
  *    output.create(new AggregateCreator() {
@@ -25,6 +31,5 @@ package io.takari.incrementalbuild.aggregator;
  */
 public interface AggregatorBuildContext {
 
-  public InputSet newInputSet();
-
+    public InputSet newInputSet();
 }

@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.builder;
 
 import static java.lang.annotation.ElementType.FIELD;
@@ -12,18 +19,18 @@ import java.lang.annotation.Target;
 @Target({FIELD})
 @Retention(RUNTIME)
 public @interface OutputFile {
-  /**
-   * @see Parameter#required()
-   */
-  boolean required() default true;
+    /**
+     * @see Parameter#required()
+     */
+    boolean required() default true;
 
-  /**
-   * @see Parameter#value()
-   */
-  String[] value() default {};
+    /**
+     * @see Parameter#value()
+     */
+    String[] value() default {};
 
-  /**
-   * @see Parameter#defaultValue()
-   */
-  String[] defaultValue() default {};
+    /**
+     * @see Parameter#defaultValue()
+     */
+    String[] defaultValue() default {};
 }

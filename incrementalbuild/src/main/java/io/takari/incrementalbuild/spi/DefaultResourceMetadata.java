@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2014-2024 Takari, Inc.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v10.html
+ */
 package io.takari.incrementalbuild.spi;
 
 import io.takari.incrementalbuild.ResourceMetadata;
@@ -8,61 +15,60 @@ import io.takari.incrementalbuild.ResourceStatus;
  */
 public class DefaultResourceMetadata<T> implements ResourceMetadata<T> {
 
-  protected final AbstractBuildContext context;
+    protected final AbstractBuildContext context;
 
-  protected final DefaultBuildContextState state;
+    protected final DefaultBuildContextState state;
 
-  protected final T resource;
+    protected final T resource;
 
-  protected DefaultResourceMetadata(AbstractBuildContext context, DefaultBuildContextState state,
-      T resource) {
-    this.context = context;
-    this.state = state;
-    this.resource = resource;
-  }
-
-  @Override
-  public T getResource() {
-    return resource;
-  }
-
-  @Override
-  public ResourceStatus getStatus() {
-    return context.getResourceStatus(resource);
-  }
-
-  @Override
-  public DefaultResource<T> process() {
-    return context.processResource(this);
-  }
-
-  @Override
-  public int hashCode() {
-    return resource.hashCode();
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
+    protected DefaultResourceMetadata(AbstractBuildContext context, DefaultBuildContextState state, T resource) {
+        this.context = context;
+        this.state = state;
+        this.resource = resource;
     }
 
-    if (obj == null || obj.getClass() != getClass()) {
-      return false;
+    @Override
+    public T getResource() {
+        return resource;
     }
 
-    DefaultResourceMetadata<?> other = (DefaultResourceMetadata<?>) obj;
+    @Override
+    public ResourceStatus getStatus() {
+        return context.getResourceStatus(resource);
+    }
 
-    // must be from the same context to be equal
-    return context == other.context && state == other.state && resource.equals(other.resource);
-  }
+    @Override
+    public DefaultResource<T> process() {
+        return context.processResource(this);
+    }
 
-  protected AbstractBuildContext getContext() {
-    return context;
-  }
+    @Override
+    public int hashCode() {
+        return resource.hashCode();
+    }
 
-  @Override
-  public String toString() {
-    return resource.toString();
-  }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null || obj.getClass() != getClass()) {
+            return false;
+        }
+
+        DefaultResourceMetadata<?> other = (DefaultResourceMetadata<?>) obj;
+
+        // must be from the same context to be equal
+        return context == other.context && state == other.state && resource.equals(other.resource);
+    }
+
+    protected AbstractBuildContext getContext() {
+        return context;
+    }
+
+    @Override
+    public String toString() {
+        return resource.toString();
+    }
 }

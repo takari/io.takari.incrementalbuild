@@ -9,18 +9,18 @@ import java.util.stream.Collectors;
 
 public class DirAssert {
 
-  public static void assertFiles(Collection<File> actualFiles, File... expectedFiles) {
-    String expected = toString(Arrays.asList(expectedFiles));
-    String actual = toString(actualFiles);
+    public static void assertFiles(Collection<File> actualFiles, File... expectedFiles) {
+        String expected = toString(Arrays.asList(expectedFiles));
+        String actual = toString(actualFiles);
 
-    assertEquals(expected, actual);
-  }
+        assertEquals(expected, actual);
+    }
 
-  private static String toString(Collection<File> files) {
-    return files.stream().sorted() //
-        .map(file -> file.toPath().normalize().toFile()) //
-        .map(file -> file.getAbsolutePath()) //
-        .collect(Collectors.joining("\n"));
-  }
-
+    private static String toString(Collection<File> files) {
+        return files.stream()
+                .sorted() //
+                .map(file -> file.toPath().normalize().toFile()) //
+                .map(file -> file.getAbsolutePath()) //
+                .collect(Collectors.joining("\n"));
+    }
 }
