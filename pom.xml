@@ -70,9 +70,10 @@
       |
 
      -->
-
+    <!--
     <module>incrementalbuild-workspace</module>
     <module>takari-builder-security-manager</module>
+    -->
 
     <module>incrementalbuild</module>
     <module>incrementalbuild-its</module>
@@ -98,14 +99,14 @@
     <guava.version>33.0.0-jre</guava.version>
     <!-- TODO: MessageCollectorTest deadlocks with 31.1, see why -->
     <eclipse-sisu.version>0.9.0.M2</eclipse-sisu.version>
-    <plugin-testing.version>3.0.1</plugin-testing.version>
+    <plugin-testing.version>3.0.2</plugin-testing.version>
     <takariLifecycleVersion>2.1.3</takariLifecycleVersion>
     <takari.javaSourceVersion>1.8</takari.javaSourceVersion>
     <classworlds.version>2.8.0</classworlds.version>
     <takari.transitiveDependencyReference>error</takari.transitiveDependencyReference>
     <takari.privatePackageReference>ignore</takari.privatePackageReference>
-    <incrementalbuild-workspace.version>1.0.1-SNAPSHOT</incrementalbuild-workspace.version>
-    <takari-builder-security-manager.version>1.0.1-SNAPSHOT</takari-builder-security-manager.version>
+    <incrementalbuild-workspace.version>0.20.9</incrementalbuild-workspace.version>
+    <takari-builder-security-manager.version>0.20.5</takari-builder-security-manager.version>
     <maven-resolver.version>1.9.18</maven-resolver.version>
     <maven-wagon.version>3.5.3</maven-wagon.version>
 
