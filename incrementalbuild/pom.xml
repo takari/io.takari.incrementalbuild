@@ -65,7 +65,6 @@
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
-      <classifier>no_aop</classifier>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -120,13 +119,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>animal-sniffer-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
 </project>
