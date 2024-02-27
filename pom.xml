@@ -92,7 +92,7 @@
   <properties>
     <apache-maven.version>3.9.6</apache-maven.version>
     <mavenPluginPlugin.version>3.11.0</mavenPluginPlugin.version>
-    <slf4j.version>1.7.36</slf4j.version>
+    <slf4j.version>2.0.12</slf4j.version>
     <junit.version>4.13.2</junit.version>
     <guava.version>33.0.0-jre</guava.version>
     <!-- TODO: MessageCollectorTest deadlocks with 31.1, see why -->
