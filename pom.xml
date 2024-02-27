@@ -106,7 +106,7 @@
     <incrementalbuild-workspace.version>1.0.1-SNAPSHOT</incrementalbuild-workspace.version>
     <takari-builder-security-manager.version>1.0.1-SNAPSHOT</takari-builder-security-manager.version>
     <maven-resolver.version>1.6.3</maven-resolver.version>
-    <maven-wagon.version>3.5.1</maven-wagon.version>
+    <maven-wagon.version>3.5.3</maven-wagon.version>
 
     <argLine />
   </properties>
