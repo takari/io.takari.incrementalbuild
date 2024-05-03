@@ -226,7 +226,14 @@
       <dependency>
         <groupId>javax.enterprise</groupId>
         <artifactId>cdi-api</artifactId>
-        <version>1.0</version>
+        <version>2.0</version>
+        <exclusions>
+          <!-- We need only javax.enterprise.inject.Typed -->
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.inject</groupId>
