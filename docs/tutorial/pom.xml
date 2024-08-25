@@ -18,7 +18,7 @@
   <packaging>takari-maven-plugin</packaging>
 
   <properties>
-    <mavenVersion>3.3.9</mavenVersion>
+    <mavenVersion>3.8.1</mavenVersion>
   </properties>
 
   <dependencies>
@@ -43,7 +43,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <version>4.13.1</version>
     </dependency>
     <dependency>
       <groupId>io.takari.maven.plugins</groupId>
