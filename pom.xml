@@ -93,7 +93,7 @@
 
   <properties>
     <apache-maven.version>3.9.6</apache-maven.version>
-    <mavenPluginPlugin.version>3.12.0</mavenPluginPlugin.version>
+    <mavenPluginPlugin.version>3.14.0</mavenPluginPlugin.version>
     <slf4j.version>1.7.36</slf4j.version>
     <junit.version>4.13.2</junit.version>
     <guava.version>33.2.0-jre</guava.version>
