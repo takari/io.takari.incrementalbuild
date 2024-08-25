@@ -18,7 +18,7 @@
   </parent>
 
   <artifactId>io.takari.incrementalbuild</artifactId>
-  <version>1.0.3-SNAPSHOT</version>
+  <version>1.0.3</version>
   <packaging>pom</packaging>
 
   <name>incrementalbuild</name>
@@ -87,7 +87,7 @@
   <scm>
     <connection>scm:git:git@github.com:takari/io.takari.incrementalbuild.git</connection>
     <developerConnection>scm:git:git@github.com:takari/io.takari.incrementalbuild.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>io.takari.incrementalbuild-1.0.3</tag>
     <url>https://github.com/takari/io.takari.incrementalbuild</url>
   </scm>
 
