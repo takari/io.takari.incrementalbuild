@@ -20,6 +20,7 @@
   <artifactId>takari-builder-common</artifactId>
 
   <packaging>takari-maven-component</packaging>
+  <name>${project.groupId}:${project.artifactId}</name>
 
   <dependencies>
 

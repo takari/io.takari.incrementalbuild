@@ -18,6 +18,7 @@
   </parent>
   <artifactId>incrementalbuild</artifactId>
   <packaging>takari-maven-component</packaging>
+  <name>${project.groupId}:${project.artifactId}</name>
 
   <dependencies>
 
@@ -65,6 +66,7 @@
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
+      <classifier>classes</classifier>
       <optional>true</optional>
     </dependency>
     <dependency>

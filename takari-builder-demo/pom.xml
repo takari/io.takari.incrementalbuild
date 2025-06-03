@@ -20,6 +20,7 @@
   <groupId>io.takari.builder.demo</groupId>
   <artifactId>takari-builder-demo</artifactId>
   <packaging>takari-maven-plugin</packaging>
+  <name>${project.groupId}:${project.artifactId}</name>
 
   <dependencies>
 

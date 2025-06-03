@@ -45,8 +45,8 @@ public class BuilderWorkspace {
     public Stream<Path> walk(Path basedir) throws IOException {
         switch (getMode(basedir)) {
             case SUPPRESSED:
-                // workspace.walk will walk all resources to calculate inputs, but build will still be
-                // skipped in BuilderRunner#execute()
+            // workspace.walk will walk all resources to calculate inputs, but build will still be
+            // skipped in BuilderRunner#execute()
             case DELTA:
                 // workspace.walk will only return changed resources,
                 // combine these with unchanged resources from previous execution state

@@ -18,6 +18,7 @@
   </parent>
   <artifactId>incrementalbuild-workspace</artifactId>
   <packaging>takari-jar</packaging>
+  <name>${project.groupId}:${project.artifactId}</name>
 
   <description>Provides hooks to run incremental build inside m2e workspace. Other host applications
   may also be able to use this API, but have not been tested.

@@ -19,6 +19,7 @@
   <groupId>io.takari.builder</groupId>
   <artifactId>takari-builder-security-manager</artifactId>
 
+  <name>${project.groupId}:${project.artifactId}</name>
   <packaging>takari-jar</packaging>
 
   <properties>
